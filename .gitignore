@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+.react-router/
+.cache/
+
+# Shopify CLI
+.shopify/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Tests and reports
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Run ledger raw logs (D-18: they live in the ledger repo)
+.agents/ledger/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
