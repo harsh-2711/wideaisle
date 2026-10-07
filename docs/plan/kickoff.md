@@ -9,7 +9,7 @@ Written on 2026-10-07 after reading all of docs/plan/roadmap.md.
 3. Fixes are rules written once per theme into a shared library. AI writes them offline. Only alt text calls a model at run time, in batch.
 4. Every store gets a dated evidence pack: scans, a remediation log, an accessibility statement and known limits.
 5. The stack is one TypeScript repo on Shopify's React Router template with Postgres, Drizzle, pg-boss and Playwright.
-6. Milestones run M0 to M8 over about 10 weeks, with five gates (G0 to G4) where the owner decides.
+6. M0 to M7 run over about 10 weeks, and M8 follows in months 3 to 6. Five gates (G0 to G4) are where the owner decides.
 7. M1, M2 and M3 run side by side, and so do M4 and M5.
 8. The PoC passes when the six error types fall by 80% or more on key pages of 10 live pilot stores.
 9. Agents do the work in parallel lanes and log to a run ledger through hooks. The planner is the only agent that writes to the owner.
@@ -38,14 +38,13 @@ Approved and Changed decisions are final. For Changed ones, the owner's note is 
 | D-15 | Entity | Individual Partner for pilots; decide before G3 |
 | D-16 | Outreach | Exclude stores recently named in lawsuits from cold outreach |
 | D-17 | First expansion | Decide with launch data |
-| D-18 | Raw agent logs | B: ledger repo harsh-2711/wideaisle-ledger; a gitignored .agents/ledger/ until it exists |
+| D-18 | Raw agent logs | B: ledger repo harsh-2711/wideaisle-ledger; a gitignored .agents/ledger/ until it exists; C once the PoC server exists |
 | D-19 | Status board | A: GitHub Projects, mirrored from .agents/board.json |
 
-D-18 and D-19 were Pending in the plan. The owner approved both on 2026-10-07.
+D-18 and D-19 were Pending when the kickoff started. The owner approved both on 2026-10-07, and the live doc now shows them Approved.
 
 ## Changes from the plan text
 
-- The repo is `harsh-2711/wideaisle`, not `wide-aisle`.
 - Branches are `claude/<type>-<name>`, not `task/<id>-<short-name>`. The task id goes in the commit footer. The owner set this on 2026-10-07 and the live doc now says so.
 - Every feature branch reaches main through a pull request. Agents merge their own pull requests after green CI and a reviewer agent's check, using a merge commit.
 - main got one direct root commit so pull requests have a base. Every later change goes through a pull request.

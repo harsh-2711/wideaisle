@@ -70,7 +70,7 @@ Any agent that picks up this plan reads this section first. When you say "start 
 6. Adds the Claude Code setup: .claude/settings.json with hooks and deny rules, hook scripts in .claude/hooks/, and one subagent definition per role in .claude/agents/. Commit: `chore(agents): add hooks, rules and subagents`.
 7. Adds the GitHub files: pull request and issue templates, CODEOWNERS with you as owner, and a CI workflow. Commit: `ci: add templates and checks`.
 8. Plans M0 as tasks T-001 onward, each with its own TASK.md and HANDOFF.md, and matching GitHub issues. Commit: `chore(tasks): plan M0`.
-9. Pushes and sends you a short kickoff report: what exists, which tasks are queued, and which Pending decisions block work (today D-18 and D-19). Then it waits at gate G0.
+9. Pushes and sends you a short kickoff report: what exists, which tasks are queued, and which Pending decisions block work (none today: D-18 and D-19 were approved on 7 October 2026). Then it waits at gate G0.
 
 ### Project files the kickoff creates
 
@@ -180,7 +180,7 @@ Every decision below is yours. Agents draft a memo with options and costs, you s
 
 ## Roadmap
 
-Roadmap as text (the live doc has the drawing). Left: build lane. Right: market lane. Weeks are targets.
+Roadmap as text (the live doc has the drawing). Weeks are targets.
 
 | When | Build lane | Market lane |
 |---|---|---|
@@ -202,7 +202,7 @@ M1 to M3 run side by side, and so do M4 and M5. Each gate is one short weekly se
 
 Nine agent roles run in parallel lanes; you appear at exactly two points in every loop: approving a decision and reviewing a gate. Once you approve, agents work independently until the milestone's exit criteria pass or they hit a blocker they must escalate.
 
-Agent loop as text (the live doc has the drawing). Only two steps need you: approving a decision and reviewing a gate.
+Agent loop as text (the live doc has the drawing).
 
 1. Draft decision memo: an agent writes options, costs, risks and a pick.
 2. **You approve** or change the pick in the decision log.
@@ -249,10 +249,10 @@ The planner drafts, you approve, builders and reviewers loop until the exit crit
 
 Every agent writes to one run ledger through hooks rather than its own memory, so you can see what each agent is doing right now, and any agent can resume a failed task from its last checkpoint. It costs close to nothing: files in git, a GitHub Project board and shell-script hooks.
 
-Ledger as text (the live doc has the drawing). Hooks write everything to one ledger; children report only to their parent.
+Ledger as text (the live doc has the drawing).
 
 - You: see the board and unblock what waits on you.
-- Planner: assigns tasks and relaunches stalled ones. The only agent that writes to you.
+- Planner: assigns tasks and relaunches stalled ones.
 - Lane leads: file their children's reports.
 - Child subagents: narrow jobs; report only to their lead.
 - Run ledger, written by hooks: the status board (GitHub Project: queued, running, blocked, done), checkpoints (HANDOFF.md per task: done, next step, blockers) and the event log (every prompt, tool call, edit and error, appended).
