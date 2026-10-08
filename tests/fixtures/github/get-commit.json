@@ -1,0 +1,21 @@
+{
+  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+  "node_id": "MDY6Q29tbWl0NmRjYjA5YjViNTc4NzVmMzM0ZjYxYWViZWQ2OTVlMmU0MTkzZGI1ZQ==",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/commits/6dcb09b5b57875f334f61aebed695e2e4193db5e",
+  "html_url": "https://github.com/acme-agency/acme-dawn-theme/commit/6dcb09b5b57875f334f61aebed695e2e4193db5e",
+  "author": { "date": "2026-10-01T09:00:00Z", "name": "shopify[bot]", "email": "79544226+shopify[bot]@users.noreply.github.com" },
+  "committer": { "date": "2026-10-01T09:00:00Z", "name": "shopify[bot]", "email": "79544226+shopify[bot]@users.noreply.github.com" },
+  "message": "Update from Shopify for theme acme-dawn-theme/main",
+  "tree": {
+    "sha": "9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
+    "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/9fb037999f264ba9a7fc6274d15fa3ae2ab98312"
+  },
+  "parents": [
+    {
+      "sha": "553c2077f0edc3d5dc5d17262f6aa498e69d6f8e",
+      "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/commits/553c2077f0edc3d5dc5d17262f6aa498e69d6f8e",
+      "html_url": "https://github.com/acme-agency/acme-dawn-theme/commit/553c2077f0edc3d5dc5d17262f6aa498e69d6f8e"
+    }
+  ],
+  "verification": { "verified": false, "reason": "unsigned", "signature": null, "payload": null, "verified_at": null }
+}

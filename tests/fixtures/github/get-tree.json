@@ -1,0 +1,17 @@
+{
+  "sha": "9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
+  "tree": [
+    { "path": "assets", "mode": "040000", "type": "tree", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" },
+    { "path": "assets/base.css", "mode": "100644", "type": "blob", "sha": "c71d39301973d4d4d426f1e38fe03ecadb36fbfe", "size": 50, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/c71d39301973d4d4d426f1e38fe03ecadb36fbfe" },
+    { "path": "config", "mode": "040000", "type": "tree", "sha": "b2c3d4e5f60718293a4b5c6d7e8f901234567890", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/b2c3d4e5f60718293a4b5c6d7e8f901234567890" },
+    { "path": "config/settings_data.json", "mode": "100644", "type": "blob", "sha": "8942d91a38c114dcf06f3d90c83184a79a6ff574", "size": 27, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/8942d91a38c114dcf06f3d90c83184a79a6ff574" },
+    { "path": "layout", "mode": "040000", "type": "tree", "sha": "c3d4e5f60718293a4b5c6d7e8f9012345678901a", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/c3d4e5f60718293a4b5c6d7e8f9012345678901a" },
+    { "path": "layout/theme.liquid", "mode": "100644", "type": "blob", "sha": "ea7473b9ec9a874b45787b074305a389a1ee21b0", "size": 144, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/ea7473b9ec9a874b45787b074305a389a1ee21b0" },
+    { "path": "locales", "mode": "040000", "type": "tree", "sha": "d4e5f60718293a4b5c6d7e8f9012345678901a2b", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/d4e5f60718293a4b5c6d7e8f9012345678901a2b" },
+    { "path": "locales/en.default.json", "mode": "100644", "type": "blob", "sha": "1ff03c60b135459d71d47c9eb6c5e8be2a2bf672", "size": 48, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/1ff03c60b135459d71d47c9eb6c5e8be2a2bf672" },
+    { "path": "sections", "mode": "040000", "type": "tree", "sha": "e5f60718293a4b5c6d7e8f9012345678901a2b3c", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/e5f60718293a4b5c6d7e8f9012345678901a2b3c" },
+    { "path": "sections/header.liquid", "mode": "100644", "type": "blob", "sha": "ea1611e0aeb27442bb53438910f2a6ea29951213", "size": 82, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/ea1611e0aeb27442bb53438910f2a6ea29951213" }
+  ],
+  "truncated": false
+}

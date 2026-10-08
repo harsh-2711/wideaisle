@@ -8,7 +8,7 @@ See TASK.md. Duplicate a theme and write files through the Admin API; the GitHub
 
 ## Status
 
-Running. Last updated 2026-10-08. Zip and Admin API routes done; GitHub next.
+Running. Last updated 2026-10-08. All three adapters done; spike doc next.
 
 ## Done so far
 
@@ -16,17 +16,18 @@ Running. Last updated 2026-10-08. Zip and Admin API routes done; GitHub next.
 |---|---|
 | Research: Admin API 2026-10 schema, GitHub REST description, exemption sources | d3cfb22 |
 | Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | f8ced04 |
-| Admin API client and adapter, 23 recorded GraphQL fixtures, 20 tests | this commit |
+| Admin API client and adapter, 24 recorded GraphQL fixtures, 20 tests | 07b4d9e |
+| GitHub pull request adapter, 24 recorded REST fixtures, 14 tests | this commit |
 
 ## Current step
 
-GitHub pull request adapter with recorded REST fixtures.
+docs/spikes/spike-a-delivery.md.
 
 ## Next three steps
 
-1. GitHub pull request adapter (branch, blobs, tree, commit, PR; revert by close or revert PR).
-2. docs/spikes/spike-a-delivery.md.
-3. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
+1. Write docs/spikes/spike-a-delivery.md (built, merchant needs, exemption sources, Q-03, Q-27).
+2. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
+3. Set the board to In review and report to the parent.
 
 ## Blockers and open questions
 
@@ -46,10 +47,11 @@ D-09
 - .agents/tasks/T-030/HANDOFF.md, status.json
 - package.json, package-lock.json (fflate 0.8.2, pinned exactly)
 - app/lib/delivery/: types.ts, errors.ts, limits.ts, patch.ts, http.ts, theme-file.ts,
-  shopify-admin.ts, admin-api.ts
+  shopify-admin.ts, admin-api.ts, github.ts
 - tests/unit/delivery/: helpers.ts, theme-data.ts, patch.test.ts, theme-file.test.ts,
-  admin-api.test.ts
-- tests/fixtures/shopify/ (hand-written responses, README lists them)
+  admin-api.test.ts, github.test.ts
+- tests/fixtures/shopify/ and tests/fixtures/github/ (hand-written responses; each README
+  lists them)
 
 ## How to verify
 
@@ -63,3 +65,7 @@ D-09
 - productUpdateMedia is deprecated in 2026-10. Alt text goes through fileUpdate, which needs
   write_files (or write_themes), not write_products.
 - themeFilesUpsert takes at most 50 files per call and returns a Job to poll.
+- GitHub revert after a merge points each file at its original blob SHA, so the bytes are
+  exact without uploading anything. Before checks compare git blob IDs, no downloads.
+- Test data that a script must import lives in tests/unit/delivery/theme-data.ts; helpers.ts
+  imports vitest and cannot load outside a test run.

@@ -1,0 +1,13 @@
+{
+  "sha": "0a9b8c7d6e5f40312a3b4c5d6e7f8091a2b3c4d5",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/0a9b8c7d6e5f40312a3b4c5d6e7f8091a2b3c4d5",
+  "tree": [
+    { "path": "assets", "mode": "040000", "type": "tree", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" },
+    { "path": "assets/base.css", "mode": "100644", "type": "blob", "sha": "c71d39301973d4d4d426f1e38fe03ecadb36fbfe", "size": 50, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/c71d39301973d4d4d426f1e38fe03ecadb36fbfe" },
+    { "path": "layout", "mode": "040000", "type": "tree", "sha": "c3d4e5f60718293a4b5c6d7e8f9012345678901a", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/c3d4e5f60718293a4b5c6d7e8f9012345678901a" },
+    { "path": "layout/theme.liquid", "mode": "100644", "type": "blob", "sha": "ea7473b9ec9a874b45787b074305a389a1ee21b0", "size": 144, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/ea7473b9ec9a874b45787b074305a389a1ee21b0" },
+    { "path": "sections", "mode": "040000", "type": "tree", "sha": "f60718293a4b5c6d7e8f9012345678901a2b3c4d", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/f60718293a4b5c6d7e8f9012345678901a2b3c4d" },
+    { "path": "sections/header.liquid", "mode": "100644", "type": "blob", "sha": "b51aa0e9047721b77c19769a7697f1bf9d5f5c93", "size": 100, "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/blobs/b51aa0e9047721b77c19769a7697f1bf9d5f5c93" }
+  ],
+  "truncated": false
+}
