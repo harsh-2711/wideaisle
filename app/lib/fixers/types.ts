@@ -19,6 +19,10 @@ export interface Patch {
 export interface FixContext {
   // Translation strings from locales/en.default.json, if the theme has them.
   locale?: Record<string, unknown>;
+  // True for Dawn-family themes, which draw text as
+  // rgba(var(--color-foreground), 0.75) and 0.7. The contrast fixer then
+  // measures text at those opacities; otherwise it checks solid colour.
+  dawnTextOpacity?: boolean;
 }
 
 export interface Fixer {

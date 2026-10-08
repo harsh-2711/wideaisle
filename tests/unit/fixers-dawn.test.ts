@@ -19,6 +19,9 @@ const locale = {
   products: { product: { quantity: { label: "Quantity", input_label: "Quantity for {{ product }}", increase: "Increase quantity for {{ product }}", decrease: "Decrease quantity for {{ product }}" } } },
 };
 
+// Dawn's layout/theme.liquid draws body text at rgba(var(--color-foreground), 0.75).
+const DAWN = { locale, dawnTextOpacity: true };
+
 const withoutHiddenText = (src: string) => src.replace(/<span class="visually-hidden">[\s\S]*?<\/span>/g, "");
 
 describe("Dawn 16 header drawer", () => {
@@ -74,7 +77,7 @@ describe("Dawn 16 settings_data.json", () => {
 
   it("fixes the preset's failing scheme and nothing else", () => {
     expect(parse(edited).current).toBe("Dawn");
-    const p = lowContrast.fixFile("config/settings_data.json", edited, {})!;
+    const p = lowContrast.fixFile("config/settings_data.json", edited, DAWN)!;
     const d = parse(p.after);
     const s2 = d.presets.Dawn.color_schemes["scheme-2"].settings;
     expect(s2.text).not.toBe("#AAAAAA");
@@ -88,12 +91,12 @@ describe("Dawn 16 settings_data.json", () => {
     expect(p.notes.filter((n) => n.startsWith("Needs review"))).toHaveLength(1);
     expect(p.notes[1]).toMatch(/^Needs review: Colour scheme scheme-5/);
     // A second run changes nothing.
-    const again = lowContrast.fixFile("config/settings_data.json", p.after, {})!;
+    const again = lowContrast.fixFile("config/settings_data.json", p.after, DAWN)!;
     expect(again.after).toBe(again.before);
   });
 
   it("leaves stock Dawn's colours alone", () => {
-    const p = lowContrast.fixFile("config/settings_data.json", stock, {})!;
+    const p = lowContrast.fixFile("config/settings_data.json", stock, DAWN)!;
     expect(p.after).toBe(stock);
   });
 });

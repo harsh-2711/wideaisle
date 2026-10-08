@@ -191,22 +191,26 @@ export function parseAttrs(attrs: string): Attr[] {
       i++;
       continue;
     }
-    const lq = skipLiquid(attrs, i);
-    if (lq >= 0) {
-      i = lq;
+    // {% if %} and other tags sit between attributes.
+    if (attrs.startsWith("{%", i)) {
+      i = skipLiquid(attrs, i);
       continue;
     }
+    // A name may hold Liquid output ("data-{{ x }}"); it is then one name
+    // that matches no real attribute.
     let j = i;
-    while (j < n && !NAME_END.test(attrs[j]) && !(attrs[j] === "{" && /[{%]/.test(attrs[j + 1] ?? ""))) j++;
+    while (j < n && !NAME_END.test(attrs[j]) && !attrs.startsWith("{%", j)) j = attrs.startsWith("{{", j) ? skipLiquid(attrs, j) : j + 1;
     if (j === i) {
       i++;
       continue;
     }
     const name = attrs.slice(i, j).toLowerCase();
+    const liquidOnly = /^(\{\{[\s\S]*?\}\})+$/.test(name);
     let k = j;
     while (k < n && /\s/.test(attrs[k])) k++;
     if (attrs[k] !== "=") {
-      out.push({ name, value: null });
+      // Bare output such as {{ block.shopify_attributes }} is not a name.
+      if (!liquidOnly) out.push({ name, value: null });
       i = j;
       continue;
     }

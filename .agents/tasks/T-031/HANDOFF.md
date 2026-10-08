@@ -8,7 +8,7 @@ See TASK.md. Rule-based Liquid and CSS patches for the six failure types on Dawn
 
 ## Status
 
-Review findings on PR #35 fixed (16 of 16); back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-08.
+Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed; back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-08.
 
 ## Done so far
 
@@ -22,6 +22,7 @@ Review findings on PR #35 fixed (16 of 16); back in review. Three of four exit c
 | Review 6 to 8, 10: alt only from image objects, shop-logo clues, icon-x, keys with variables | 16f3cac |
 | Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | e318ca8 |
 | Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | ac725af |
+| Re-review A to E: quote check, Dawn opacity only for Dawn-family themes, split tags, home-link alt, Liquid attribute names | this commit |
 
 ## Current step
 
@@ -66,5 +67,7 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/fixers.spec.ts
 - Copy an attribute value only when its Liquid balances (liquidBalanced). Read values with parseAttrs, never a regex.
 - Every alt copied from an image object adds a review note: empty admin alt renders as decorative.
 - Dawn draws text at 75% opacity (body) and 70% (subtitles). The contrast fixer solves for 70% and falls back to 75% with a review note. Dawn 16 scheme-5 fails at 70% (4.43:1) and no colour fixes it: one expected review item.
+- The opacity table applies only when contextFor finds rgba(var(--color-foreground), 0.75) in layout/theme.liquid or assets/base.css (ctx.dawnTextOpacity). Unit tests of Dawn behaviour pass that flag.
+- A Liquid part that holds both quote kinds is never copied: attrSafe would turn " into ' and break it.
 - revertFixes returns { theme, refused }: a file edited since the fix is not reverted.
 - loadTheme reads theme folders only. Walking .git failed in CI when git removed a lock file mid-walk.

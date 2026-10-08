@@ -32,6 +32,10 @@ describe("copying placeholder values (review 2)", () => {
       `<input type="text" placeholder="Save 10 }} today">`,
       `<input type="text" placeholder="{% if a %}Email"{% endif %}>`,
       `<input type="text" placeholder="{{ "it's" }}">`,
+      // Liquid that holds both quote kinds cannot switch to single quotes.
+      `<input type="text" placeholder='{{ 'Your "best" email' }}'>`,
+      `<input type="text" placeholder='{% if a == "x" %}{{ 'He said "no"' }}{% endif %}'>`,
+      `<input type="text" placeholder="{{ 'Say \\"hi\\"' }}">`,
     ]) {
       const p = missingLabel.fixFile("sections/x.liquid", src, {})!;
       expect(p.after, src).toBe(src);
@@ -66,6 +70,11 @@ describe("tag scanner (reviews 13 to 15)", () => {
     expect(hasAttr(`href="/" title="Home"`, "title")).toBe(true);
     expect(hasAttr(`{% if x %}title="{{ y }}"{% endif %}`, "title")).toBe(true);
     expect(hasAttr(`class="a" hidden`, "hidden")).toBe(true);
+    // Names built with Liquid are one unknown name, and their value is a value.
+    expect(hasAttr(`data-{{ x }}="title"`, "title")).toBe(false);
+    expect(hasAttr(`{{ attr }}="aria-label"`, "aria-label")).toBe(false);
+    expect(hasAttr(`class="a"{{ block.shopify_attributes }} title="b"`, "title")).toBe(true);
+    expect(attrValue(`data-{{ x }}="title" href="/cart"`, "href")).toBe("/cart");
     const p = emptyLink.fixFile("snippets/x.liquid", `<a href="{{ routes.cart_url }}" class="title icon">{% render 'icon-cart' %}</a>`, {})!;
     expect(p.after).toContain(`<a aria-label="Cart" href=`);
   });
@@ -195,5 +204,32 @@ describe("revert (review 16)", () => {
     expect(result.theme.get("sections/header.liquid")).toContain("Merchant note");
     expect(result.theme.get("layout/theme.liquid")).toBe(theme.get("layout/theme.liquid"));
     expect(revertFixes(fixed, report)).toEqual({ theme, refused: [] });
+  });
+});
+
+describe("opening tags split across branches (re-review C)", () => {
+  it("flags an <a> whose closing tag cannot be matched", () => {
+    const src = `{% if link %}<a href="{{ link }}" class="x">{% else %}<a href="/cart" class="y">{% endif %}{% render 'icon-cart' %}</a>`;
+    const p = emptyLink.fixFile("snippets/x.liquid", src, {})!;
+    expect(p.after).toContain(`<a href="{{ link }}" class="x">`);
+    expect(review(p.notes)).toHaveLength(1);
+    expect(review(p.notes)[0]).toMatch(/<a> on line 1/);
+  });
+});
+
+describe("images in a home link that has text (re-review D)", () => {
+  it("gives the image empty alt when the link already shows text", () => {
+    const src = `<a href="/" class="header__heading-link"><img src="{{ 'logo.png' | asset_url }}"><span>{{ shop.name }}</span></a>`;
+    const p = missingAlt.fixFile("sections/header.liquid", src, {})!;
+    expect(p.after).toContain(`<img alt="" src="{{ 'logo.png' | asset_url }}">`);
+    expect(review(p.notes)).toEqual([]);
+  });
+
+  it("keeps the shop name when the text may not render with the image", () => {
+    const src = `<a href="/">{% if settings.logo %}<img src="{{ settings.logo | image_url }}">{% else %}{{ shop.name }}{% endif %}</a>`;
+    const p = missingAlt.fixFile("sections/header.liquid", src, {})!;
+    expect(p.after).toContain(`<img alt="{{ settings.logo.alt | default: shop.name | escape }}"`);
+    const alone = `<a href="/"><img src="{{ 'logo.png' | asset_url }}"></a>`;
+    expect(missingAlt.fixFile("sections/header.liquid", alone, {})!.after).toContain(`alt="{{ shop.name | escape }}"`);
   });
 });

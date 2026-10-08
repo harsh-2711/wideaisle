@@ -24,9 +24,12 @@ function parseJsonWithComments(text: string): Record<string, unknown> | undefine
   }
 }
 
+const DAWN_TEXT = /rgba\(\s*var\(\s*--color-foreground\s*\)\s*,\s*0?\.75\s*\)/;
+
 export function contextFor(theme: ThemeFiles): FixContext {
   const locale = theme.get("locales/en.default.json");
-  return { locale: locale ? parseJsonWithComments(locale) : undefined };
+  const dawnTextOpacity = ["layout/theme.liquid", "assets/base.css"].some((f) => DAWN_TEXT.test(theme.get(f) ?? ""));
+  return { locale: locale ? parseJsonWithComments(locale) : undefined, dawnTextOpacity };
 }
 
 // Runs every fixer over every file, chaining fixers on the same file.

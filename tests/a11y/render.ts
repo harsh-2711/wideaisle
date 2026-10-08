@@ -51,12 +51,11 @@ export async function renderTheme(theme: ThemeFiles): Promise<string> {
     for (const k of String(key).split(".")) cur = (cur as Record<string, unknown> | undefined)?.[k];
     return typeof cur === "string" ? cur : key;
   });
-  // Shopify's color_modify, alpha only: '#9A9A9A' | color_modify: 'alpha', 0.75.
-  engine.registerFilter("color_modify", (hex: string, field: string, value: number) => {
+  // Shopify's color_extract for red, green and blue: '#9A9A9A' | color_extract: 'red'.
+  engine.registerFilter("color_extract", (hex: string, field: string) => {
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex));
-    if (!m || field !== "alpha") return hex;
-    const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
-    return `rgba(${r}, ${g}, ${b}, ${value})`;
+    const at = ["red", "green", "blue"].indexOf(field);
+    return m && at >= 0 ? parseInt(m[at + 1], 16) : "";
   });
   engine.registerFilter("image_url", () => PIXEL);
   engine.registerFilter("img_url", () => PIXEL);

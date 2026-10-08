@@ -36,7 +36,7 @@ Stock Dawn's other colour schemes pass at every opacity Dawn uses for text. Real
 
 ## How the contrast fix measures text
 
-Dawn draws text as `rgba(var(--color-foreground), alpha)`: headings at 1, body text, labels and menu items at 0.75 (`layout/theme.liquid`, `assets/base.css`), and subtitles, unit prices, predictive search headings and facet counts at 0.7. The fixer measures each text colour over its background at 1, 0.75 and 0.7, and changes it only as much as needed for all three. 0.7 is the lowest opacity Dawn uses for text that must pass. When no shade reaches 4.5:1 at 0.7, the fixer still makes 0.75 text pass and flags the 0.7 text for review.
+Dawn draws text as `rgba(var(--color-foreground), alpha)`: headings at 1, body text, labels and menu items at 0.75 (`layout/theme.liquid`, `assets/base.css`), and subtitles, unit prices, predictive search headings and facet counts at 0.7. The fixer uses this table only for Dawn-family themes: those whose `layout/theme.liquid` or `assets/base.css` holds `rgba(var(--color-foreground), 0.75)`. Other themes are checked as solid colour, so a brand colour that passes as solid text is left alone. For Dawn-family themes the fixer measures each text colour over its background at 1, 0.75 and 0.7, and changes it only as much as needed for all three. 0.7 is the lowest opacity Dawn uses for text that must pass. When no shade reaches 4.5:1 at 0.7, the fixer still makes 0.75 text pass and flags the 0.7 text for review.
 
 One setting can sit on several backgrounds. In older Dawn, `colors_text` is drawn on `colors_background_1` and `colors_background_2`. The fixer looks for one colour that passes on every background. If none exists, it changes nothing and flags it for review. Every note states ratios measured on the new file.
 
@@ -45,13 +45,13 @@ One setting can sit on several backgrounds. In older Dawn, `colors_text` is draw
 - Rendering uses LiquidJS with stand-ins for Shopify objects and filters, not Shopify itself. The dev-store scan (needs Q-03) is the real test.
 - No visual diff yet: it needs a rendered store. Only contrast changes affect looks, and the merchant previews them first (M4).
 - The contrast fixer changes foreground colours only and leaves backgrounds and brand buttons alone. Gradients and images behind text are not handled.
-- Text opacities are Dawn's. Other themes may draw text at other opacities; the census themes need their own table. Text Dawn draws below 0.7 (placeholders at 0.55, slider counters and facet help text at 0.5) cannot reach 4.5:1 on white with any colour, so a colour setting cannot fix it.
+- Text opacities are Dawn's, and only Dawn-family themes get them. Other themes may draw text at other opacities and are checked as solid colour until the census themes get their own table. Text Dawn draws below 0.7 (placeholders at 0.55, slider counters and facet help text at 0.5) cannot reach 4.5:1 on white with any colour, so a colour setting cannot fix it.
 - Colours that are not 3- or 6-digit hex (rgba, 8-digit hex, names) are skipped.
 - The alt fixer adds `alt` only from image objects (paths ending in image, featured_image, featured_media, media or preview_image). Other objects such as product or collection have no `.alt` and go to review. Every alt taken from the admin is also flagged: where the admin alt is empty, the image renders as decorative (`alt=""`). Spike C drafts that content.
-- The shop name is used only for the shop's own logo or home link (settings.logo, header__heading-logo or header__heading-link, routes.root_url, href="/"). Other logos go to review.
+- The shop name is used only for the shop's own logo or home link (settings.logo, header__heading-logo or header__heading-link, routes.root_url, href="/"). Other logos go to review. An image in a home link that always shows text gets `alt=""`, so the name is not read twice. Text inside `{% if %}` does not count, since it may render without the image.
 - Names from plain English are used when the theme has no matching translation key, or when the key's text needs a variable (for example "Increase quantity for {{ product }}"). Multilingual stores need translations (M4).
 - A link or button that renders a snippet other than an icon, or uses echo, liquid or section tags, counts as having text. An empty one of these is missed rather than named over.
-- When an opening tag is split across `{% if %}` and `{% else %}`, only the last branch is checked.
+- When an opening tag is split across `{% if %}` and `{% else %}`, only the last branch is checked. The others are listed for review.
 
 ## Next
 

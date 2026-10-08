@@ -54,12 +54,12 @@ export function liquidBalanced(value: string): boolean {
 }
 
 // A value attrSafe can carry into a new attribute unchanged in meaning.
-// Liquid strings in double quotes that hold an apostrophe cannot switch to
-// single quotes, so they are refused too.
+// attrSafe turns " into ' inside Liquid, so a Liquid part that already
+// holds both kinds of quote ('Your "best" email', "it's") would break.
 function copyable(value: string): boolean {
   if (!liquidBalanced(value)) return false;
   const liquidParts = value.match(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g) ?? [];
-  return !liquidParts.some((part) => /"[^"]*'[^"]*"/.test(part));
+  return !liquidParts.some((part) => part.includes('"') && part.includes("'"));
 }
 
 function line(src: string, index: number): number {
@@ -102,7 +102,12 @@ function nameFixer(id: string, type: "empty-link" | "empty-button", tagName: "a"
         if (attrValue(tag.attrs, "aria-hidden")?.trim().toLowerCase() === "true") continue;
         if (tagName === "a" && !hasAttr(tag.attrs, "href")) continue;
         const el = elementFor(content, tag);
-        if (!el || !hasNoText(el.inner)) continue;
+        if (!el) {
+          // For example an opening tag split across {% if %} and {% else %}.
+          notes.push(`Needs review: <${tagName}> on line ${line(content, tag.start)} has no matching closing tag here, so its content was not checked.`);
+          continue;
+        }
+        if (!hasNoText(el.inner)) continue;
         const name = inferName(clueText(tag, el.inner), rules, ctx.locale);
         if (!name) {
           notes.push(`Needs review: <${tagName}> on line ${line(content, tag.start)} has no accessible name and no clue to name it.`);
@@ -187,6 +192,14 @@ function enclosingLink(links: Element[], at: number): Element | undefined {
   return links.filter((a) => a.end <= at && at < a.closeStart).sort((x, y) => y.start - x.start)[0];
 }
 
+// True when the link shows text besides this image, always. Text inside
+// {% if %} or {% case %} may render without the image, so it does not count.
+function linkHasOtherText(content: string, link: Element, img: Tag): boolean {
+  const rest = content.slice(link.end, img.start) + content.slice(img.end, link.closeStart);
+  if (/\{%-?\s*(?:if|unless|case|else|elsif|when)\b/.test(rest)) return false;
+  return !hasNoText(rest);
+}
+
 export const missingAlt: Fixer = {
   id: "missing-alt/img-alt",
   type: "missing-alt",
@@ -203,7 +216,13 @@ export const missingAlt: Fixer = {
       const found = /\{\{-?\s*([a-z_][\w.[\]'"]*?)\s*\|\s*(image_url|img_url|product_img_url|collection_img_url)/i.exec(src)?.[1];
       const object = found && !/['"[\]]/.test(found) ? found : undefined;
       const link = enclosingLink(links, tag.start);
-      if (object === "settings.logo" || SHOP_LOGO.test(attrValue(tag.attrs, "class") ?? "")) {
+      const ownLogo = object === "settings.logo" || SHOP_LOGO.test(attrValue(tag.attrs, "class") ?? "");
+      const homeLink = link !== undefined && SHOP_LOGO.test(link.attrs);
+      if ((ownLogo || homeLink) && link && linkHasOtherText(content, link, tag)) {
+        // The link's text already names it: the shop name again as alt would be read twice.
+        edits.push({ tag, attr: 'alt=""' });
+        notes.push(`Gave the image on line ${at} empty alt: the link around it already shows text.`);
+      } else if (ownLogo) {
         const alt = object === "settings.logo" ? "{{ settings.logo.alt | default: shop.name | escape }}" : "{{ shop.name | escape }}";
         edits.push({ tag, attr: `alt="${alt}"` });
         notes.push(`Added the shop name as alt to the shop logo on line ${at}.`);
@@ -211,7 +230,7 @@ export const missingAlt: Fixer = {
         edits.push({ tag, attr: `alt="{{ ${object}.alt | escape }}"` });
         notes.push(`Added alt from ${object}.alt to the image on line ${at}.`);
         notes.push(`Needs review: the image on line ${at} takes its alt from ${object}.alt. Where that is empty in the admin, the image renders as decorative (alt=""). Add alt text in the admin (Spike C).`);
-      } else if (link && SHOP_LOGO.test(link.attrs)) {
+      } else if (homeLink) {
         edits.push({ tag, attr: 'alt="{{ shop.name | escape }}"' });
         notes.push(`Added the shop name as alt to the image in the home link on line ${at}.`);
       } else {
@@ -225,8 +244,8 @@ export const missingAlt: Fixer = {
 
 // ---------- low-contrast text (theme colour settings) ----------
 
-// Dawn draws text as rgba(var(--color-foreground), alpha), so a setting
-// that passes as solid colour can still fail on the page:
+// Dawn-family themes draw text as rgba(var(--color-foreground), alpha), so
+// a setting that passes as solid colour can still fail on the page:
 //   1     headings
 //   0.75  body text, labels and menu items (layout/theme.liquid, base.css)
 //   0.7   subtitles, unit prices, predictive search headings, facet counts
@@ -234,7 +253,8 @@ export const missingAlt: Fixer = {
 // aims for it. When no shade reaches it, the fix still makes 0.75 text pass
 // and flags the 0.7 text for review. Lower opacities (0.55 placeholders,
 // 0.5 slider counters) cannot reach 4.5:1 on white with any colour; a
-// colour setting cannot fix them.
+// colour setting cannot fix them. Themes that do not use these opacities
+// (ctx.dawnTextOpacity unset) are checked as solid colour only.
 interface Need {
   fg: string;
   bg: string;
@@ -243,24 +263,27 @@ interface Need {
   what: string;
 }
 
-const textNeeds = (fg: string, bg: string): Need[] => [
-  { fg, bg, alpha: 1, required: true, what: "headings" },
-  { fg, bg, alpha: 0.75, required: true, what: "body text" },
-  { fg, bg, alpha: 0.7, required: false, what: "subtitles and unit prices" },
-];
 const solid = (fg: string, bg: string, what: string): Need => ({ fg, bg, alpha: 1, required: true, what });
+const textNeeds = (fg: string, bg: string, dawn: boolean): Need[] =>
+  dawn
+    ? [
+        { fg, bg, alpha: 1, required: true, what: "headings" },
+        { fg, bg, alpha: 0.75, required: true, what: "body text" },
+        { fg, bg, alpha: 0.7, required: false, what: "subtitles and unit prices" },
+      ]
+    : [solid(fg, bg, "text")];
 
 // Dawn 10+ colour schemes, then the older Dawn and Online Store 2.0 keys.
 // One foreground key can sit on several backgrounds: one colour must pass
 // on all of them.
-const SCHEME_NEEDS: Need[] = [
-  ...textNeeds("text", "background"),
+const schemeNeeds = (dawn: boolean): Need[] => [
+  ...textNeeds("text", "background", dawn),
   solid("button_label", "button", "button labels"),
   solid("secondary_button_label", "background", "outline buttons and links"),
 ];
-const LEGACY_NEEDS: Need[] = [
-  ...textNeeds("colors_text", "colors_background_1"),
-  ...textNeeds("colors_text", "colors_background_2"),
+const legacyNeeds = (dawn: boolean): Need[] => [
+  ...textNeeds("colors_text", "colors_background_1", dawn),
+  ...textNeeds("colors_text", "colors_background_2", dawn),
   solid("colors_solid_button_labels", "colors_accent_1", "button labels"),
   solid("colors_outline_button_labels", "colors_background_1", "outline buttons"),
 ];
@@ -337,8 +360,9 @@ function describe(needs: Need[]): string {
 export const lowContrast: Fixer = {
   id: "low-contrast/color-settings",
   type: "low-contrast",
-  fixFile(path, content) {
+  fixFile(path, content, ctx) {
     if (path !== "config/settings_data.json") return null;
+    const dawn = ctx.dawnTextOpacity === true;
     const { head, body } = stripComments(content);
     let data: { current?: unknown; presets?: Record<string, Settings> };
     try {
@@ -355,10 +379,10 @@ export const lowContrast: Fixer = {
     const schemes = live.color_schemes;
     if (schemes && typeof schemes === "object") {
       for (const name of Object.keys(schemes)) {
-        groups.push({ label: `Colour scheme ${name}`, path: [...base, "color_schemes", name, "settings"], needs: SCHEME_NEEDS });
+        groups.push({ label: `Colour scheme ${name}`, path: [...base, "color_schemes", name, "settings"], needs: schemeNeeds(dawn) });
       }
     }
-    groups.push({ label: "Theme colours", path: base, needs: LEGACY_NEEDS });
+    groups.push({ label: "Theme colours", path: base, needs: legacyNeeds(dawn) });
 
     const plans = groups.flatMap((g) => {
       const settings = settingsAt(data, g.path);
