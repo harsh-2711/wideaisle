@@ -22,7 +22,8 @@ In review. The agent-only part is done. The real run is blocked on Q-04 and the 
 | 2. Batch client in `app/lib/alt-text/` and 48 unit tests with a mocked SDK client | d5b0906 |
 | 3. CLI `scripts/alt-text/run.ts`, npm scripts `alt-text` and `alt-text:sheet`, pre-run estimate, CLI tests | b56e461 |
 | 4. Rating sheet: seeded sample of 50 to CSV, `scripts/alt-text/sheet.ts`, rubric doc, tests | b640493 |
-| 5. Spike doc `docs/spikes/spike-c-alt-text.md`; all checks pass | (this commit) |
+| 5. Spike doc `docs/spikes/spike-c-alt-text.md`; all checks pass | a9d9f64 |
+| 6. Board state set to In review | (this commit) |
 
 ## Current step
 

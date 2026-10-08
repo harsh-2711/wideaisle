@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "fixers",
   "agent": "builder",
-  "state": "Running",
-  "step": "setup: branch, deps, read docs",
+  "state": "In review",
+  "step": "agent part done; real run waits on Q-04, ratings on Q-26",
   "branch": "claude/feat-alt-text",
   "issue": 28,
   "needs": [],
-  "updated": "2026-10-08T06:54:11Z",
+  "updated": "2026-10-08T07:16:12Z",
   "id": "T-032"
 }
