@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
-import { buildReport, renderReport, type ScanLine, type StoreLine } from "../../app/lib/census/report";
+import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine } from "../../app/lib/census/report";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
@@ -355,9 +355,14 @@ async function main() {
     process.exit(2);
   }
   if (cmd === "report") {
-    // A resumed run can hold several lines per domain; the last one counts.
-    const stores = latest(readRecords<StoreLine>(values.input));
-    const scans = values.scans ? latest(readRecords<ScanLine>(values.scans)) : [];
+    if (!values.scans) {
+      console.error("report needs --scans as well as --input (stores).");
+      process.exit(2);
+    }
+    // A resumed run can hold several lines per domain; keep the last one
+    // with data, so a failed retry does not hide an earlier scan.
+    const stores = pickRecords(readRecords<StoreLine>(values.input));
+    const scans = pickRecords(readRecords<ScanLine>(values.scans));
     fs.writeFileSync(values.out, renderReport(buildReport(stores, scans), new Date().toISOString().slice(0, 10)));
     console.log(`wrote ${values.out}`);
     return;

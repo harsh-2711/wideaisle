@@ -68,6 +68,27 @@ const APP_HINTS: [string, RegExp][] = [
   ["TikTok Pixel", /analytics\.tiktok\.com/i],
 ];
 
+// How each app's markup shows up on the page, for tying a failing element
+// to an app. Apps that render nothing visible (pixels, tag managers) have
+// no marker and are never blamed for a failure.
+export const APP_DOM_MARKERS: Record<string, RegExp> = {
+  Klaviyo: /klaviyo/i,
+  "Judge.me": /jdgm|judgeme/i,
+  Yotpo: /yotpo/i,
+  Loox: /loox/i,
+  Privy: /privy/i,
+  Omnisend: /omnisend/i,
+  Gorgias: /gorgias/i,
+  Tidio: /tidio/i,
+  Rebuy: /rebuy/i,
+  ReCharge: /recharge/i,
+  Afterpay: /afterpay/i,
+  Klarna: /klarna/i,
+  "Shop Pay Installments": /shopify-payment-terms|shop-pay-installments|installments-banner/i,
+  accessiBe: /acsb/i,
+  UserWay: /userway/i,
+};
+
 export function detectStore(html: string): StoreFacts {
   const isShopify =
     /cdn\.shopify\.com|\/cdn\/shop\/|Shopify\.theme\s*=|shopify-features|window\.Shopify\s*=|Shopify\.shop\s*=/.test(html);
