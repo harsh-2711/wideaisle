@@ -46,8 +46,22 @@ const CODE_FLAGS = {
   python: ["-c"],
   python3: ["-c"],
 };
-// Inline code is not a file name, but it can still name one.
-const CODE_ENV_REF = /(^|[^\w.-])\.env(\.(?!example\b)[\w.-]+)?(?![\w-]|\.example\b)|\/proc\/[^/\s'"]+\/environ/;
+// Inline code is not a file name, but it can still name one or print the
+// environment. A tripwire for honest mistakes, not a sandbox: code can always
+// build a string the guard cannot see.
+const CODE_ENV_FILE = /(^|[^\w.-])\.env(\.(?!example\b)[\w.-]+)?(?![\w-]|\.example\b)/;
+const CODE_ENV_DUMP = /\/proc\/\S*environ|\bprocess\.env\b(?!\s*(\?\.|\.|\[))|\bos\.environ\b(?!\s*(\[|\.get\b))/;
+const CODE_ENV_NAME = /process\.env(?:\?\.|\.)(\w+)|process\.env\[\s*['"`](\w+)|os\.environ\[\s*['"](\w+)|os\.environ\.get\(\s*['"](\w+)|os\.getenv\(\s*['"](\w+)/g;
+// Python short options that take no value, so they can sit before -c in one word.
+const PY_CODE_CLUSTER = /^-[bBdEiIOqsSuvRx]*c(.*)$/s;
+
+function codeReadsSecrets(c) {
+  if (CODE_ENV_FILE.test(c) || CODE_ENV_DUMP.test(c)) return true;
+  for (const m of c.matchAll(CODE_ENV_NAME)) {
+    if (SECRET_NAME.test(m.slice(1).find(Boolean))) return true;
+  }
+  return false;
+}
 // jq options that take two values (a name and a value or file).
 const TWO_VALUE_FLAGS = new Set(["--arg", "--argjson", "--slurpfile", "--rawfile", "--args"]);
 VALUE_FLAGS.egrep = VALUE_FLAGS.grep;
@@ -603,6 +617,12 @@ function checkSecrets(cmd, args, redirects, words) {
         files.push(...rest.slice(k + 1));
         break;
       }
+      const cluster = cmd.startsWith("python") ? PY_CODE_CLUSTER.exec(a) : cmd === "node" && /^-(pe|ep)$/.test(a) ? [a, ""] : null;
+      if (cluster && !valueFlags.has(a)) {
+        if (cluster[1]) code.push(cluster[1]);
+        else code.push(rest[++k] ?? "");
+        continue;
+      }
       if (a.startsWith("-")) {
         const name = a.split("=")[0];
         if (a.includes("=")) {
@@ -630,7 +650,7 @@ function checkSecrets(cmd, args, redirects, words) {
     files = files.filter((x) => x !== undefined);
     if (["cp", "scp", "rsync", "mv"].includes(cmd)) files = files.slice(0, -1);
     if (files.some(isEnvFile)) return block("Reading .env files is blocked. Use .env.example for variable names.");
-    if (code.some((c) => CODE_ENV_REF.test(c))) return block("Inline code that names a .env file or a process environment is blocked.");
+    if (code.some(codeReadsSecrets)) return block("Inline code that reads a .env file, the whole environment or a secret variable is blocked.");
     if (files.some((p) => /\/proc\/[^/]+\/environ$/.test(p))) return block("Reading a process environment is blocked.");
   }
   if (cmd === "env" || cmd === "printenv") {
