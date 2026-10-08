@@ -1,0 +1,15 @@
+{
+  "title": "Branch protection on main",
+  "milestone": "M0",
+  "lane": "repo",
+  "agent": "",
+  "state": "Blocked on you",
+  "step": "",
+  "branch": "",
+  "issue": 11,
+  "needs": [
+    "owner:Q-08"
+  ],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-003"
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Cost per merchant estimate",
+  "milestone": "M3",
+  "lane": "architect",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/docs-adr-m3",
+  "issue": 31,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-035"
+}
