@@ -15,7 +15,7 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | Desk teardown from public listings | 48e11c9 |
-| Fixes from the PR #37 review: AccessFix Agency tier, TestParty Pro caveat, FTC wording, UserWay single source, support-question rule, unnamed sued merchant | pending |
+| Fixes from the PR #37 review: AccessFix Agency tier, TestParty Pro caveat, FTC wording, UserWay single source, support-question rule, unnamed sued merchant | df0a4a0 |
 
 ## Current step
 
