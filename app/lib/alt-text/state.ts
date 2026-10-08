@@ -13,7 +13,8 @@ export interface RunConfig {
 export type StateRecord =
   | { t: "config"; at: string; config: RunConfig }
   | { t: "input"; at: string; customId: string; item: AltTextInput }
-  // Written before batches.create, cleared by "submitted" or "submit_failed".
+  // Written before batches.create, cleared by "submitted", or by "submit_failed"
+  // when a resume abandons it with allowResubmit.
   | { t: "intent"; at: string; intentId: string; customIds: string[] }
   | { t: "submitted"; at: string; intentId: string; batchId: string; customIds: string[] }
   | { t: "submit_failed"; at: string; intentId: string; error: string }
@@ -34,8 +35,10 @@ export interface RunState {
   usages: TokenUsage[];
   /** Batches sent but not yet fully collected. */
   openBatches: Map<string, string[]>;
-  /** Submissions with no known outcome: the process stopped during batches.create. */
+  /** Submissions with no known outcome: batches.create failed or the process stopped during it. */
   danglingIntents: Map<string, string[]>;
+  /** Requests in abandoned submissions. They may have been sent and billed, so they count toward the request cap. */
+  maybeSent: number;
   batchIds: string[];
   /** Lines that could not be parsed, for example a write cut off by a crash. */
   badLines: number;
@@ -50,6 +53,7 @@ export function emptyState(): RunState {
     usages: [],
     openBatches: new Map(),
     danglingIntents: new Map(),
+    maybeSent: 0,
     batchIds: [],
     badLines: 0,
   };
@@ -73,6 +77,8 @@ export function applyRecord(state: RunState, rec: StateRecord): void {
       for (const id of rec.customIds) state.attempts.set(id, (state.attempts.get(id) ?? 0) + 1);
       break;
     case "submit_failed":
+      // Only written when a resume abandons an intent. Its batch may exist.
+      state.maybeSent += state.danglingIntents.get(rec.intentId)?.length ?? 0;
       state.danglingIntents.delete(rec.intentId);
       break;
     case "result": {

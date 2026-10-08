@@ -87,8 +87,12 @@ type Responder = (req: BatchCreateParams.Request, batchNo: number) => MessageBat
  */
 export class MockBatches implements BatchesClient {
   created: BatchCreateParams[] = [];
+  /** The request options passed with each create call, failed calls included. */
+  createOptions: unknown[] = [];
   retrieved: string[] = [];
   resultsFetched: string[] = [];
+  /** Arguments after the batch ID, per retrieve or results call. Empty means SDK defaults. */
+  extraArgs: unknown[][] = [];
   private polls = new Map<string, number>();
   private requests = new Map<string, BatchCreateParams.Request[]>();
   createError: Error | null = null;
@@ -98,7 +102,8 @@ export class MockBatches implements BatchesClient {
     private pollsBeforeEnd = 0,
   ) {}
 
-  async create(params: BatchCreateParams): Promise<MessageBatch> {
+  async create(params: BatchCreateParams, options?: { maxRetries?: number }): Promise<MessageBatch> {
+    this.createOptions.push(options);
     if (this.createError) throw this.createError;
     this.created.push(params);
     const id = `msgbatch_${this.created.length}`;
@@ -107,14 +112,16 @@ export class MockBatches implements BatchesClient {
     return batch(id, "in_progress", params.requests.length);
   }
 
-  async retrieve(batchId: string): Promise<MessageBatch> {
+  async retrieve(batchId: string, ...rest: unknown[]): Promise<MessageBatch> {
+    this.extraArgs.push(rest);
     this.retrieved.push(batchId);
     const n = this.polls.get(batchId) ?? 0;
     this.polls.set(batchId, n + 1);
     return batch(batchId, n >= this.pollsBeforeEnd ? "ended" : "in_progress", 1);
   }
 
-  async results(batchId: string): Promise<AsyncIterable<MessageBatchIndividualResponse>> {
+  async results(batchId: string, ...rest: unknown[]): Promise<AsyncIterable<MessageBatchIndividualResponse>> {
+    this.extraArgs.push(rest);
     this.resultsFetched.push(batchId);
     const batchNo = Number(batchId.split("_")[1]);
     const rows = (this.requests.get(batchId) ?? [])

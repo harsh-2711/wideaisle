@@ -34,6 +34,9 @@ describe("draftProblems", () => {
     expect(draftProblems("A photo of a blue shoe", it1, false)).toContain('starts with "image of" or similar');
     expect(draftProblems("x".repeat(126), it1, false)[0]).toMatch(/longer than 125 characters \(126\)/);
     expect(draftProblems("Blue shoe, WCAG compliant design", it1, false)).toContain("mentions accessibility or compliance");
+    // Regression: only "certified" was caught, not "certification" or "certifies".
+    expect(draftProblems("Blue shoe with safety certification label", it1, false)).toContain("mentions accessibility or compliance");
+    expect(draftProblems("Blue shoe, certifies to EN 20345", it1, false)).toContain("mentions accessibility or compliance");
     expect(draftProblems("Blue shoe, buy now at 20% off", it1, false)).toContain("reads like an ad or contains a link");
     expect(draftProblems("Blue shoe from www.example.com", it1, false)).toContain("reads like an ad or contains a link");
     expect(draftProblems("shoe shoe running shoe", it1, false)).toContain("looks like a keyword list");

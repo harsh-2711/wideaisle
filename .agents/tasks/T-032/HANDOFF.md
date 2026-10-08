@@ -12,7 +12,7 @@ See TASK.md. Draft alt text for 200 product images through the Batch API; cost p
 
 ## Status
 
-In review. The agent-only part is done. The real run is blocked on Q-04 and the ratings on Q-26. Last updated 2026-10-08.
+Running: fixing review findings on PR #39. The real run is blocked on Q-04 and Q-33, the ratings on Q-26. Last updated 2026-10-08.
 
 ## Done so far
 
@@ -23,11 +23,13 @@ In review. The agent-only part is done. The real run is blocked on Q-04 and the 
 | 3. CLI `scripts/alt-text/run.ts`, npm scripts `alt-text` and `alt-text:sheet`, pre-run estimate, CLI tests | b56e461 |
 | 4. Rating sheet: seeded sample of 50 to CSV, `scripts/alt-text/sheet.ts`, rubric doc, tests | b640493 |
 | 5. Spike doc `docs/spikes/spike-c-alt-text.md`; all checks pass | a9d9f64 |
-| 6. Board state set to In review | (this commit) |
+| 6. Board state set to In review | 88ec366 |
+| 7. Merged origin/main (owner queue Q-30 to Q-32, census tsx); took main's `^4.23.15` range for tsx | 855116b |
+| 8. Review fixes: create with no SDK retries and unknown outcome kept, per-run caps and ceilings, run lock, custom_id clash, CSV guard, certif\w*, locale check; regression tests | (this commit) |
 
 ## Current step
 
-Waiting for review, then for Q-04.
+Review fixes on PR #39: docs, owner queue Q-33, then back to In review.
 
 ## Next three steps
 

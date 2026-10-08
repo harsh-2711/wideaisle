@@ -12,7 +12,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   DEFAULT_IMAGE_WIDTH,
   DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_MAX_IMAGES,
+  DEFAULT_MAX_REQUESTS,
   DEFAULT_MAX_TOKENS,
+  MAX_ATTEMPTS_CEILING,
+  MAX_IMAGES_CEILING,
+  MAX_REQUESTS_CEILING,
   RESULTS_FILE,
   STATE_FILE,
   altTextModel,
@@ -35,12 +40,21 @@ const HELP = `Usage: npm run alt-text -- [options]
                         "productTitle", "productType"?, "existingAlt"?, "locale"?}
   --run <name>          Run folder under data/alt-text/. Pass the same name to resume.
   --limit <n>           Use only the first n lines of the input.
-  --max-images <n>      Refuse to send more images than this (default 250).
-  --max-attempts <n>    Times one image may be sent, first try included (default ${DEFAULT_MAX_ATTEMPTS}).
   --allow-resubmit      Resend images whose batch may have been created but not saved.
+                        Check the Console batch list first: this can pay twice.
   --dry-run             Build the requests and print the first one and an estimate. No API call.
   --yes                 Send the batch. Needed for every real run.
   --help
+
+Spending limits. Each counts across every command on the same --run folder, and none
+can go above its hard ceiling:
+  --max-images <n>      Images the run folder may hold in total, earlier commands included.
+                        Default ${DEFAULT_MAX_IMAGES}, ceiling ${MAX_IMAGES_CEILING}. Over it, nothing is added or sent.
+  --max-requests <n>    Requests the run may send in total, first tries and retries together.
+                        Default ${DEFAULT_MAX_REQUESTS}, ceiling ${MAX_REQUESTS_CEILING}. At the cap the run stops sending;
+                        unsent images go to retry.jsonl.
+  --max-attempts <n>    Times one image may be sent, first try included.
+                        Default ${DEFAULT_MAX_ATTEMPTS}, ceiling ${MAX_ATTEMPTS_CEILING}.
 
 Needs ANTHROPIC_API_KEY for a real run (owner queue Q-04). Model: ALT_TEXT_MODEL,
 default ${altTextModel({})}.`;
@@ -50,10 +64,11 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-function positiveInt(value: string | undefined, name: string, fallback: number): number {
+function positiveInt(value: string | undefined, name: string, fallback: number, ceiling = Infinity): number {
   if (value === undefined) return fallback;
   const n = Number(value);
   if (!Number.isInteger(n) || n < 1) fail(`--${name} must be a whole number above 0`);
+  if (n > ceiling) fail(`--${name} ${n} is above the hard ceiling of ${ceiling}`);
   return n;
 }
 
@@ -96,6 +111,7 @@ async function main() {
       run: { type: "string" },
       limit: { type: "string" },
       "max-images": { type: "string" },
+      "max-requests": { type: "string" },
       "max-attempts": { type: "string" },
       "allow-resubmit": { type: "boolean", default: false },
       "dry-run": { type: "boolean", default: false },
@@ -109,8 +125,10 @@ async function main() {
   }
   const model = altTextModel();
   const limit = values.limit === undefined ? undefined : positiveInt(values.limit, "limit", 0);
-  const maxImages = positiveInt(values["max-images"], "max-images", 250);
-  const maxAttempts = positiveInt(values["max-attempts"], "max-attempts", DEFAULT_MAX_ATTEMPTS);
+  // Checked against the hard ceilings here, and again in the runner.
+  const maxImages = positiveInt(values["max-images"], "max-images", DEFAULT_MAX_IMAGES, MAX_IMAGES_CEILING);
+  const maxRequests = positiveInt(values["max-requests"], "max-requests", DEFAULT_MAX_REQUESTS, MAX_REQUESTS_CEILING);
+  const maxAttempts = positiveInt(values["max-attempts"], "max-attempts", DEFAULT_MAX_ATTEMPTS, MAX_ATTEMPTS_CEILING);
 
   const rows = values.input ? readInput(values.input, limit) : undefined;
   const { prepared, skipped } = prepareItems(rows ?? []);
@@ -134,8 +152,8 @@ async function main() {
   const dir = path.join(process.cwd(), "data", "alt-text", runName);
   const resuming = fs.existsSync(path.join(dir, STATE_FILE));
   if (!rows && !resuming) fail(`No saved run at ${dir}. Pass --input to start one.`);
-
-  if (prepared.length > maxImages) fail(`${prepared.length} images is more than --max-images ${maxImages}. Raise it or use --limit.`);
+  // The image and request caps count the whole run folder, so the runner
+  // checks them against saved state before it adds or sends anything.
 
   const missing: string[] = [];
   if (!process.env.ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY is not set. The owner creates a key with a spend limit (Q-04).");
@@ -161,6 +179,8 @@ async function main() {
     dir,
     items: rows,
     model,
+    maxImages,
+    maxRequests,
     maxAttempts,
     allowResubmit: values["allow-resubmit"],
     log,
@@ -169,6 +189,7 @@ async function main() {
   console.log(
     [
       `Model: ${summary.model}. Batches: ${summary.batchIds.join(", ") || "none"}.`,
+      `Requests sent for this run: ${summary.requestsSent} of at most ${summary.limits.maxRequests}.`,
       `Drafts: ${summary.drafts.length} (${summary.drafts.filter((d) => d.needsReview).length} need review).`,
       `Retry: ${summary.retry.length}. Failed: ${summary.failed.length}. Skipped input: ${summary.skipped.length}.`,
       `Tokens: ${c.tokens.input} input, ${c.tokens.output} output over ${c.tokens.requests} billed request(s).`,

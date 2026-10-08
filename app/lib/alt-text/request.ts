@@ -36,6 +36,15 @@ function optionalString(v: unknown): boolean {
   return v === undefined || v === null || typeof v === "string";
 }
 
+/** The canonical form of a BCP 47 tag ("en-us" becomes "en-US"), or null if it is not valid. */
+export function canonicalLocale(tag: string): string | null {
+  try {
+    return Intl.getCanonicalLocales(tag.trim())[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Checks one input record. Returns the reason it is unusable, or null. */
 export function inputProblem(raw: unknown): string | null {
   if (!raw || typeof raw !== "object") return "not an object";
@@ -46,6 +55,7 @@ export function inputProblem(raw: unknown): string | null {
   for (const key of ["productType", "existingAlt", "locale"]) {
     if (!optionalString(r[key])) return `${key} must be a string`;
   }
+  if (nonEmpty(r.locale) && !canonicalLocale(r.locale)) return "locale is not a valid BCP 47 language tag";
   try {
     const url = new URL(r.imageUrl as string);
     if (url.protocol !== "https:") return "imageUrl must use https";
@@ -75,7 +85,7 @@ export function prepareItems(raw: unknown[]): { prepared: PreparedItem[]; skippe
       productTitle: src.productTitle as string,
       ...(src.productType ? { productType: src.productType } : {}),
       ...(src.existingAlt ? { existingAlt: src.existingAlt } : {}),
-      ...(src.locale ? { locale: src.locale } : {}),
+      ...(src.locale?.trim() ? { locale: canonicalLocale(src.locale) as string } : {}),
     };
     if (seenMedia.has(item.mediaId)) {
       skipped.push({ item: r, reason: `duplicate mediaId ${item.mediaId}` });

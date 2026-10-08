@@ -5,6 +5,7 @@ import {
   CUSTOM_ID,
   buildBatchRequests,
   buildRequest,
+  canonicalLocale,
   customIdFor,
   imageSource,
   imageTokens,
@@ -56,6 +57,15 @@ describe("custom_id", () => {
     expect(inputProblem({ ...item(1), locale: 5 })).toBe("locale must be a string");
     expect(inputProblem("nope")).toBe("not an object");
     expect(prepareItems([{ ...item(1), imageUrl: "not a url" }]).skipped[0].reason).toBe("imageUrl is not a URL");
+  });
+
+  it("rejects a locale that is not a BCP 47 tag and canonicalises valid ones", () => {
+    for (const bad of ["en_US", "e", "123", "de-", "en--US"]) {
+      expect(inputProblem({ ...item(1), locale: bad })).toBe("locale is not a valid BCP 47 language tag");
+    }
+    expect(canonicalLocale("en_US")).toBeNull();
+    const { prepared } = prepareItems([item(1, { locale: "en-us" }), item(2, { locale: " pt-br " }), item(3, { locale: "" })]);
+    expect(prepared.map((p) => p.item.locale)).toEqual(["en-US", "pt-BR", undefined]);
   });
 });
 

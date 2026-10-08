@@ -131,6 +131,19 @@ describe("csv", () => {
     expect(csvCell("@shoe")).toBe("'@shoe");
   });
 
+  // Regression: leading spaces, NBSP and full-width signs got past the guard.
+  it("guards formulas after leading spaces and in full-width form", () => {
+    expect(csvCell(" =1+1")).toBe("' =1+1");
+    expect(csvCell("\u00a0=1+1")).toBe("'\u00a0=1+1");
+    expect(csvCell("\u3000+cmd")).toBe("'\u3000+cmd");
+    expect(csvCell("＝SUM(A1)")).toBe("'＝SUM(A1)");
+    expect(csvCell("＋1")).toBe("'＋1");
+    expect(csvCell("－1")).toBe("'－1");
+    expect(csvCell("＠x")).toBe("'＠x");
+    expect(csvCell("\tx")).toBe("'\tx");
+    expect(csvCell("Blue shoe - side view")).toBe("Blue shoe - side view");
+  });
+
   it("starts with a byte order mark and uses CRLF line ends", () => {
     const csv = toCsv([["a", "b"], ["c", "é"]]);
     expect(csv).toBe("\uFEFFa,b\r\nc,é\r\n");

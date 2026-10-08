@@ -254,14 +254,156 @@ describe("resume from saved state", () => {
     expect(run.drafts).toHaveLength(1);
   });
 
-  it("knows a 4xx from batches.create created nothing", async () => {
+  // Regression: a retried or 4xx create used to clear the intent, so a
+  // resume could send another batch while an earlier one was billed.
+  for (const status of [429, 400, 500]) {
+    it(`treats a ${status} from batches.create as an unknown outcome and keeps the intent`, async () => {
+      const dir = runDir();
+      const first = new MockBatches(goodResponder);
+      first.createError = Object.assign(new Error(`status ${status}`), { status });
+      await expect(draftAltText({ client: first, dir, items: [item(1)], poll: fast })).rejects.toThrow(
+        /batches\.create failed \(status \d+\)\. A batch with 1 image\(s\) may still have been created\. Check the Console batch list/,
+      );
+      expect(first.createOptions).toEqual([{ maxRetries: 0 }]);
+      const saved = loadState(path.join(dir, "state.jsonl"));
+      expect(saved.danglingIntents.size).toBe(1);
+      expect(fs.readFileSync(path.join(dir, "state.jsonl"), "utf8")).not.toContain("submit_failed");
+
+      await expect(draftAltText({ client: noApi, dir, poll: fast })).rejects.toThrow(/Check the Console batch list/);
+    });
+  }
+});
+
+describe("SDK retries", () => {
+  // Regression: create used the SDK's default of two retries with no idempotency key.
+  it("sends batches.create with maxRetries 0 and leaves retrieve and results on SDK defaults", async () => {
+    const client = new MockBatches(goodResponder, 1);
+    await draftAltText({ client, dir: runDir(), items: [item(1)], poll: fast });
+    expect(client.createOptions).toEqual([{ maxRetries: 0 }]);
+    expect(client.extraArgs.length).toBe(3); // two retrieves, one results
+    expect(client.extraArgs.every((args) => args.length === 0)).toBe(true);
+  });
+});
+
+describe("spending limits", () => {
+  // Regression: the image cap applied per --input, so two commands on one run could send 500.
+  it("caps images per run, counting images added by earlier commands", async () => {
+    const dir = runDir();
+    await draftAltText({ client: new MockBatches(goodResponder), dir, items: [item(1), item(2)], poll: fast, maxImages: 3 });
+    const before = fs.readFileSync(path.join(dir, "state.jsonl"), "utf8");
+    await expect(draftAltText({ client: noApi, dir, items: [item(3), item(4)], poll: fast, maxImages: 3 })).rejects.toThrow(
+      "this run would hold 4 images (2 already in it, 2 new), more than the cap of 3. Nothing was added or sent.",
+    );
+    expect(fs.readFileSync(path.join(dir, "state.jsonl"), "utf8")).toBe(before);
+    // Known media IDs do not count twice.
+    const again = await draftAltText({ client: noApi, dir, items: [item(1), item(2)], poll: fast, maxImages: 2 });
+    expect(again.drafts).toHaveLength(2);
+    // A resume with a lower cap than the run already holds is refused too.
+    await expect(draftAltText({ client: noApi, dir, poll: fast, maxImages: 1 })).rejects.toThrow(/would hold 2 images/);
+  });
+
+  // Regression: there was no cap on requests per run, retries included.
+  it("caps requests per run, retries included", async () => {
+    const dir = runDir();
+    const client = new MockBatches((req) => expired(req.custom_id));
+    const lines: string[] = [];
+    const run = await draftAltText({
+      client,
+      dir,
+      items: [item(1), item(2), item(3)],
+      poll: fast,
+      maxRequests: 4,
+      maxAttempts: 2,
+      log: (l) => lines.push(l),
+    });
+    expect(client.created.map((b) => b.requests.length)).toEqual([3, 1]);
+    expect(run.requestsSent).toBe(4);
+    expect(run.retry.map((r) => [r.customId, r.attempts, r.reason])).toEqual([
+      ["m_2001", 2, "expired before processing"],
+      ["m_2002", 1, "expired before processing; not resent: request cap of 4 reached"],
+      ["m_2003", 1, "expired before processing; not resent: request cap of 4 reached"],
+    ]);
+    expect(lines).toContain("request cap of 4 reached; 2 image(s) not sent");
+    const summary = JSON.parse(fs.readFileSync(path.join(dir, "summary.json"), "utf8"));
+    expect(summary).toMatchObject({ requestsSent: 4, limits: { maxImages: 250, maxRequests: 4, maxAttempts: 2 } });
+  });
+
+  it("keeps the request cap across commands on the same run", async () => {
+    const dir = runDir();
+    const first = await draftAltText({ client: new MockBatches(goodResponder), dir, items: [item(1), item(2), item(3)], poll: fast, maxRequests: 2 });
+    expect(first.drafts).toHaveLength(2);
+    expect(first.retry).toEqual([expect.objectContaining({ customId: "m_2003", attempts: 0, reason: "not sent: request cap of 2 reached" })]);
+    // A second command with the same cap sends nothing.
+    const second = await draftAltText({ client: noApi, dir, poll: fast, maxRequests: 2 });
+    expect(second.requestsSent).toBe(2);
+    // Raising the cap sends only the one image still pending.
+    const client = new MockBatches(goodResponder);
+    const third = await draftAltText({ client, dir, poll: fast, maxRequests: 3 });
+    expect(client.created.map((b) => b.requests.map((r) => r.custom_id))).toEqual([["m_2003"]]);
+    expect(third.drafts).toHaveLength(3);
+  });
+
+  it("counts requests in an abandoned batch toward the cap, since it may have been billed", async () => {
     const dir = runDir();
     const first = new MockBatches(goodResponder);
-    first.createError = Object.assign(new Error("invalid model"), { status: 400 });
-    await expect(draftAltText({ client: first, dir, items: [item(1)], poll: fast })).rejects.toThrow("invalid model");
-    expect(loadState(path.join(dir, "state.jsonl")).danglingIntents.size).toBe(0);
+    first.createError = new Error("socket hang up");
+    await expect(draftAltText({ client: first, dir, items: [item(1)], poll: fast })).rejects.toThrow();
+    const run = await draftAltText({ client: noApi, dir, poll: fast, allowResubmit: true, maxRequests: 1 });
+    expect(run.requestsSent).toBe(1);
+    expect(run.retry).toEqual([expect.objectContaining({ customId: "m_2001", reason: "not sent: request cap of 1 reached" })]);
+  });
 
-    const run = await draftAltText({ client: new MockBatches(goodResponder), dir, poll: fast });
-    expect(run.drafts).toHaveLength(1);
+  // Regression: --max-attempts had no ceiling.
+  it("refuses limits above the hard ceilings before touching the run folder", async () => {
+    const dir = path.join(runDir(), "not-created");
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], maxAttempts: 4 })).rejects.toThrow("maxAttempts 4 is above the hard ceiling of 3");
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], maxImages: 1001 })).rejects.toThrow("maxImages 1001 is above the hard ceiling of 1000");
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], maxRequests: 3001 })).rejects.toThrow("maxRequests 3001 is above the hard ceiling of 3000");
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], maxAttempts: 0 })).rejects.toThrow("maxAttempts must be a whole number above 0");
+    expect(fs.existsSync(dir)).toBe(false);
+  });
+});
+
+describe("custom_id clash across commands", () => {
+  // Regression: an image added later whose custom_id matched an earlier image threw.
+  it("hashes the custom_id of a new image that clashes with one added earlier", async () => {
+    const dir = runDir();
+    await draftAltText({ client: new MockBatches(goodResponder), dir, items: [item(1)], poll: fast });
+    const video = item(9, { mediaId: "gid://shopify/Video/2001" }); // same numeric tail as item(1)
+    const client = new MockBatches(goodResponder);
+    const run = await draftAltText({ client, dir, items: [video], poll: fast });
+    const [sent] = client.created[0].requests;
+    expect(sent.custom_id).toMatch(/^h_[0-9a-f]{40}$/);
+    expect(run.drafts.map((d) => d.mediaId)).toEqual([item(1).mediaId, video.mediaId]);
+  });
+});
+
+describe("run lock", () => {
+  // Regression: two processes could work on the same run folder at once.
+  it("refuses a run folder another process holds, and leaves that lock alone", async () => {
+    const dir = runDir();
+    fs.writeFileSync(path.join(dir, "lock"), "{}\n");
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], poll: fast })).rejects.toThrow(/another process is working on this run/);
+    expect(fs.existsSync(path.join(dir, "lock"))).toBe(true);
+    expect(fs.existsSync(path.join(dir, "state.jsonl"))).toBe(false);
+  });
+
+  it("blocks a second run started while the first is still working", async () => {
+    const dir = runDir();
+    const first = draftAltText({ client: new MockBatches(goodResponder, 1), dir, items: [item(1)], poll: fast });
+    await expect(draftAltText({ client: noApi, dir, items: [item(1)], poll: fast })).rejects.toThrow(/another process is working on this run/);
+    expect((await first).drafts).toHaveLength(1);
+  });
+
+  it("removes the lock and its exit handler when a run ends or fails", async () => {
+    const listeners = process.listenerCount("exit");
+    const dir = runDir();
+    await draftAltText({ client: new MockBatches(goodResponder), dir, items: [item(1)], poll: fast });
+    expect(fs.existsSync(path.join(dir, "lock"))).toBe(false);
+    const failing = new MockBatches(goodResponder);
+    failing.retrieve = () => Promise.reject(new Error("stop"));
+    await expect(draftAltText({ client: failing, dir: runDir(), items: [item(1)], poll: fast })).rejects.toThrow("stop");
+    for (const d of dirs) expect(fs.existsSync(path.join(d, "lock"))).toBe(false);
+    expect(process.listenerCount("exit")).toBe(listeners);
   });
 });

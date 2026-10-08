@@ -37,7 +37,7 @@ export function parseModelText(text: string): ParseResult {
 }
 
 const STARTS_WITH_MEDIUM = /^(an?\s+|the\s+)?(image|picture|photo|photograph|graphic|illustration)\s+(of|showing)\b/i;
-const CLAIMS = /\b(accessib\w*|compliant|compliance|wcag|ada|certified|lawsuit\w*)\b/i;
+const CLAIMS = /\b(accessib\w*|compliant|compliance|wcag|ada|certif\w*|lawsuit\w*)\b/i;
 const PROMO = /\b(buy now|shop now|order now|click|discount|sale|free shipping|best price|cheap|limited time|deal)\b|\d+\s*% off/i;
 const LINK = /https?:\/\/|www\.|\.com\b/i;
 const INJECTION_ECHO = /\b(ignore|disregard)\b.{0,40}\b(instructions|prompt|rules)\b|\bsystem prompt\b|\bas an ai\b/i;

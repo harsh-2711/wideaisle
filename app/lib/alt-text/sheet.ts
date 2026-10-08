@@ -41,9 +41,10 @@ export function seededSample<T>(rows: T[], n: number, seed: number): T[] {
   return copy.slice(0, take);
 }
 
-// Spreadsheet apps run cells that start with these as formulas. Store text
-// is untrusted, so such cells get a leading apostrophe.
-const FORMULA_START = /^[=+\-@\t\r]/;
+// Spreadsheet apps run cells that start with these as formulas, also after
+// leading spaces (NBSP included) and in full-width form. Store text is
+// untrusted, so such cells get a leading apostrophe.
+const FORMULA_START = /^\s*[=+\-@＝＋－＠]|^[\t\r]/;
 
 export function csvCell(value: string): string {
   const safe = FORMULA_START.test(value) ? `'${value}` : value;

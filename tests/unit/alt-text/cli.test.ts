@@ -52,9 +52,33 @@ describe("alt-text CLI", () => {
     expect(fs.existsSync(path.join(cwd, "data"))).toBe(false);
   }, 60_000);
 
-  it("refuses more images than --max-images", () => {
-    const r = run(["--input", input, "--max-images", "1", "--yes"], { ANTHROPIC_API_KEY: "test-key-not-real" });
+  it("refuses more images than --max-images for the run, before adding or sending anything", () => {
+    const r = run(["--input", input, "--run", "t3", "--max-images", "1", "--yes"], { ANTHROPIC_API_KEY: "test-key-not-real" });
     expect(r.status).toBe(1);
-    expect(r.stderr).toContain("2 images is more than --max-images 1");
+    expect(r.stderr).toContain("this run would hold 2 images (0 already in it, 2 new), more than the cap of 1. Nothing was added or sent.");
+    const runDir = path.join(cwd, "data", "alt-text", "t3");
+    expect(fs.existsSync(path.join(runDir, "state.jsonl"))).toBe(false);
+    expect(fs.existsSync(path.join(runDir, "lock"))).toBe(false);
+  }, 60_000);
+
+  it("refuses limits above their hard ceilings", () => {
+    for (const [flag, value, ceiling] of [
+      ["--max-attempts", "4", "3"],
+      ["--max-images", "1001", "1000"],
+      ["--max-requests", "3001", "3000"],
+    ]) {
+      const r = run(["--input", input, flag, value, "--dry-run"]);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain(`${flag} ${value} is above the hard ceiling of ${ceiling}`);
+    }
+  }, 60_000);
+
+  it("says in its help exactly what each limit caps", () => {
+    const r = run(["--help"]);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("Each counts across every command on the same --run folder");
+    expect(r.stdout).toContain("Images the run folder may hold in total, earlier commands included.");
+    expect(r.stdout).toContain("Requests the run may send in total, first tries and retries together.");
+    expect(r.stdout).toContain("Default 2, ceiling 3.");
   }, 60_000);
 });

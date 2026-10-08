@@ -19,8 +19,20 @@ export const DEFAULT_MAX_TOKENS = 1024;
 /** Merchant text longer than this is cut before it reaches the prompt. */
 export const MAX_MERCHANT_TEXT = 512;
 
-/** A request is sent at most this many times (first try plus retries). */
+// Spending limits. Each has a default and a hard ceiling that no option or
+// flag can raise. They count across every command on the same run folder.
+
+/** Images one run folder may hold in total, counting earlier commands on the same run. */
+export const DEFAULT_MAX_IMAGES = 250;
+export const MAX_IMAGES_CEILING = 1000;
+
+/** Requests one run may send in total, first tries and retries together. */
+export const DEFAULT_MAX_REQUESTS = 500;
+export const MAX_REQUESTS_CEILING = 3000;
+
+/** Times one image may be sent, first try included. */
 export const DEFAULT_MAX_ATTEMPTS = 2;
+export const MAX_ATTEMPTS_CEILING = 3;
 
 /** The Batch API takes up to 100,000 requests per batch. */
 export const MAX_REQUESTS_PER_BATCH = 100_000;
