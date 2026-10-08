@@ -12,10 +12,12 @@
 //
 //   npx tsx scripts/census/census.ts discover --input domains.txt --out data/census/stores.jsonl
 //   npx tsx scripts/census/census.ts scan --input data/census/stores.jsonl --out data/census/scans.jsonl
+//   npx tsx scripts/census/census.ts report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Browser } from "playwright";
+import { buildReport, renderReport, type ScanLine, type StoreLine } from "../../app/lib/census/report";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { PoliteClient } from "../../app/lib/scanner/polite";
@@ -138,12 +140,20 @@ async function main() {
       limit: { type: "string" },
       concurrency: { type: "string" },
       delay: { type: "string" },
+      scans: { type: "string" },
     },
   });
   const [cmd] = positionals;
-  if (!values.input || !values.out || !["discover", "scan"].includes(cmd)) {
-    console.error("Usage: census.ts discover|scan --input FILE --out FILE [--limit N] [--concurrency N] [--delay MS]");
+  if (!values.input || !values.out || !["discover", "scan", "report"].includes(cmd)) {
+    console.error("Usage: census.ts discover|scan|report --input FILE --out FILE [--scans FILE] [--limit N] [--concurrency N] [--delay MS]");
     process.exit(2);
+  }
+  if (cmd === "report") {
+    const stores = readLines(values.input).map((l) => JSON.parse(l) as StoreLine);
+    const scans = values.scans ? readLines(values.scans).map((l) => JSON.parse(l) as ScanLine) : [];
+    fs.writeFileSync(values.out, renderReport(buildReport(stores, scans), new Date().toISOString().slice(0, 10)));
+    console.log(`wrote ${values.out}`);
+    return;
   }
   const client = new PoliteClient({ contact: process.env.CENSUS_CONTACT ?? "", minDelayMs: Number(values.delay ?? 2000) });
   const limit = Number(values.limit ?? Infinity);
