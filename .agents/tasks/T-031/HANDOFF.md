@@ -22,7 +22,7 @@ Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed
 | Review 6 to 8, 10: alt only from image objects, shop-logo clues, icon-x, keys with variables | 16f3cac |
 | Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | e318ca8 |
 | Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | ac725af |
-| Re-review A to E: quote check, Dawn opacity only for Dawn-family themes, split tags, home-link alt, Liquid attribute names | this commit |
+| Re-review A to E: quote check, Dawn opacity only for Dawn-family themes, split tags, home-link alt, Liquid attribute names | 6b19058 |
 
 ## Current step
 
