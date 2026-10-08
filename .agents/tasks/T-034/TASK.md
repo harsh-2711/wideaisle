@@ -5,7 +5,7 @@
 | Milestone | M3 |
 | Lane | architect |
 | Branch | claude/docs-adr-m3 |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#30 |
 | Decisions used | D-09, D-10, D-11 |
 | Needs | none |
 | Created | 2026-10-08 |

@@ -5,7 +5,7 @@
 | Milestone | M0 |
 | Lane | ops |
 | Branch |  |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#15 |
 | Decisions used | D-02, D-04 |
 | Needs | owner:Q-03, owner:Q-04, owner:Q-10 |
 | Created | 2026-10-08 |

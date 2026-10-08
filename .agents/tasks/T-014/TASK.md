@@ -5,7 +5,7 @@
 | Milestone | M1 |
 | Lane | research |
 | Branch | claude/docs-m1-research |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#20 |
 | Decisions used | D-13 |
 | Needs | none |
 | Created | 2026-10-08 |

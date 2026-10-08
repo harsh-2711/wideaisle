@@ -5,7 +5,7 @@
 | Milestone | M0 |
 | Lane | ledger |
 | Branch | claude/test-handoff-resume |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#14 |
 | Decisions used | D-18 |
 | Needs | none |
 | Created | 2026-10-08 |

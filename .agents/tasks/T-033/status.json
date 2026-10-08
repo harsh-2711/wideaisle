@@ -6,7 +6,7 @@
   "state": "Queued",
   "step": "",
   "branch": "claude/feat-scan-benchmark",
-  "issue": null,
+  "issue": 29,
   "needs": [],
   "updated": "2026-10-08T06:04:01Z",
   "id": "T-033"

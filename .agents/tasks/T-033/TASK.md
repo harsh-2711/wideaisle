@@ -5,7 +5,7 @@
 | Milestone | M3 |
 | Lane | scanner |
 | Branch | claude/feat-scan-benchmark |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#29 |
 | Decisions used | D-10 |
 | Needs | none |
 | Created | 2026-10-08 |

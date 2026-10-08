@@ -5,7 +5,7 @@
 | Milestone | M2 |
 | Lane | data |
 | Branch | claude/feat-census-crawler |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#21 |
 | Decisions used | D-08, D-10, D-16 |
 | Needs | none |
 | Created | 2026-10-08 |

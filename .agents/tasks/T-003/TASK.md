@@ -5,7 +5,7 @@
 | Milestone | M0 |
 | Lane | repo |
 | Branch |  |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#11 |
 | Decisions used | none |
 | Needs | owner:Q-08 |
 | Created | 2026-10-08 |

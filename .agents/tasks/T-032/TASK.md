@@ -5,7 +5,7 @@
 | Milestone | M3 |
 | Lane | fixers |
 | Branch | claude/feat-alt-text |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#28 |
 | Decisions used | D-11 |
 | Needs | none |
 | Created | 2026-10-08 |

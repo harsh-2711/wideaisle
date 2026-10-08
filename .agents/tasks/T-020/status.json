@@ -6,7 +6,7 @@
   "state": "Queued",
   "step": "",
   "branch": "claude/feat-census-crawler",
-  "issue": null,
+  "issue": 21,
   "needs": [],
   "updated": "2026-10-08T06:04:01Z",
   "id": "T-020"

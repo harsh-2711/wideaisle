@@ -6,7 +6,7 @@
   "state": "Running",
   "step": "",
   "branch": "claude/docs-m1-research",
-  "issue": null,
+  "issue": 16,
   "needs": [],
   "updated": "2026-10-08T06:04:01Z",
   "id": "T-010"

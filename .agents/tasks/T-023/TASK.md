@@ -5,7 +5,7 @@
 | Milestone | M2 |
 | Lane | research |
 | Branch | claude/docs-m2-market |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#24 |
 | Decisions used | none |
 | Needs | none |
 | Created | 2026-10-08 |

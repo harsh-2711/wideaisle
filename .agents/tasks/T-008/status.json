@@ -6,7 +6,7 @@
   "state": "Queued",
   "step": "",
   "branch": "claude/test-handoff-resume",
-  "issue": null,
+  "issue": 14,
   "needs": [],
   "updated": "2026-10-08T06:04:01Z",
   "id": "T-008"

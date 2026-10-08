@@ -5,7 +5,7 @@
 | Milestone | M0 |
 | Lane | repo |
 | Branch | claude/ci-github-checks |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#10 |
 | Decisions used | D-06 |
 | Needs | none |
 | Created | 2026-10-08 |

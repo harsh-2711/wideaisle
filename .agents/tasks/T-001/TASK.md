@@ -5,7 +5,7 @@
 | Milestone | M0 |
 | Lane | repo |
 | Branch | claude/feat-app-scaffold |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#9 |
 | Decisions used | D-05 |
 | Needs | none |
 | Created | 2026-10-08 |

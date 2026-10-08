@@ -5,7 +5,7 @@
 | Milestone | M3 |
 | Lane | delivery |
 | Branch | claude/feat-delivery-adapters |
-| Issue | (link once created) |
+| Issue | harsh-2711/wideaisle#26 |
 | Decisions used | D-09 |
 | Needs | none |
 | Created | 2026-10-08 |

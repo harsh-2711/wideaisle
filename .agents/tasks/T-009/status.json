@@ -6,7 +6,7 @@
   "state": "Blocked on you",
   "step": "",
   "branch": "",
-  "issue": null,
+  "issue": 15,
   "needs": [
     "owner:Q-03",
     "owner:Q-04",
