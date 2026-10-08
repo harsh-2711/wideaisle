@@ -2,12 +2,12 @@
   "title": "Review mining",
   "milestone": "M2",
   "lane": "research",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "researcher",
+  "state": "In review",
+  "step": "PR review",
   "branch": "claude/docs-m2-market",
   "issue": 24,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:51:01Z",
   "id": "T-023"
 }
