@@ -9,7 +9,7 @@
     "prepare": "husky || true",
     "commitlint": "commitlint",
     "board": "node scripts/agents/board.mjs",
-    "test:agents": "node --test 'scripts/agents/*.test.mjs'"
+    "test:agents": "node --test 'scripts/agents/*.test.mjs' '.claude/hooks/*.test.mjs'"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
