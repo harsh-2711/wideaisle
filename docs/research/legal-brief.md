@@ -70,7 +70,7 @@ All rows: via search, not opened. The FTC's own documents (ftc.gov, docket C-481
 
 1. The FTC looks at whether a claim is backed by evidence. Every number we publish needs a dated scan behind it. D-06 already bans "compliant" and its relatives.
 2. Pilots get a founding discount. Their testimonials may need a disclosure of that connection. This is question 3 for the lawyer.
-3. The roadmap and D-06 say the FTC "fined" accessiBe. "Ordered to pay $1 million" is closer to the order's wording. The planner may want to adjust those lines.
+3. The roadmap and D-06 now say the FTC "ordered" accessiBe "to pay $1 million", which is closer to the order's wording than "fined".
 
 ## EU: the European Accessibility Act
 

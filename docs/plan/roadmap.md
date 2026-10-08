@@ -497,7 +497,7 @@ The pain is settled; what we still need are our own numbers on themes, fixabilit
 - More than 5,000 US digital accessibility suits were filed in 2025, and about 70% targeted ecommerce ([Fudge](https://www.fudge.ai/blog/ada-website-compliance/)).
 - Shopify home pages average 75.1 detected errors, 33.9% worse than the average site ([WebAIM Million 2026](https://webaim.org/projects/million/)).
 - Six failure types make up 96% of detected errors, and they have barely changed in seven years (same source).
-- Overlay widgets do not change the underlying code, and the FTC fined the largest overlay vendor $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
+- Overlay widgets do not change the underlying code, and the FTC ordered the largest overlay vendor to pay $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
 - Only three Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 to $599 a month ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)).
 
 **Open questions and how the agents answer them.**

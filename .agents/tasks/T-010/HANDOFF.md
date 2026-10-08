@@ -4,30 +4,32 @@ Update after every step, before compaction, before stopping and before handing o
 
 ## Goal and exit criteria
 
-See TASK.md. Map each relevant success criterion to real store parts.
+See TASK.md. A primer on the WCAG 2.2 AA criteria that matter for Shopify themes, with sources listed and dated.
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| WCAG 2.2 AA primer | 48e69e8 |
 
 ## Current step
 
-Not started.
+Pull request review, then merge.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After merge, set the state to Done.
+2. The owner reads it (Q-20).
+3. Refresh the sources when Q-01 opens the web; most were seen through search, not opened.
 
 ## Blockers and open questions
 
-- None yet.
+- None for agents. Q-20 is the owner's reading.
+- The cloud environment blocks most sites (Q-01). Sources marked "via search, not opened" were read through search results only.
 
 ## Decisions used
 
@@ -35,12 +37,12 @@ D-06, D-08
 
 ## Files touched
 
-- None yet.
+- docs/research/wcag-primer.md
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- Open docs/research/wcag-primer.md and check every claim has a dated source.
 
 ## Lessons and gotchas
 
-- None yet.
+- Mark every source as opened or via search, with the date checked.

@@ -34,6 +34,7 @@ These need you once agents finish their part. Agents will move each one to Open 
 | Q-27 | File the theme exemption request if Spike A shows it is needed (D-09) | 20 min | M3 Spike A | After Q-03 |
 | Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |
 | Q-29 | Gate G1 review | 30 min | M4 and M5 | M1 to M3 exits |
+| Q-30 | Pick for D-13: B (expert every release) or D (AI checks every release, expert at G2, G3, then quarterly). Agents recommend D; see decisions/D-13.md | 10 min | M4 test harness lane, G2 | D-13 research merged |
 
 ## Domains the agents need (for Q-01)
 
