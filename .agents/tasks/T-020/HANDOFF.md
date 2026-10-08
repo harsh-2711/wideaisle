@@ -17,6 +17,7 @@ In review. The crawler and its tests are done. The full run waits on Q-01 (netwo
 | robots.txt parser, PoliteClient, theme detection, axe scan, resumable JSONL | be3d59b |
 | Public addresses only, checked on every redirect hop | 31b59a5 |
 | Connections pinned to vetted addresses; egress proxy for the browser | 46f2e52 |
+| Review fixes: WebRTC off, robots and spacing on every hop, Crawl-delay on scans, retries | (this commit) |
 
 ## Current step
 
@@ -55,3 +56,6 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/census.spec.ts
 - Node skips the `lookup` option for IP literals. Vet literals with resolvePublic before connecting.
 - Playwright sends loopback through a context proxy by default (`<-loopback>`), so the egress proxy also covers localhost.
 - The a11y test uses `allowPrivate: true` to reach its local server. Never set it for a real run.
+- WebRTC UDP does not go through a browser proxy, and the Chromium policy flag did not stop STUN to a private address. The scan removes RTCPeerConnection with an init script; the strict browser test proves it.
+- Playwright does not call route handlers for redirect hops. Browser redirects are checked after the load, and the page is dropped if a hop was off-limits.
+- robots.txt patterns are matched without regular expressions to avoid ReDoS from hostile patterns.

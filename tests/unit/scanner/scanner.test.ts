@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { detectStore, sampleLinks } from "../../../app/lib/scanner/detect";
 import { isPublicAddress, sameSite } from "../../../app/lib/scanner/netguard";
-import { PoliteClient, userAgentFor } from "../../../app/lib/scanner/polite";
+import { sourceOf } from "../../../app/lib/scanner/axe";
+import { isSkip, PoliteClient, userAgentFor } from "../../../app/lib/scanner/polite";
 
 const publicLookup = async () => ["93.184.216.34"];
-import { parseRobots } from "../../../app/lib/scanner/robots";
-import { parseDomains } from "../../../scripts/census/census";
+import { parseRobots, ruleMatches } from "../../../app/lib/scanner/robots";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { done, latest, MAX_ATTEMPTS, parseDomains, readRecords } from "../../../scripts/census/census";
 
 describe("robots.txt", () => {
   const txt = `
@@ -39,6 +43,34 @@ Disallow: /collections/*sort_by*
     const r = parseRobots("User-agent: *\nDisallow: /*.pdf$\nDisallow:", "x");
     expect(r.isAllowed("/a.pdf")).toBe(false);
     expect(r.isAllowed("/a.pdf?x=1")).toBe(true);
+  });
+
+  it("matches agents by product token, not by substring", () => {
+    const ua = "WideAisleCensus/0.1 (contact: a@b.co)";
+    // An empty User-agent value matches nobody.
+    expect(parseRobots("User-agent: *\nDisallow: /\n\nUser-agent:\nAllow: /", ua).isAllowed("/")).toBe(false);
+    // "ai" is not our token.
+    expect(parseRobots("User-agent: ai\nAllow: /\n\nUser-agent: *\nDisallow: /", ua).isAllowed("/")).toBe(false);
+    // A version after the token still names us.
+    expect(parseRobots("User-agent: WideAisleCensus/0.1\nDisallow: /", ua).isAllowed("/")).toBe(false);
+  });
+
+  it("keeps a group together across Crawl-delay and Sitemap lines", () => {
+    const r = parseRobots("User-agent: other\nCrawl-delay: 1\nSitemap: https://s.example/sitemap.xml\nUser-agent: WideAisleCensus\nDisallow: /private", "WideAisleCensus/0.1");
+    expect(r.isAllowed("/private/x")).toBe(false);
+    expect(r.crawlDelaySeconds).toBe(1);
+  });
+
+  it("matches wildcards without backtracking blow-up", () => {
+    expect(ruleMatches("/a*b$", "/axxb")).toBe(true);
+    expect(ruleMatches("/a*b$", "/axxbc")).toBe(false);
+    expect(ruleMatches("/a*b", "/axxbc")).toBe(true);
+    expect(ruleMatches("/*.pdf$", "/x/y.pdf")).toBe(true);
+    expect(ruleMatches("*", "/")).toBe(true);
+    const hostile = "/" + "*a".repeat(40) + "*b";
+    const started = performance.now();
+    expect(ruleMatches(hostile, "/products/" + "a".repeat(2000))).toBe(false);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 });
 
@@ -87,13 +119,61 @@ describe("polite client", () => {
       return new Response(body, { status: 200 });
     }) as unknown as typeof fetch;
     const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 1000, fetchImpl, now: () => clock, sleep: async (ms) => void (clock += ms), lookup: publicLookup });
-    expect(await client.get("https://s.example/cart")).toBeNull();
+    expect(await client.get("https://s.example/cart")).toMatchObject({ skipped: "disallowed", retry: false });
     await client.get("https://s.example/");
     await client.get("https://s.example/products/x");
     expect(calls.map((c) => new URL(c.url).pathname)).toEqual(["/robots.txt", "/", "/products/x"]);
     expect(calls.every((c) => c.ua.includes("contact: a@b.co"))).toBe(true);
-    // Crawl-delay 3s beats the 1s minimum.
+    // Crawl-delay 3s beats the 1s minimum, including for the first page.
+    expect(calls[1].at - calls[0].at).toBeGreaterThanOrEqual(3000);
     expect(calls[2].at - calls[1].at).toBeGreaterThanOrEqual(3000);
+  });
+
+  it("checks robots.txt and spaces every redirect hop", async () => {
+    let clock = 0;
+    const calls: { url: string; at: number }[] = [];
+    const fetchImpl = (async (url: string) => {
+      calls.push({ url, at: clock });
+      const u = new URL(url);
+      if (u.pathname === "/robots.txt") return new Response(u.host === "other.example" ? "User-agent: *\nDisallow: /private" : "", { status: 200 });
+      if (u.pathname === "/") return new Response("", { status: 301, headers: { location: "/a" } });
+      if (u.pathname === "/a") return new Response("", { status: 301, headers: { location: "https://other.example/private" } });
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 2000, fetchImpl, now: () => clock, sleep: async (ms) => void (clock += ms), lookup: publicLookup });
+    const res = await client.get("https://store.example/");
+    expect(res).toMatchObject({ skipped: "disallowed", url: "https://other.example/private" });
+    expect(calls.map((c) => c.url)).toEqual([
+      "https://store.example/robots.txt",
+      "https://store.example/",
+      "https://store.example/a",
+      "https://other.example/robots.txt",
+    ]);
+    expect(calls[2].at - calls[1].at).toBeGreaterThanOrEqual(2000);
+  });
+
+  it("spaces concurrent page loads on one host", async () => {
+    const at: number[] = [];
+    const fetchImpl = (async (url: string) => {
+      if (!url.endsWith("robots.txt")) at.push(Date.now());
+      return new Response(url.endsWith("robots.txt") ? "" : "<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    // Real clock: three page loads started together must still be 60 ms apart.
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 60, fetchImpl, lookup: publicLookup });
+    await Promise.all(["/a", "/b", "/c"].map((p) => client.get("https://s.example" + p)));
+    at.sort((x, y) => x - y);
+    expect(at[1] - at[0]).toBeGreaterThanOrEqual(55);
+    expect(at[2] - at[1]).toBeGreaterThanOrEqual(55);
+  });
+
+  it("skips a store that asks for a very long crawl delay", async () => {
+    const client = new PoliteClient({
+      contact: "a@b.co",
+      minDelayMs: 0,
+      lookup: publicLookup,
+      fetchImpl: (async () => new Response("User-agent: *\nCrawl-delay: 3600", { status: 200 })) as unknown as typeof fetch,
+    });
+    expect(await client.get("https://s.example/")).toMatchObject({ skipped: "crawl-delay-too-long" });
   });
 
   it("stays out when robots.txt errors, and allows all when it is missing", async () => {
@@ -104,8 +184,9 @@ describe("polite client", () => {
         lookup: publicLookup,
         fetchImpl: (async (url: string) => new Response(url.endsWith("robots.txt") ? "x" : "<html></html>", { status: url.endsWith("robots.txt") ? status : 200 })) as unknown as typeof fetch,
       });
-    expect(await make(503).get("https://s.example/")).toBeNull();
-    expect(await make(404).get("https://s.example/")).not.toBeNull();
+    expect(await make(503).get("https://s.example/")).toMatchObject({ skipped: "robots-unreachable", retry: true });
+    expect(await make(429).get("https://s.example/")).toMatchObject({ skipped: "robots-unreachable", retry: true });
+    expect(isSkip(await make(404).get("https://s.example/"))).toBe(false);
   });
 });
 
@@ -138,8 +219,42 @@ describe("network guard", () => {
   });
 });
 
+describe("source guess", () => {
+  it("does not read theme wrapper classes as apps", () => {
+    expect(sourceOf("#shopify-section-template--21__main > .product__media-wrapper > img", "<img>")).toBe("theme");
+    expect(sourceOf(".card-wrapper > a", "<a>")).toBe("unknown");
+    expect(sourceOf("#shopify-section-template--21__apps > div", "<div>")).toBe("app");
+    expect(sourceOf("#shopify-block-AbC__app_reviews_x > div", "<div>")).toBe("app");
+    expect(sourceOf("div", '<div class="shopify-app-block">')).toBe("app");
+  });
+});
+
 describe("domain lists", () => {
   it("reads plain domains and Tranco CSV", () => {
     expect(parseDomains(["1,google.com", "example-store.com", "not a domain", "2,Shop.Example.CO"])).toEqual(["google.com", "example-store.com", "shop.example.co"]);
+  });
+});
+
+describe("resume", () => {
+  it("retries retryable errors up to a limit and survives a cut-off line", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-resume-"));
+    const file = path.join(dir, "out.jsonl");
+    const lines = [
+      { domain: "ok.example" },
+      { domain: "disallowed.example", error: "robots.txt disallows /" },
+      { domain: "flaky.example", error: "robots.txt unreachable", retry: true },
+      ...Array.from({ length: MAX_ATTEMPTS }, () => ({ domain: "down.example", error: "timeout", retry: true })),
+      { domain: "later.example", error: "timeout", retry: true },
+      { domain: "later.example" },
+    ];
+    fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join("\n") + '\n{"domain":"cut.exa');
+    try {
+      expect([...done(file)].sort()).toEqual(["disallowed.example", "down.example", "later.example", "ok.example"]);
+      const records = readRecords<{ domain: string; retry?: boolean }>(file);
+      expect(records).toHaveLength(lines.length);
+      expect(latest(records).find((r) => r.domain === "later.example")?.retry).toBeUndefined();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

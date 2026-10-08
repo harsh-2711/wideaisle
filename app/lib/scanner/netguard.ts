@@ -57,13 +57,11 @@ export async function assertPublicHost(hostname: string, lookup: Lookup = system
 
 type LookupCallback = (err: Error | null, address: string | LookupAddress[], family?: number) => void;
 
-// A drop-in for the `lookup` option of net, http and https. Node skips
-// `lookup` for IP literals, so check those with resolvePublic first.
-export function guardedLookup(opts: GuardOptions = {}) {
+function lookupFrom(resolve: (hostname: string) => Promise<string[]>) {
   return (hostname: string, options: unknown, callback?: LookupCallback) => {
     const cb = (typeof options === "function" ? options : callback) as LookupCallback;
     const all = typeof options === "object" && options !== null && (options as { all?: boolean }).all;
-    resolvePublic(hostname, opts).then(
+    resolve(hostname).then(
       (addresses) => {
         const list = addresses.map((address) => ({ address, family: net.isIPv6(address) ? 6 : 4 }));
         if (all) cb(null, list);
@@ -72,6 +70,18 @@ export function guardedLookup(opts: GuardOptions = {}) {
       (err: Error) => cb(err, ""),
     );
   };
+}
+
+// A drop-in for the `lookup` option of net, http and https. Node skips
+// `lookup` for IP literals, so check those with resolvePublic first.
+export function guardedLookup(opts: GuardOptions = {}) {
+  return lookupFrom((hostname) => resolvePublic(hostname, opts));
+}
+
+// A `lookup` that answers with addresses already vetted, so a connection
+// tries each of them in turn without asking DNS again.
+export function pinnedLookup(addresses: string[]) {
+  return lookupFrom(async () => addresses);
 }
 
 function registrable(host: string): string {

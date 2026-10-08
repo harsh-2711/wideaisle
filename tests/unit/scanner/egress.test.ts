@@ -1,6 +1,7 @@
 import http from "node:http";
 import net from "node:net";
 import type { AddressInfo } from "node:net";
+import zlib from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pinnedFetch, startEgressProxy } from "../../../app/lib/scanner/egress";
 import { BlockedAddressError, isPublicAddress, resolvePublic } from "../../../app/lib/scanner/netguard";
@@ -136,6 +137,50 @@ describe("egress proxy", () => {
       expect(await connectVia(strict.server, "store.example:8443")).toMatch(/^HTTP\/1\.1 403/);
     } finally {
       await strict.close();
+    }
+  });
+});
+
+describe("hostile upstreams", () => {
+  it("answers 502 for an invalid status and keeps serving", async () => {
+    const bad = net.createServer((sock) => sock.end("HTTP/1.1 000 OK\r\nContent-Length: 0\r\n\r\n"));
+    await new Promise<void>((r) => bad.listen(0, "127.0.0.1", r));
+    const badPort = (bad.address() as AddressInfo).port;
+    const proxy = await startEgressProxy({ lookup: toLocal, allowPrivate: true, ports: "any" });
+    try {
+      expect((await viaProxy(proxy.server, `http://bad.test:${badPort}/`)).status).toBe(502);
+      expect((await viaProxy(proxy.server, `http://store.test:${port}/ok`)).status).toBe(200);
+    } finally {
+      await proxy.close();
+      bad.close();
+    }
+  });
+
+  it("caps the decoded size of a compressed body", async () => {
+    const bomb = zlib.brotliCompressSync(Buffer.alloc(20_000_000));
+    const srv = http.createServer((_q, r) => {
+      r.writeHead(200, { "content-encoding": "br" });
+      r.end(bomb);
+    });
+    await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+    const p = (srv.address() as AddressInfo).port;
+    try {
+      const f = pinnedFetch({ lookup: toLocal, allowPrivate: true, maxBytes: 1_000_000 });
+      expect(bomb.length).toBeLessThan(1_000_000);
+      await expect(f(`http://bomb.test:${p}/`, { headers: {}, redirect: "manual" })).rejects.toThrow();
+    } finally {
+      srv.close();
+    }
+  });
+
+  it("tries each vetted address in turn", async () => {
+    // 127.0.0.2 refuses: the server listens on 127.0.0.1 only.
+    const proxy = await startEgressProxy({ lookup: async () => ["127.0.0.2", "127.0.0.1"], allowPrivate: true, ports: "any" });
+    try {
+      expect(await connectVia(proxy.server, `store.test:${port}`)).toContain(`hello store.test:${port} /tunnel`);
+      expect((await viaProxy(proxy.server, `http://store.test:${port}/x`)).status).toBe(200);
+    } finally {
+      await proxy.close();
     }
   });
 });

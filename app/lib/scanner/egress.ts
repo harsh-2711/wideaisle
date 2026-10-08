@@ -6,7 +6,7 @@ import https from "node:https";
 import net from "node:net";
 import type { Duplex } from "node:stream";
 import zlib from "node:zlib";
-import { BlockedAddressError, guardedLookup, resolvePublic, type GuardOptions } from "./netguard";
+import { BlockedAddressError, guardedLookup, pinnedLookup, resolvePublic, type GuardOptions } from "./netguard";
 
 export interface FetchLikeResponse {
   status: number;
@@ -25,15 +25,18 @@ export function portOf(u: URL): number {
   return Number(u.port) || (u.protocol === "https:" ? 443 : 80);
 }
 
-function decode(body: Buffer, encoding: string | undefined): Buffer {
+// Decoded size is capped too, so a small compressed body cannot expand to
+// fill memory.
+function decode(body: Buffer, encoding: string | undefined, maxBytes: number): Buffer {
+  const opts = { maxOutputLength: maxBytes };
   switch ((encoding ?? "").trim().toLowerCase()) {
     case "gzip":
     case "x-gzip":
-      return zlib.gunzipSync(body);
+      return zlib.gunzipSync(body, opts);
     case "deflate":
-      return zlib.inflateSync(body);
+      return zlib.inflateSync(body, opts);
     case "br":
-      return zlib.brotliDecompressSync(body);
+      return zlib.brotliDecompressSync(body, opts);
     default:
       return body;
   }
@@ -70,7 +73,7 @@ export function pinnedFetch(opts: GuardOptions & { maxBytes?: number } = {}): Fe
           if (tooBig) return;
           let body: Buffer;
           try {
-            body = decode(Buffer.concat(chunks), res.headers["content-encoding"]);
+            body = decode(Buffer.concat(chunks), res.headers["content-encoding"], maxBytes);
           } catch (err) {
             return reject(err);
           }
@@ -109,10 +112,9 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
   const blocked = new Set<string>();
   const portAllowed = (p: number) => ports === "any" || ports.includes(p);
 
-  async function vet(host: string, port: number): Promise<string> {
+  async function vet(host: string, port: number): Promise<string[]> {
     if (!portAllowed(port)) throw new BlockedAddressError(`port ${port} is not crawled`);
-    const [address] = await resolvePublic(host, opts);
-    return address;
+    return resolvePublic(host, opts);
   }
 
   const server = http.createServer(async (req, res) => {
@@ -124,9 +126,9 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
       res.writeHead(400).end();
       return;
     }
-    let address: string;
+    let addresses: string[];
     try {
-      address = await vet(u.hostname, portOf(u));
+      addresses = await vet(u.hostname, portOf(u));
     } catch {
       blocked.add(u.hostname);
       res.writeHead(403).end();
@@ -134,11 +136,27 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
     }
     const headers = Object.fromEntries(Object.entries(req.headers).filter(([k]) => !HOP_BY_HOP.has(k)));
     const upstream = http.request(
-      { host: address, port: portOf(u), path: u.pathname + u.search, method: req.method, headers, agent: false },
+      {
+        host: u.hostname.replace(/^\[|\]$/g, ""),
+        port: portOf(u),
+        path: u.pathname + u.search,
+        method: req.method,
+        headers,
+        agent: false,
+        lookup: pinnedLookup(addresses) as unknown as net.LookupFunction,
+      },
       (up) => {
-        const out = Object.fromEntries(Object.entries(up.headers).filter(([k]) => !HOP_BY_HOP.has(k)));
-        res.writeHead(up.statusCode ?? 502, out);
-        up.pipe(res);
+        // A bad upstream answer must not take the census down with it.
+        try {
+          const code = up.statusCode && up.statusCode >= 100 && up.statusCode <= 599 ? up.statusCode : 502;
+          const out = Object.fromEntries(Object.entries(up.headers).filter(([k]) => !HOP_BY_HOP.has(k)));
+          res.writeHead(code, out);
+          up.pipe(res);
+        } catch {
+          up.destroy();
+          if (!res.headersSent) res.writeHead(502);
+          res.end();
+        }
       },
     );
     upstream.on("error", () => {
@@ -156,15 +174,15 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
       return;
     }
     const [, host, port] = m;
-    let address: string;
+    let addresses: string[];
     try {
-      address = await vet(host, Number(port));
+      addresses = await vet(host, Number(port));
     } catch {
       blocked.add(host);
       client.end("HTTP/1.1 403 Forbidden\r\n\r\n");
       return;
     }
-    const upstream = net.connect({ host: address, port: Number(port) }, () => {
+    const upstream = net.connect({ host, port: Number(port), lookup: pinnedLookup(addresses) as unknown as net.LookupFunction }, () => {
       client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       if (head.length) upstream.write(head);
       upstream.pipe(client);
