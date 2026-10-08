@@ -1,24 +1,29 @@
 import type { ActionFunctionArgs } from "react-router";
-import { authenticate } from "../shopify.server";
+import { eq } from "drizzle-orm";
+import db from "../db.server";
+import { sessionTable } from "../db/schema";
+import { verifyShopifyWebhook } from "../lib/webhooks/verify.server";
 
 // The three mandatory privacy webhooks. Wide Aisle reads only public
 // storefront pages and product media and stores no customer data, so there
-// is nothing to export or erase for a customer. shop/redact will delete the
-// shop's scans and evidence once those tables exist (M6 compliance lane).
+// is nothing to export or erase for a customer. shop/redact arrives 48 hours
+// after uninstall and erases what we hold for the shop. Scans and evidence
+// join this list when those tables exist (M6 compliance lane).
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { topic, shop } = await authenticate.webhook(request);
+  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "");
+  if (!hook) return new Response("Unauthorized", { status: 401 });
 
-  switch (topic) {
-    case "CUSTOMERS_DATA_REQUEST":
-    case "CUSTOMERS_REDACT":
-      console.log(`Received ${topic} for ${shop}: no customer data is stored`);
+  switch (hook.topic) {
+    case "customers/data_request":
+    case "customers/redact":
+      console.log(`Received ${hook.topic} for ${hook.shop}: no customer data is stored`);
       break;
-    case "SHOP_REDACT":
-      console.log(`Received ${topic} for ${shop}: no shop data tables yet`);
+    case "shop/redact":
+      await db.delete(sessionTable).where(eq(sessionTable.shop, hook.shop));
+      console.log(`Received ${hook.topic} for ${hook.shop}: shop data erased`);
       break;
     default:
-      console.log(`Unexpected compliance topic ${topic} for ${shop}`);
+      console.log(`Unexpected compliance topic ${hook.topic} for ${hook.shop}`);
   }
-
   return new Response();
 };

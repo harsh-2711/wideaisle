@@ -5,6 +5,7 @@ export default defineConfig({
   schema: "./app/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://wideaisle:wideaisle@localhost:5432/wideaisle",
+    // Only `drizzle-kit migrate` and `push` connect; `generate` does not.
+    url: process.env.DATABASE_URL ?? "",
   },
 });
