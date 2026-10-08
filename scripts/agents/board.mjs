@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Board CLI for the run ledger. Run `node scripts/agents/board.mjs help`.
+import fs from "node:fs";
+import path from "node:path";
 import { parseArgs } from "node:util";
 import {
-  appendEvent, buildBoard, createTask, digest, lastEvents, listTasks,
-  markStale, staleTasks, STATES, upsertTask,
+  appendEvent, buildBoard, createTask, currentTask, digest, getTask, lastEvents, lintHandoff, listTasks,
+  markStale, paths, staleTasks, STATES, upsertTask,
 } from "./ledger.mjs";
 
 const HELP = `Usage: node scripts/agents/board.mjs <command>
@@ -20,8 +22,22 @@ const HELP = `Usage: node scripts/agents/board.mjs <command>
                                     List Running tasks with no heartbeat. --mark sets Stalled
                                     on the current branch's task; add --all for every task
   digest [--hours 24]               Print the daily digest
+  lint-handoff [<id> | --all]       Check that a HANDOFF.md is enough to resume, against the
+                                    task's state. No id: the current task. --all: every task
+                                    that is not Done. Prints <id>: <problem> lines, exits 1 if any
 
 States: ${STATES.join(", ")}`;
+
+// Returns "<id>: <problem>" lines for one task's HANDOFF.md.
+function usage(message) {
+  return Object.assign(new Error(message), { usage: true });
+}
+
+function lintTask(t) {
+  const file = path.join(paths().tasks, t.id, "HANDOFF.md");
+  if (!fs.existsSync(file)) return [`${t.id}: no HANDOFF.md`];
+  return lintHandoff(fs.readFileSync(file, "utf8"), t.state).map((p) => `${t.id}: ${p}`);
+}
 
 function main(argv) {
   const [cmd, ...rest] = argv;
@@ -91,6 +107,31 @@ function main(argv) {
       console.log(digest(undefined, Number(values.hours ?? 24)));
       return;
     }
+    case "lint-handoff": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { all: { type: "boolean" } } });
+      if (positionals.length > 1 || (values.all && positionals.length)) throw usage("lint-handoff takes one task id, or --all");
+      let tasks;
+      const unreadable = [];
+      if (values.all) {
+        tasks = listTasks().filter((t) => t.state !== "Done");
+        // listTasks skips a task it cannot read; here that is a problem.
+        const listed = new Set(listTasks().map((t) => t.id));
+        const dir = paths().tasks;
+        const ids = fs.existsSync(dir) ? fs.readdirSync(dir).filter((d) => /^T-\d{3,}$/.test(d)) : [];
+        for (const id of ids) if (!listed.has(id)) unreadable.push(`${id}: status.json cannot be read`);
+      } else {
+        const id = positionals[0] ?? currentTask()?.id;
+        if (!id) throw usage("no current task: pass a task id or --all, or set WA_TASK");
+        const t = getTask(id);
+        if (!t) throw new Error(`${id} does not exist`);
+        tasks = [t];
+      }
+      const problems = [...unreadable, ...tasks.flatMap(lintTask)];
+      for (const p of problems) console.log(p);
+      if (problems.length) process.exitCode = 1;
+      else console.log(`${tasks.length} handoff${tasks.length === 1 ? "" : "s"} ok`);
+      return;
+    }
     case undefined:
     case "help":
     case "--help":
@@ -105,5 +146,6 @@ try {
   main(process.argv.slice(2));
 } catch (err) {
   console.error(err.message);
-  process.exit(1);
+  // 2 for a usage error, 1 for anything else.
+  process.exit(err.usage ? 2 : 1);
 }
