@@ -49,3 +49,6 @@ Thumbs.db
 /app/public/build
 /extensions/*/dist
 .shopify.lock
+
+# Agent worktrees created by Claude Code
+.claude/worktrees/
