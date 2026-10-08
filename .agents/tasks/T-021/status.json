@@ -1,0 +1,13 @@
+{
+  "title": "Census analysis and gap report",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/feat-census-analysis",
+  "issue": 22,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-021"
+}

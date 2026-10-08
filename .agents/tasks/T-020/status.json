@@ -1,0 +1,13 @@
+{
+  "title": "Store census crawler",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "In review",
+  "step": "PR review",
+  "branch": "claude/feat-census-crawler",
+  "issue": 21,
+  "needs": [],
+  "updated": "2026-10-08T06:45:46Z",
+  "id": "T-020"
+}

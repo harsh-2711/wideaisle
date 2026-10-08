@@ -1,0 +1,15 @@
+{
+  "title": "Status board live on GitHub Projects",
+  "milestone": "M0",
+  "lane": "ledger",
+  "agent": "",
+  "state": "Blocked on you",
+  "step": "",
+  "branch": "",
+  "issue": 12,
+  "needs": [
+    "owner:Q-06"
+  ],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-006"
+}
