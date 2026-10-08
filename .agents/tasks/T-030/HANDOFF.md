@@ -8,23 +8,24 @@ See TASK.md. Duplicate a theme and write files through the Admin API; the GitHub
 
 ## Status
 
-Running. Last updated 2026-10-08. Research done; writing the shared types next.
+Running. Last updated 2026-10-08. Shared types and the zip route are done; Admin API next.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
-| Research: Admin API 2026-10 schema, GitHub REST description, exemption sources | this checkpoint |
+| Research: Admin API 2026-10 schema, GitHub REST description, exemption sources | d3cfb22 |
+| Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | this commit |
 
 ## Current step
 
-Shared patch types and validation under app/lib/delivery/.
+Admin API adapter with recorded GraphQL fixtures.
 
 ## Next three steps
 
-1. Shared types, patch validation, size limits, HTTP retry helper.
-2. Patched-theme zip adapter (offline) with tests.
-3. Admin API adapter and GitHub adapter with recorded fixtures and tests.
+1. Admin API client (throttling, retries) and adapter (duplicate, upsert, job polling, revert).
+2. GitHub pull request adapter with recorded REST fixtures.
+3. docs/spikes/spike-a-delivery.md, then final checks.
 
 ## Blockers and open questions
 
@@ -42,10 +43,13 @@ D-09
 ## Files touched
 
 - .agents/tasks/T-030/HANDOFF.md, status.json
+- package.json, package-lock.json (fflate 0.8.2, pinned exactly)
+- app/lib/delivery/: types.ts, errors.ts, limits.ts, patch.ts, http.ts, theme-file.ts
+- tests/unit/delivery/: helpers.ts, patch.test.ts, theme-file.test.ts
 
 ## How to verify
 
-- (filled in as tests land)
+- `npx vitest run tests/unit/delivery` (offline; no credentials)
 
 ## Lessons and gotchas
 
