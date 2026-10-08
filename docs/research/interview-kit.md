@@ -1,15 +1,17 @@
 # Interview kit: merchants and agencies
 
-Task T-024 · M2 · Written 2026-10-08 · Decisions used: D-06, D-07, D-12, D-16
+Task T-024 · M2 · Written 2026-10-08, revised 2026-10-08 after review · Decisions used: D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
 
 ## The answer
 
 - Run 15 merchant calls and 5 agency calls of 20 to 30 minutes (D-07). Book 25 minutes.
-- Each call has one goal: learn what the person does about accessibility today, what it costs them, and whether they would pay $29, $79 or $199 a month (D-12) for fixes in theme code plus a dated record.
+- Each call has one goal. Learn what the person does about accessibility today and what it costs them. Then learn whether they would pay $29, $79 or $199 a month (D-12) for fixes in theme code plus a dated record.
 - Count commitments, not compliments. The best evidence is a paid pilot at the founding price, current spend on an alternative, or an introduction to the person who pays.
 - You send every message and run every call. Agents draft messages and write the summaries.
 - Never promise compliance (D-06). Never cold-contact stores recently named in lawsuits (D-16). Every message has an easy opt-out.
-- Two choices wait on you before the first batch. See "Decide before the first batch" at the end.
+- Until a lawyer answers section 15, cold messages go only to stores and agencies based in the US.
+- This repo is public (Q-32). Recordings, transcripts, per-call summaries and contact lists never go in it. They live in the private ledger repo once you create it (Q-07), and on your machine until then. Only a combined, anonymous synthesis goes in this repo.
+- Five choices wait on you before the first batch. See "Decide before the first batch" at the end.
 
 ## Contents
 
@@ -20,7 +22,7 @@ Task T-024 · M2 · Written 2026-10-08 · Decisions used: D-06, D-07, D-12, D-16
 5. Screening questions
 6. Recruiting messages
 7. Scheduling
-8. Consent and recording
+8. Consent, recording and where notes live
 9. Call script: merchants
 10. Call script: agencies
 11. Per-call summary template
@@ -96,7 +98,7 @@ At least 1 agency should have clients selling into the EU.
 
 Merchants, in this order:
 
-1. Stores from the census on supported themes, after the suppression check. The reason to talk is a free scan report of their own store (D-16). If the report is not ready, use the message without it.
+1. Stores from the census on supported themes, after the suppression check. Only stores based in the US until a lawyer answers section 15 (see section 6). Message A leads with the research ask and offers a free report of their own store as a link (D-16). If the report is not ready, leave the link out.
 2. Your own network and second-degree introductions.
 3. LinkedIn: store founders and ecommerce managers who list a Shopify store.
 4. Shopify Community and r/shopify. Read each forum's rules first and message the moderators before any recruiting post. Third-party summaries describe r/shopify as strict about promotion (via search, not opened; the subreddit's own rules are unverified). Never post the same message in many places.
@@ -112,12 +114,15 @@ Agencies, in this order:
 
 Run these steps on every list before you approve it (Q-25).
 
-1. Remove every address and store on the opt-out list. Keep that list outside the repo, since it holds personal data.
-2. Remove every store recently named in an accessibility lawsuit. Until the team has a lawsuit list, an agent searches each store name and company name with "ADA lawsuit" and "accessibility lawsuit" and drops any store with a hit inside the window you set (see section 14). The agent lists dropped stores without the reason in the batch file, so the batch file itself is not a list of sued stores.
+Batch files hold names, emails and stores. Keep them, the opt-out list and the suppression list in private storage (section 8), never in this repo.
+
+1. Remove every address and store on the opt-out list.
+2. Remove every store recently named in an accessibility lawsuit. Until the team has a lawsuit list, an agent searches each store name and company name with "ADA lawsuit" and "accessibility lawsuit". It drops any store with a hit inside the window you set (section 14) and adds it to the suppression list. The batch file lists dropped stores without the reason, so it is not a list of sued stores. Never write a sued store's name in this repo.
 3. Remove anyone contacted in the last 90 days.
-4. You read the batch and approve it. Agents never send.
-5. Log the date sent. Follow up once after 5 business days. Then stop.
-6. Honour opt-outs the same day if you can. The FTC's CAN-SPAM guide gives a ceiling of 10 business days (via search, not opened).
+4. For cold messages, keep only stores and agencies based in the US (section 6). Check the business address on the store's contact page or policies. If you cannot tell, leave the store out.
+5. You read the batch and approve it. Agents never send.
+6. Log the date sent. Follow up once after 5 business days. Then stop.
+7. Honour opt-outs the same day if you can. The FTC's CAN-SPAM guide gives a ceiling of 10 business days (via search, not opened).
 
 ## 5. Screening questions
 
@@ -156,26 +161,36 @@ Rules for every message:
 - Sent by you, under your real name, from your own address.
 - Give the honest reason: you are building a Shopify app and want to learn.
 - No fear tactics. Never write "you could be sued" or "you are at risk".
-- No promise of compliance or protection (D-06). Say what the scan found and that automated scans miss some problems.
+- No promise of compliance or protection (D-06).
+- In a cold message, never quote an issue count or list issues. Lead with the research ask and offer the report as a link. "We scanned your store and found issues" reads like the lawsuit-mill and "rescue" emails merchants already fear (review-mining.md). The report itself says what the scan found and that automated scans miss some problems.
+- Be straight about selling. Calls are mostly questions. At the end you may ask whether they would like to try the app when it is ready. Never promise "no pitch".
 - One follow-up at most.
-- An opt-out line in every message, and a postal address in the signature of every email. CAN-SPAM asks for both in commercial email, B2B included (via search, not opened). Whether a research request counts as commercial is a lawyer question; include both anyway.
+- Cold messages go only to stores and agencies based in the US until a lawyer answers (section 15). A cold message is A, C, D or E sent to someone you have not met. Canada (CASL), the UK (PECR) and some EU countries have stricter rules for cold email. CASL, for example, generally needs consent before the first message (via search, not opened). Reach people outside the US only through warm channels: introductions, your network, or people who reply to a public post and ask to talk.
 - Fill every {placeholder}. Never send a message with a placeholder left in.
 
-### A. Merchant email, with a free report (census stores)
+CAN-SPAM checklist for every email. CAN-SPAM covers commercial email, B2B included (FTC guide, via search, not opened). Whether a research request counts as commercial is a lawyer question, so follow every item anyway.
 
-Subject: Free accessibility scan of {store name}
+1. Accurate header. The From name is you. The From and Reply-To addresses are yours, and you read them.
+2. A subject line that matches the body. No "Re:" or "Fwd:" on a first message.
+3. Identify an ad as an ad. Every message says near the top that you are building a Shopify app. If a message offers the app, a price or a pilot, say plainly that it is about a product you are building. Whether this is clear enough is a lawyer question (section 15).
+4. Your valid postal address in the signature.
+5. A clear way to opt out: the "no thanks" line.
+6. Honour opt-outs within 10 business days at most, and the same day if you can. Ask for nothing but a reply. Keep the reply address working for at least 30 days after sending. Never share or sell an address that opted out.
+7. You stay responsible for any message sent for you. Agents only draft; you send.
+
+### A. Merchant email, with a free report (census stores, US only)
+
+Subject: 25 minutes on how {theme} stores handle accessibility?
 
 > Hi {first name},
 >
 > I'm Harsh. I'm building Wide Aisle, a Shopify app that fixes common accessibility problems in theme code.
 >
-> I ran a free automated scan of {store name}'s home, collection, product and cart pages. It found {number} issues of six common types, for example {one plain example, such as "the search field has no label"}. The short report is here: {link}. It is yours to keep whether or not we talk.
->
-> I'm talking to store owners on {theme} to learn how they handle accessibility today. Would you do a 25-minute call? I won't try to sell you anything on it.
+> Before I build more, I'm talking to store owners on {theme} about how they handle accessibility today, including if the answer is "we haven't". Would you do a 25-minute call? Most of it is my questions. At the end I may ask if you'd like to try the app when it's ready, and no is a fine answer.
 >
 > You can pick a time here: {booking link}. Or reply with a time that suits you.
 >
-> One note: automated scans cannot find every accessibility problem, so the report is a starting point, not a verdict.
+> I also ran a free automated check of {store name}'s home, collection, product and cart pages. The short report is here if it's useful: {link}. It's yours to keep whether or not we talk. Automated checks cannot find every accessibility problem, so it's a starting point, not a verdict.
 >
 > If you'd rather not hear from me, reply "no thanks" and I won't write again.
 >
@@ -190,7 +205,7 @@ Subject: 25 minutes on how you handle accessibility?
 >
 > {Mutual contact} suggested I write. I'm Harsh, and I'm building a Shopify app that fixes common accessibility problems in theme code.
 >
-> Before I build more, I'm talking to store owners about how they handle accessibility today, including if the answer is "we haven't". Would you do a 25-minute call in the next two weeks? I won't pitch you on it. As thanks, I can send you a free automated scan of your key pages.
+> Before I build more, I'm talking to store owners about how they handle accessibility today, including if the answer is "we haven't". Would you do a 25-minute call in the next two weeks? Most of it is my questions. At the end I may ask if you'd like to try the app when it's ready, and no is a fine answer. As thanks, I can send you a free automated scan of your key pages.
 >
 > Pick a time here: {booking link}, or reply with one that works.
 >
@@ -201,9 +216,9 @@ Subject: 25 minutes on how you handle accessibility?
 
 ### C. Merchant DM (LinkedIn or a forum that allows DMs)
 
-Keep it short. Platforms cap the length of connection notes; the exact cap is unverified.
+Keep it short. Platforms cap the length of connection notes; the exact cap is unverified. Cold DMs go only to people based in the US (rules above).
 
-> Hi {first name}, I'm building a Shopify app that fixes common accessibility problems in theme code. I'm talking to store owners on {theme} about how they handle accessibility today. Would you do a 25-minute call? No pitch, and I can send a free scan of your store. If not, no worries, I won't message again.
+> Hi {first name}, I'm building a Shopify app that fixes common accessibility problems in theme code. I'm talking to store owners on {theme} about how they handle accessibility today. Would you do a 25-minute call? It's mostly my questions, and I can send a free scan of your store. If not, no worries, I won't message again.
 
 ### D. Agency email
 
@@ -213,7 +228,7 @@ Subject: How do your clients handle accessibility?
 >
 > I'm Harsh. I'm building Wide Aisle, a Shopify app that fixes common accessibility problems in theme code and keeps a dated record of each fix. Agencies that look after many stores are a big part of who I want to build for.
 >
-> Could I ask you 25 minutes of questions about how accessibility comes up with your clients, what you do about it today and what you charge for it? I won't pitch. If it helps, I'll send free automated scans of two of your client stores, with their permission.
+> Could I ask you 25 minutes of questions about how accessibility comes up with your clients, what you do about it today and what you charge for it? At the end I may ask if you'd like to try the app when it's ready, and no is a fine answer. If it helps, I'll send free automated scans of two of your client stores, with their permission.
 >
 > Pick a time here: {booking link}, or reply with one that works.
 >
@@ -224,7 +239,7 @@ Subject: How do your clients handle accessibility?
 
 ### E. Agency DM
 
-> Hi {first name}, I'm building a Shopify app that fixes common accessibility problems in theme code, with reports agencies can share with clients. Could I ask you 25 minutes of questions about how accessibility comes up with your clients? No pitch. If not, no worries, I won't message again.
+> Hi {first name}, I'm building a Shopify app that fixes common accessibility problems in theme code, with reports agencies can share with clients. Could I ask you 25 minutes of questions about how accessibility comes up with your clients? It's mostly my questions. If not, no worries, I won't message again.
 
 ### F. One follow-up, 5 business days later
 
@@ -234,7 +249,7 @@ Subject: How do your clients handle accessibility?
 
 > Thanks, {first name}. We're set for {day, date, time in their time zone} at {call link}.
 >
-> I'll ask about your store, how accessibility has come up, what you've tried and what it cost. With your OK I'll record the call so I can take fewer notes. Only I and my research tools see the recording, and I delete it within {retention period} after I write my notes.
+> I'll ask about your store, how accessibility has come up, what you've tried and what it cost. With your OK I'll record the call so I can take fewer notes. The recording, transcript and my notes stay in private storage that only I and my research tools can open. I delete the recording and transcript within {recording retention} and my notes within {notes retention}. I may publish a combined summary of all my calls, with no names or stores. You can ask me to delete anything about you at any time by replying to this email.
 >
 > If the time stops working, reply and we'll move it.
 
@@ -252,35 +267,58 @@ Add the address to the opt-out list the same day.
 4. Send the confirmation (message G) as soon as they book. Show the time in their time zone.
 5. Send one reminder 24 hours before.
 6. If someone does not show, offer one new time. If they miss that too, stop.
-7. Aim for 4 to 6 calls a week. After call 5 and call 10, the research agent reads the summaries and suggests script changes. Keep the price questions the same throughout, so answers stay comparable.
-8. Give each participant an ID: M01 to M15 for merchants, A01 to A05 for agencies. Keep the key that links IDs to names and stores outside the repo.
+7. Aim for 4 to 6 calls a week. After call 5 and call 10, the research agent reads the summaries where they live (section 8) and suggests script changes. Keep the price questions the same throughout, so answers stay comparable.
+8. Give each participant an ID: M01 to M15 for merchants, A01 to A05 for agencies. Keep the key that links IDs to names and stores in private storage (section 8).
 
-## 8. Consent and recording
+## 8. Consent, recording and where notes live
+
+### Where notes live
+
+This repo is public (Q-32). Nothing that names a participant, or points to one, goes in it.
+
+| What | Where it lives |
+|---|---|
+| Recordings, transcripts and per-call summaries | Private storage: the private ledger repo harsh-2711/wideaisle-ledger (D-18) once you create it (Q-07). Until then, your machine only, in a folder outside the repo clone |
+| Batch files with names, emails and stores; screener answers; the key that links IDs to people | Private storage, as above |
+| The opt-out list and the suppression list, including sued stores | Private storage, as above |
+| The combined, anonymous synthesis (section 12) | This repo: docs/research/interview-synthesis.md |
+
+An agent writes or reads per-call summaries only where it can reach private storage: on your machine, or in a clone of the ledger repo. Agents never commit them to this repo. Revisit this table once you decide Q-32.
+
+### Transcripts
+
+1. Record with the call tool you already use. Use its built-in transcript if your current plan has one.
+2. If it has none, transcribe on your own machine with Whisper, OpenAI's open-source speech-to-text model, which runs locally for free (via search, not opened). The audio does not leave your machine at this step.
+3. An agent summarises the transcript with the AI plan you already pay for (D-01).
+4. Do not sign up for, or pay for, a transcription or note-taker service without your approval (D-04). A meeting bot that joins the call counts as a new service.
+
+### Consent script
 
 Read this out at the start of every call, before you press record:
 
-> Before we start: I'd like to record this call so I can listen instead of typing. The recording is transcribed and summarised with an AI tool. Only I and my research tools use it, and I delete the recording within {retention period}. I may quote something you say, but without your name or your store's name unless you say yes in writing. Is it OK to record?
+> Before we start, a word on notes. I'd like to record this call so I can listen instead of typing. I use AI tools to transcribe the recording and summarise it. The recording, the transcript and my notes stay in private storage that only I and my research tools can open. I delete the recording and transcript within {recording retention}, and my notes within {notes retention}. My notes use a code, not your name or your store's name. I may publish a combined summary of all my calls. It has no names, no stores and nothing that points to you. I won't quote you by name, or name your store, unless you say yes in writing. You can ask me to delete anything about you at any time by replying to my email. Is it OK to record?
 
 Then, once recording starts: "Just so it's on the recording: you're OK with me recording this call?"
 
 Rules:
 
-- Ask everyone on the call, every time. If anyone says no, take notes by hand.
+- Ask everyone on the call, every time. If anyone says no, take notes by hand. Hand notes follow the same storage rules.
 - Some US states require consent from everyone on a call. Sources disagree on which states (via search, not opened), so ask everyone regardless of where they are.
 - For people in the EU or UK, also tell them the purpose, who sees the data, how long you keep it, and how to ask for deletion. The script above covers this; keep it.
 - Never share a recording outside the project.
-- Summaries in the repo use the participant ID, never a name, email or store address.
-- If someone describes a demand letter or lawsuit, do not ask for documents, names of law firms or amounts they do not offer. Keep any detail they share out of the repo. Do not give legal advice. If asked, say: "I can't advise on that. A lawyer can."
+- Per-call summaries never go in this repo. Only the combined synthesis does (section 12).
+- If someone asks for deletion, delete their recording, transcript, summary, screener answers and contact details, and confirm by reply. Take their quotes out of the synthesis. If they also opted out, keep only their address on the opt-out list.
+- If someone describes a demand letter or lawsuit, do not ask for documents, names of law firms or amounts they do not offer. Do not write any detail they share into any note. The summary records only yes, no or declined. Do not give legal advice. If asked, say: "I can't advise on that. A lawyer can."
 
 ## 9. Call script: merchants (25 minutes)
 
-Ask about the past, not the future. "Tell me about the last time..." beats "Would you...". Talk less than they do. Do not pitch until step 6.
+Ask about the past, not the future. "Tell me about the last time..." beats "Would you...". Talk less than they do. Do not describe the product until step 6.
 
 **Before the call (5 minutes, not on the clock).** Open the store. Note the theme, any accessibility widget, and the scan result if you have one. Read the screener. Fill in the top rows of the summary template.
 
 **1. Open (2 minutes).**
 - Thank them. Say why you are calling: you are building a Shopify app and want to learn how stores handle accessibility today.
-- "I'm not selling anything today. Criticism helps me most."
+- "Most of this call is my questions. Near the end I'll describe the app, and I may ask if you'd like to try it when it's ready. No is a fine answer. Criticism helps me most."
 - Consent to record (section 8).
 
 **2. Context (3 minutes).**
@@ -333,9 +371,9 @@ Then show the ladder (D-12):
 
 If you are short on time, skip the four questions and ask only the ladder.
 
-**8. Ask for a commitment (2 minutes).** Ask for one of these, strongest first. Write down exactly what they agreed to.
+**8. Offer a next step (2 minutes).** Make it an offer, not a push. Say: "If you'd like to try it when it's ready, here are a few ways." Offer these, strongest first. If they say no, thank them and move on. Write down exactly what they agreed to.
 
-1. A paid pilot at the founding price, once you have confirmed the founding price (section 14).
+1. A paid pilot at the founding price, once you have confirmed the founding price (section 14). Billing goes through Shopify only (D-12). Never send an invoice or take payment outside Shopify.
 2. Installing the pilot on a preview theme when it is ready, with a date.
 3. An introduction to the person who decides or pays.
 4. An introduction to another store owner or agency.
@@ -367,14 +405,14 @@ Same opening, consent and closing as the merchant script. The middle changes.
 - "Would per-store pricing suit you better? Why?"
 - "What share of revenue would a referral need to be worth your time?" Write the number.
 
-**Commitment (2 minutes).** Ask for one, strongest first:
-1. A pilot on at least 3 client stores (one M5 exit path is 5 agencies with at least 3 stores each).
+**Next step (2 minutes).** Make it an offer, as in the merchant script. Strongest first:
+1. A pilot on at least 3 client stores, billed through Shopify (one M5 exit path is 5 agencies with at least 3 stores each).
 2. Permission to run free scans on 2 client stores, with the client's consent.
 3. An introduction to another agency.
 
 ## 11. Per-call summary template
 
-The research agent fills one table per call within 24 hours, from the transcript. Save each as `docs/research/interviews/<ID>.md`. Use the participant ID only. Quotes are verbatim, short and anonymous.
+The research agent fills one table per call within 24 hours, from the transcript. Save each as `interviews/<ID>.md` in private storage (section 8), never in this repo. Use the participant ID only. Quotes are verbatim, short and anonymous.
 
 | Field | Answer |
 |---|---|
@@ -397,8 +435,8 @@ The research agent fills one table per call within 24 hours, from the transcript
 | Van Westendorp: too cheap | $ |
 | Ladder pick | Free, Starter, Pro, Agency or none, and why |
 | Spend on accessibility today | $ a month or one-off, or nothing |
-| Commitment asked | Which one |
-| Commitment given | What exactly, with a date |
+| Next step offered | Which one, or none |
+| Commitment given | What exactly, with a date, or none |
 | Evidence level (section 12) | 0 to 5 |
 | H1 to H6 | For each: supports, against or no signal |
 | Best quote | Verbatim, anonymous, with consent |
@@ -413,7 +451,7 @@ Score each call at its highest level reached. Compliments and future promises ar
 
 | Level | Evidence | Example |
 |---|---|---|
-| 5 | Money: paid, or signed up for a paid pilot at a stated price | "Send me the pilot invoice" |
+| 5 | Money: paid, or agreed in writing to a paid pilot at a stated price | Agrees in writing to a pilot at $X a month, billed through Shopify (D-12) |
 | 4 | Current spend on the same job at or above our price, with an amount named | Pays $49 a month for an accessibility app, or paid a freelancer $1,500 last year |
 | 3 | A concrete next step that costs them time or reputation, with a date | Will install on a preview theme on a set date; introduced the person who pays; agency names 3 client stores |
 | 2 | A specific past pain with money attached | Spent money answering a demand letter; has a budget line for accessibility |
@@ -432,17 +470,25 @@ With 15 people, Van Westendorp answers show a rough range, not a precise price. 
 
 ### Synthesis outline
 
-Write `docs/research/interview-synthesis.md` with these sections, point first:
+Write `docs/research/interview-synthesis.md`. It is the only interview file in this repo, and this repo is public (Q-32). Build it from the private summaries and keep it anonymous:
+
+- No names, emails, store addresses, participant IDs or details that point to one person or store.
+- Report counts by segment, never one row per call.
+- Report demand letters and lawsuits only as one total across all calls. Never split that total by segment, theme or market, and never put it next to a quote.
+- Quote only people who agreed on the recording, and strip any detail that points to them.
+- If a segment has fewer than 3 people, merge it with the next one before you report it.
+
+Sections, point first:
 
 1. **Answer.** Will merchants pay $29 a month without a lawsuit hanging over them? Will agencies pay $199? Yes, no or unclear, with the evidence count.
-2. **Who we spoke to.** A table of IDs by segment, theme and market.
-3. **Willingness to pay.** Calls per evidence level, by segment. List every level 3 to 5 call with what they committed to.
+2. **Who we spoke to.** Counts by segment, theme and market. No IDs.
+3. **Willingness to pay.** Calls per evidence level, by segment. For levels 3 to 5, list the kinds of commitment given, without IDs.
 4. **Price answers.** Medians and ranges of the four Van Westendorp answers by segment. Ladder picks by segment. Current spend on accessibility.
 5. **Jobs.** The jobs people described, ranked by how many calls raised them.
 6. **What they tried and why it fell short.** Overlays, freelancers, apps, agencies.
 7. **Fears and objections.** Ranked by count, each with one short quote.
 8. **Hypotheses.** H1 to H6: supported, contradicted or unclear, with counts.
-9. **What changes.** Pricing, scope, onboarding, messaging and the outreach list. Each change names the calls behind it.
+9. **What changes.** Pricing, scope, onboarding, messaging and the outreach list. Each change says how many calls are behind it.
 10. **Open questions.** What the M5 pilots must answer.
 
 ## 13. Words we use and words we never use
@@ -467,7 +513,7 @@ These go to the owner through the planner.
 
 1. **What "recently" means for D-16.** Proposal: any accessibility lawsuit naming the store or its company in the last 24 months. Also confirm the check in section 4, step 2, until a lawsuit list exists.
 2. **The founding price to offer on calls.** D-12 says "for example 50% off for 12 months", which would be $14.50 a month for Starter and $39.50 for Pro. Confirm before anyone hears a number.
-3. **Recording retention.** Proposal: delete raw recordings 30 days after the summary is written.
+3. **How long to keep recordings, transcripts and notes.** Proposal: delete recordings and transcripts 30 days after the summary is written. Delete per-call summaries 12 months after the call. The consent script and message G quote both periods.
 4. **The willingness-to-pay bar** in section 12.
 5. **A thank-you for participants.** The free scan report costs nothing. Any gift card or paid incentive needs your approval first (D-04).
 
@@ -476,10 +522,12 @@ These go to the owner through the planner.
 This kit is not legal advice. Add these to the D-14 review list.
 
 1. For calls with people in different US states and other countries, is asking everyone for consent at the start and on the recording enough?
-2. Does a cold email asking for a research call, with a free scan report, count as commercial email under CAN-SPAM? What applies to cold B2B email to the UK and the EU?
-3. Is it a problem to run an automated scan of a store's public pages and send the owner the result without being asked?
-4. If a participant tells us about a demand letter or lawsuit, what can we keep in our notes, and for how long?
-5. Can we quote participants anonymously in public material later, and what written permission do we need?
+2. Does a cold email asking for a research call, with a free scan report, count as commercial email under CAN-SPAM? If it does, is the opening line "I'm building a Shopify app" enough to identify it as an ad?
+3. What applies to cold B2B email and DMs to people in Canada (CASL), the UK (PECR and UK GDPR) and the EU (each country's ePrivacy rules and GDPR)? Until you answer, cold messages go only to stores and agencies based in the US.
+4. Is it a problem to run an automated scan of a store's public pages and send the owner the result without being asked?
+5. If a participant tells us about a demand letter or lawsuit, what can we keep in our notes, and for how long?
+6. Is the consent script enough notice under GDPR and UK GDPR for recording, AI transcription, keeping summaries and publishing a combined anonymous summary? Do we also need a written privacy notice?
+7. Can we quote participants anonymously in public material later, and what written permission do we need?
 
 ## 16. Sources
 
@@ -488,7 +536,9 @@ Checked 2026-10-08. This container could not open these pages (the proxy denies 
 - Van Westendorp price sensitivity meter, the four questions and the warning that it measures stated acceptability, not purchases: [Wikipedia](https://en.wikipedia.org/wiki/Van_Westendorp%27s_Price_Sensitivity_Meter) (via search, not opened); [Umbrex](https://umbrex.com/resources/frameworks/marketing-frameworks/van-westendorp-price-sensitivity-meter/) (via search, not opened).
 - Interview method, asking about past behaviour and counting commitments of time, reputation or money: summaries of Rob Fitzpatrick's The Mom Test by [mtlynch.io](https://mtlynch.io/book-reports/the-mom-test/) and [Yevgeniy Brikman](https://www.ybrikman.com/blog/2023/03/29/the-mom-test/) (via search, not opened).
 - Recording consent: lists of all-party consent states differ between sources, for example [Kilpatrick Townsend, July 2024](https://ktslaw.com/Insights/Alert/2024/7/Wiretap-Laws-in-the-United-States) and [Kixie](https://www.kixie.com/sales-blog/what-are-the-laws-governing-call-recordings) (via search, not opened). The exact list is unverified.
-- CAN-SPAM: covers B2B commercial email, needs a postal address and an opt-out, and opt-outs must be honoured within 10 business days: [FTC compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) (via search, not opened).
+- CAN-SPAM covers B2B commercial email. It needs accurate header information, a subject line that matches the body, clear identification of an ad, a valid postal address and a clear opt-out. Opt-outs must be honoured within 10 business days, and the opt-out route must work for at least 30 days after sending. Opted-out addresses may not be sold or transferred. Source: [FTC compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) (via search, not opened; checked 2026-10-08).
+- Cold email outside the US: CASL generally needs consent before a commercial message, and its B2B exemption needs an existing relationship between the organisations ([Torys, June 2020](https://www.torys.com/insights/publications/2020/06/fca-confirms-casl-is-constitutional-but-limits-business-communications-exemption), via search, not opened). Under PECR, cold email to a UK company needs no prior consent, but sole traders and some partnerships count as individuals ([Sprintlaw UK](https://sprintlaw.co.uk/articles/unsolicited-emails-in-the-uk-what-businesses-can-send-and-stay-compliant/), via search, not opened). Both checked 2026-10-08. Law-firm and vendor commentary, not primary texts; a lawyer question (section 15).
+- Whisper, OpenAI's open-source speech-to-text model, runs on your own machine under the MIT licence: [github.com/openai/whisper](https://github.com/openai/whisper) (via search, not opened; seen through a mirror's metadata and third-party reviews; checked 2026-10-08).
 - r/shopify promotion rules described as strict by third parties: [The Hive Index](https://thehiveindex.com/communities/r-shopify/) (via search, not opened). The subreddit's own rules are unverified.
 - Shopify Partner Directory as a place to find agencies by service: [Shopify](https://www.shopify.com/partners/directory/partner/devxagency) (an example profile; via search, not opened).
-- Plan inputs: docs/plan/roadmap.md and decisions D-06, D-07, D-08, D-12 and D-16 in this repo (opened).
+- Plan inputs: docs/plan/roadmap.md and decisions D-01, D-04, D-06, D-07, D-08, D-12, D-14, D-16 and D-18 in this repo (opened).

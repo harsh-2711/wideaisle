@@ -1,14 +1,14 @@
 # Competitor teardown: Shopify accessibility apps
 
-Task T-022 · M2 · Desk research, written 2026-10-08 · Decisions used: D-06, D-08, D-12
+Task T-022 · M2 · Desk research, written 2026-10-08, revised 2026-10-08 after review · Decisions used: D-04, D-06, D-08, D-12
 
 ## The answer
 
-- Three apps on Shopify say they change theme code: Patrol (from $200 a month), TestParty (Pro at $599 a month) and Adafix (from $29 a month). Everything else we found is an overlay widget that adds JavaScript at runtime, priced from free to $479 a month.
+- Three apps on Shopify say they change theme code: Patrol (from $200 a month), TestParty (Pro listed at $599 a month) and Adafix (from $29 a month). TestParty's own blog says its service costs $1,000 to $5,000 a month. Everything else we found is an overlay widget that adds JavaScript at runtime, priced from free to $479 a month.
 - Our $29 Starter plan sits at Adafix's price and far below Patrol and TestParty. Adafix is the closest threat: same price, same "edit the code, review, one-click revert" pitch, and it launched on 29 September 2026 with no reviews yet.
-- Patrol and TestParty have what we lack: live installs, 5.0 ratings on 20 to 27 reviews, and human help (TestParty runs monthly manual audits). Patrol already ships fixes as GitHub pull requests.
+- Patrol and TestParty have what we lack: live installs, 5.0 ratings on 20 to 27 reviews, and human help (TestParty lists monthly manual audits; which plan includes them is unverified). Patrol already ships fixes as GitHub pull requests.
 - Every competitor we checked makes a claim we must not copy (D-06): "Automate ADA Compliance" (Patrol), "real ADA, WCAG 2.2 AA, EAA and AODA compliance" (TestParty), "accessibility certifications" (accessiBe), "Shield against accessibility-related lawsuits" (UserWay).
-- The FTC's final order against accessiBe (April 2025, $1 million) bars it from claiming automated tools make a site WCAG compliant. That is the line our claims policy keeps us well behind.
+- The FTC's final order against accessiBe (April 2025, $1 million) bars it from claiming that its automated tools make a site WCAG compliant unless it has evidence to back the claim. Our claims policy keeps us well behind that line: we make no compliance claim at all.
 - Every number here comes from search summaries of listing pages, not from pages we opened. This container cannot reach apps.shopify.com (owner queue Q-01). Treat each figure as unverified until a person or an agent with web access checks the live listing.
 
 ## Comparison table
@@ -19,9 +19,9 @@ All figures are from search summaries of Shopify App Store listings or third-par
 |---|---|---|---|---|---|---|
 | Patrol - ADA Code Level Fixes | AI finds and fixes issues in theme files or through GitHub | Yes | Free Monitor plan (audit, monitoring, email alerts, manual guidance). Starter $200 or $2,000 a year, adds code and alt-text fixes. One older snapshot showed $150 | 5.0 (11 to 27) | 5 Dec 2024 | "Automate ADA Compliance"; "compliant with WCAG"; "avoid costly ADA lawsuits" |
 | Adafix | Scans live pages; AI alt text and contrast fixes in code; review each change; one-click revert | Yes (alt text and contrast named) | From $29, free trial. Scheduled re-scans on paid plans only | 0.0 (0) | 29 Sep 2026 | "fixes hold up during real audits"; "WCAG compliance scan". Official listing not found; seen only on a directory |
-| TestParty: ADA Compliance | Managed service: source-code fixes as monthly GitHub pull requests, plus monthly manual audits | Yes | Free plan scans the home page only. Pro $599 or $6,469 a year. TestParty's own blog says $1,000 to $5,000 by revenue and site size | 5.0 (20 to 27) | Unverified | "real ADA, WCAG 2.2 AA, EAA and AODA compliance"; "initial WCAG 2.2 AA compliance certification within two weeks"; "Certificates of Compliance" (directory text) |
+| TestParty: ADA Compliance | Source-code fixes as monthly GitHub pull requests, plus monthly manual audits (directory text; which plan includes them is unverified) | Yes | Free plan scans the home page only. Pro $599 or $6,469 a year; one directory ties Pro to weekly full-site scans and fix suggestions, so what Pro includes is unverified. TestParty's own blog says $1,000 to $5,000 a month, including remediation | 5.0 (20 to 27) | Unverified | "real ADA, WCAG 2.2 AA, EAA and AODA compliance"; "initial WCAG 2.2 AA compliance certification within two weeks"; "Certificates of Compliance" (directory text) |
 | accessiBe Web Accessibility (accessWidget) | Overlay widget; AI scans daily and adjusts the page at runtime | No | Micro $59 or $490 a year. Growth $179 or $1,490 a year. Scale $479 or $3,990 a year | 4.1 (14); one directory shows 3.5 (15) | Unverified | Micro lists "ADA, AODA, EAA and WCAG compliance" and "accessibility certifications"; Growth adds a $15k "litigation pledge" |
-| UserWay Website Accessibility | Overlay widget priced by page views | No | Free light widget. $49 (100k page views), $149 (1M), $349 (10M); $490, $1,490, $3,490 a year | 2.2 (9); a competitor blog says 2.4 (9) | Unverified | "ADA & WCAG Compliance"; "Shield against accessibility-related lawsuits" |
+| UserWay Website Accessibility | Overlay widget priced by page views | No | Free light widget. $49 (100k page views) or $490 a year; $149 (1M) or $1,490 a year; $349 (10M) or $3,490 a year, seen in one source only | 2.2 (9); a competitor blog says 2.4 (9) | Unverified | "ADA & WCAG Compliance"; "Shield against accessibility-related lawsuits" |
 | Avada Accessibility Widget ADA | Overlay widget | No | Free up to 1,000 widget impressions. Starter $9 or $90 a year. A competitor blog lists tiers of about $9, $14 and $19 | 5.0 (279 to 293) | 8 Jan 2025 | Lists WCAG 2.1 AA (elsewhere 2.2 AA), ADA, AODA, EAA and BFSG |
 | ADA Accessibility Widget by AP | Overlay widget with AI alt text | No | Free up to 1,000 monthly visitors. Standard $9 or $64.80 a year, adds 100 AI alt texts a month and monitoring | 4.9 (83 to 87) | Unverified | Lists ADA, AODA, EAA, BFSG and WCAG |
 | Wide Aisle (plan, D-12) | Rule-based fixes in theme code per supported theme; alt text through the Admin API; preview and one-click revert; dated evidence pack | Yes | Free scan. Starter $29, Pro $79, Agency $199 for 10 stores | None yet | Not launched | None. We say what we fixed and that automated scans miss some problems (D-06) |
@@ -49,8 +49,8 @@ All figures are from search summaries of Shopify App Store listings or third-par
 
 ### TestParty
 
-- **What it fixes.** Source-code fixes for ADA and WCAG issues, shipped as monthly GitHub pull requests, plus monthly manual audits with screen readers, keyboard and zoom. Its free Shopify plan scans only the home page; a separate free "Accessibility Scan" app also exists with no reviews.
-- **Price.** Pro $599 a month or $6,469 a year on listing snapshots. Its own 2025 blog says $1,000 to $5,000 a month. Its product page asks you to request pricing.
+- **What it fixes.** Source-code fixes for ADA and WCAG issues, shipped as monthly GitHub pull requests, plus monthly manual audits with screen readers, keyboard and zoom. Directories list these without saying which plan includes them. Its free Shopify plan scans only the home page; a separate free "Accessibility Scan" app also exists with no reviews.
+- **Price.** Pro $599 a month or $6,469 a year on listing snapshots. One directory says Pro adds weekly full-site scans and suggestions for the top violations, so what Pro includes, and whether it covers the pull requests and manual audits, is unverified. TestParty's own 2025 blog posts say $1,000 to $5,000 a month, including remediation. A 2026 post gives $400 to $800 a month for a standard Shopify tier. Its product page asks you to request pricing. All via search, not opened, checked 2026-10-08.
 - **Claims we must not copy.** "Real ADA, WCAG 2.2 AA, EAA and AODA compliance", compliance "certification within two weeks", "Certificates of Compliance". Its blog says fewer than 1% of customers were sued in one place and zero in another (via search, not opened).
 - **Where we are better.** Self-serve and cheaper for small stores. A free plan that covers more than the home page.
 - **Where we are worse.** Human audits every month, which automated tools cannot match. A managed service suits stores that want someone else to own the work. Strong reviews.
@@ -59,7 +59,7 @@ All figures are from search summaries of Shopify App Store listings or third-par
 
 - **What it does.** An overlay widget. The listing says AI "scans your store daily and applies accessibility adjustments without altering your design or layout". It does not change theme code.
 - **Price.** $59, $179 or $479 a month. The roadmap's "$5 to $349" range for overlays is too low at the top: accessiBe's Scale plan is $479.
-- **FTC order.** In January 2025 the FTC announced a complaint and proposed order; the final order came in April 2025 with a $1 million payment. It bars accessiBe from claiming its automated products can make any website WCAG compliant or keep it compliant, and requires it to disclose paid endorsements (via search, not opened). accessiBe settled without admitting liability.
+- **FTC order.** In January 2025 the FTC announced a complaint and proposed order; the final order came in April 2025 with a $1 million payment. It bars accessiBe from claiming that its automated products can make any website WCAG compliant, or keep it compliant, unless it has evidence to back the claim. It also requires accessiBe to disclose paid endorsements (via search, not opened). accessiBe settled without admitting liability.
 - **Claims we must not copy.** "Compliance", "accessibility certifications", a "litigation pledge". We never offer legal support or money tied to lawsuits.
 - **Where we are better.** We fix the code. We add no widget and no runtime script for the six fixes.
 - **Where we are worse.** One-click install, a known brand, and a lawsuit pledge some merchants want. Widgets also give shoppers tools such as text size, which we do not offer.
@@ -67,7 +67,7 @@ All figures are from search summaries of Shopify App Store listings or third-par
 ### UserWay
 
 - **What it does.** An overlay widget, free in a light version, then priced by monthly page views.
-- **Legal context.** BloomsyBox filed a class action in Delaware federal court alleging UserWay's widget claims were misleading, after BloomsyBox was itself sued by a blind shopper. These are allegations; the latest update we saw is dated 17 February 2026 (via search, not opened).
+- **Legal context.** A merchant filed a class action in Delaware federal court alleging UserWay's widget claims were misleading, after the merchant was itself sued by a blind shopper. We leave the merchant unnamed here, since this repo is public (Q-32) and sued stores stay off it. These are allegations; the latest update we saw is dated 17 February 2026 (via search, not opened).
 - **Reviews.** The lowest rating in this set: 2.2 from 9 reviews. One one-star reviewer says a third-party audit found the widget fixed none of the listed issues (quoted by a competitor's blog; via search, not opened).
 - **Claims we must not copy.** "ADA & WCAG Compliance", "Shield against accessibility-related lawsuits".
 - **Where we are better.** Code fixes and honest claims.
@@ -87,7 +87,7 @@ All figures are from search summaries of Shopify App Store listings or third-par
 
 ### Also seen, not torn down
 
-- **AccessFix - ADA/EAA/WCAG (MK-Way).** Says it helps "detect and fix" WCAG 2.1 AA violations; Starter $49 and Pro $99 a month; no reviews. Whether it changes code is unverified. Check it in the hands-on pass, since it may be a fourth code-fix app.
+- **AccessFix - ADA/EAA/WCAG (MK-Way).** Says it helps "detect and fix" WCAG 2.1 AA violations. Starter $49 and Pro $99 a month. An Agency tier at $199 a month adds 120 audits and 500 AI auto-fixes a month. It also adds Liquid code fix guides and white-label PDF reports (seen on mirrors of the listing; via search, not opened, checked 2026-10-08). No reviews. Whether it changes code, and whether the Agency tier covers several stores, is unverified. Check it in the hands-on pass, since it may be a fourth code-fix app.
 - **AccessFix (StoreFix).** A scanner with a free plan; the merchant fixes issues in the theme by hand. No reviews.
 - **AccessiFix AI.** Scans for alt text, contrast and ARIA problems and suggests AI fixes; free plan of 5 scans a month.
 - **Accessibly.** An overlay widget, $5 to $75 a month, 4.4 from 23 reviews. One one-star review says the store was sued and the app did not protect it.
@@ -98,7 +98,7 @@ All figures are from search summaries of Shopify App Store listings or third-par
 1. **Lead with what a widget cannot show.** Fix count by type, a before-and-after scan, a dated record, and re-checks after theme changes. Adafix copies our "code, not overlay" line at our price, so the evidence pack and regression watch are the difference.
 2. **Our honesty is a feature, but a quiet one.** Every competitor says "compliant" or "lawsuit". We cannot, and should not try to out-shout them. Listing copy should say what we fix and what we do not, and point to the FTC order only as background, never as an attack on a named vendor. Ask the lawyer in D-14 whether naming competitors is safe.
 3. **Price check.** $29 matches Adafix and is a sixth of Patrol's paid plan. Widgets anchor small merchants under $20. The interviews (T-024) should test whether $29 feels expensive next to a $9 widget.
-4. **Agency plan is open ground.** None of the Shopify apps in the table lists an agency or multi-store plan in what we saw. Unverified: the hands-on pass and agency calls should confirm.
+4. **Agency plans are thin, not empty.** AccessFix by MK-Way lists an Agency tier at $199 a month, our Agency price, with white-label PDF reports (via search, not opened). None of the apps in the table lists an agency or multi-store plan in what we saw. Our agency case has to rest on the multi-store dashboard, the evidence pack and code fixes, not on having an agency plan. The hands-on pass and agency calls should confirm.
 5. **Correct the roadmap.** Overlays reach $479 a month (accessiBe Scale), not $349. A fourth app (AccessFix by MK-Way) may change code.
 
 ## Hands-on teardown, waits on a dev store (Q-03)
@@ -128,7 +128,7 @@ Run this once the owner creates `wideaisle-dev` with Dawn (Q-03). Install only o
 | Evidence | Reports, statements, exports, dates. Could a merchant hand it to a lawyer? |
 | Claims in the app | Copy every use of compliant, certified, lawsuit or guarantee from the app's own screens and emails |
 | Price in the app | Plans and prices shown in the app against the listing. Trial length. Upgrade prompts |
-| Support | Ask one question by the app's support channel. Time to first reply |
+| Support | You (the owner) ask one question through the app's support channel, under your real name. Do not pose as a merchant; say you are testing on a development store. Time to first reply |
 | Uninstall | Uninstall, then diff the theme again. List anything left behind |
 
 **After all installs.** Restore the baseline theme, re-run the scans to confirm a clean store, and add a results table to this file with one row per app.
@@ -148,6 +148,7 @@ Patrol:
 Adafix and similar names:
 - [PickYourApp: Adafix](https://pickyourapp.com/products/adafix-app) (via search, not opened)
 - [AppNavigator: AccessFix - ADA/EAA/WCAG (MK-Way)](https://appnavigator.io/app/accessibility-ai-audit-fix/) (via search, not opened)
+- AccessFix (MK-Way) Agency tier: [AccessFix listing, apps.shopify.com/accessibility-ai-audit-fix](https://apps.shopify.com/accessibility-ai-audit-fix) and [PickYourApp: AccessFix](https://pickyourapp.com/products/accessibility-ai-audit-fix) (via search, not opened; checked 2026-10-08; the $199 tier appeared in mirror text, and the listing's own summary cut off before its top tiers)
 - [AccessFix (StoreFix) listing](https://apps.shopify.com/accessfix?locale=pl) (via search, not opened)
 - [AppNavigator: AccessiFix AI](https://appnavigator.io/app/accessifix-ai/) (via search, not opened)
 
@@ -157,6 +158,9 @@ TestParty:
 - [PickYourApp: TestParty](https://pickyourapp.com/collections/store-design/products/testparty) (via search, not opened)
 - [TestParty blog: best Shopify accessibility tool 2025](https://testparty.ai/blog/best-shopify-accessibility-tool-2025) (vendor content; via search, not opened)
 - [TestParty blog: best Shopify accessibility apps 2026](https://testparty.ai/blog/best-shopify-accessibility-apps-2026) (vendor content; via search, not opened)
+- [TestParty blog: best Shopify accessibility agency 2025](https://testparty.ai/blog/best-shopify-accessibility-agency-2025), $1,000 to $5,000 a month including remediation (vendor content; via search, not opened; checked 2026-10-08)
+- [TestParty blog: solo founder accessibility plan](https://testparty.ai/blog/solo-founder-accessibility-plan-no-dev-team), $400 to $800 a month for a standard Shopify tier (vendor content; via search, not opened; checked 2026-10-08)
+- Pro features: the PickYourApp entry above ties Pro to weekly full-site scans and fix suggestions (via search, not opened; checked 2026-10-08)
 
 accessiBe:
 - [accessiBe listing, apps.shopify.com/accesswidget](https://apps.shopify.com/accesswidget) (via search, not opened)

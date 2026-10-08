@@ -17,6 +17,7 @@ Status: Open, Done or Dropped. Times are estimates.
 | Q-09 | Check the domains (wideaisle.com, wideaisle.app, getwideaisle.com) and run a trademark search, or let agents do it once Q-01 is done. Buy nothing yet. | 15 min | D-03 follow-up | Open |
 | Q-10 | Approve the weekly brief routine: a scheduled Claude Code run every Monday that writes the brief. It uses plan usage, so it waits for your yes. | 2 min | M0 ops lane, M0 exit (spend in the weekly brief) | Open |
 | Q-11 | On your machine, open Claude Code in the repo and accept the project's plugins and MCP servers when asked. Run `/plugin` to confirm Shopify AI Toolkit, code-review and security-guidance are on. | 10 min | Toolkit lane checked on a real machine | Open |
+| Q-32 | The GitHub repo harsh-2711/wideaisle is public, but the plan assumes private. Choose: make it private (GitHub Settings, General, Danger Zone, Change visibility), or keep it public and keep interview notes, transcripts, outreach lists and anything about sued stores in the private ledger repo (Q-07). Until you decide, agents treat the repo as public. | 5 min | Interview notes in the repo; T-024 recruiting | Open |
 
 ## Queued for later milestones
 
@@ -30,7 +31,7 @@ These need you once agents finish their part. Agents will move each one to Open 
 | Q-23 | Approve the written claims policy (D-06) | 15 min | M1 exit | Policy merged |
 | Q-24 | Run 15 merchant and 5 agency calls (D-07), using the interview kit | 8 to 10 h over weeks 1 to 4 | M2 exit | Kit merged |
 | Q-25 | Approve each outreach and recruiting batch (D-16) | 15 min a batch | Interview recruiting | Drafts ready |
-| Q-31 | Before the first recruiting batch, settle the five choices in section 14 of docs/research/interview-kit.md: what "recently" means for D-16 (proposal: 24 months), the founding price to quote, how long to keep recordings (proposal: 30 days), the willingness-to-pay bar, and any paid thank-you (needs D-04 approval) | 15 min | Q-24, Q-25 | Kit merged |
+| Q-31 | Before the first recruiting batch, settle the five choices in section 14 of docs/research/interview-kit.md: what "recently" means for D-16 (proposal: 24 months), the founding price to quote, how long to keep recordings, transcripts and notes (proposal: 30 days for recordings and transcripts, 12 months for per-call summaries), the willingness-to-pay bar, and any paid thank-you (needs D-04 approval) | 15 min | Q-24, Q-25 | Kit merged |
 | Q-26 | Rate 50 AI alt texts in the rating sheet | 30 min | M3 Spike C | After Q-04 |
 | Q-27 | File the theme exemption request if Spike A shows it is needed (D-09) | 20 min | M3 Spike A | After Q-03 |
 | Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |

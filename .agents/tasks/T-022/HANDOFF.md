@@ -15,34 +15,37 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | Desk teardown from public listings | 48e11c9 |
+| Fixes from the PR #37 review: AccessFix Agency tier, TestParty Pro caveat, FTC wording, UserWay single source, support-question rule, unnamed sued merchant | pending |
 
 ## Current step
 
-Pull request review, then merge.
+Pull request re-review after the fixes, then merge.
 
 ## Next three steps
 
 1. After merge, set the state to Blocked on you with needs Q-03.
 2. With a dev store: install Patrol (free Monitor), Adafix (trial), TestParty's free scan, UserWay and Avada; record fixes, misses and onboarding.
-3. Check whether AccessFix by MK-Way changes theme code.
+3. Check whether AccessFix by MK-Way changes theme code, and whether its $199 Agency tier covers several stores. Confirm TestParty's Pro contents on the live listing.
 
 ## Blockers and open questions
 
 - Q-03: a dev store for the hands-on installs. Nothing is bought (D-04); free plans and trials only.
 - Q-01: listings were read through search results only.
+- Q-32: the repo is public. Never name a sued store or plaintiff in this repo.
 
 ## Decisions used
 
-D-04
+D-04, D-06, D-08, D-12
 
 ## Files touched
 
 - docs/research/competitor-teardown.md
-- docs/plan/roadmap.md: overlay price range and a possible fourth code-fix app
+- docs/plan/roadmap.md: overlay price range (free to $479), code-fix app count, TestParty price range, repo visibility note (Q-32)
+- .agents/owner-queue.md: Q-32
 
 ## How to verify
 
-- Open docs/research/competitor-teardown.md. Adafix (from $29, launched 2026-09-29 per its listing) is the closest competitor.
+- Open docs/research/competitor-teardown.md. Adafix (from $29, launched 2026-09-29 per a directory listing) is the closest competitor.
 
 ## Lessons and gotchas
 
