@@ -351,6 +351,33 @@ export function createTask({ id, title = "", milestone = "", lane = "", branch =
   return upsertTask(id, { title, milestone, lane, branch, state, needs }, root);
 }
 
+// Sections every HANDOFF.md has, in order (see .agents/templates/HANDOFF.md).
+export const HANDOFF_SECTIONS = [
+  "Goal and exit criteria", "Status", "Done so far", "Current step", "Next three steps",
+  "Blockers and open questions", "Decisions used", "Files touched", "How to verify", "Lessons and gotchas",
+];
+
+// Lists what keeps a HANDOFF.md from being enough for a fresh agent:
+// missing sections, template placeholders, and a status that does not
+// match the task's state.
+export function lintHandoff(text, state = "") {
+  const problems = [];
+  const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
+  for (const name of HANDOFF_SECTIONS) {
+    if (!headings.includes(name)) problems.push(`missing section: ${name}`);
+  }
+  if (/\(fill in\)/.test(text)) problems.push("placeholder left: (fill in)");
+  const section = (name) => {
+    const m = new RegExp(`^## ${name}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text);
+    return m ? m[1].trim() : "";
+  };
+  if (["Running", "In review", "Stalled"].includes(state)) {
+    if (/^Not started\.?$/.test(section("Current step"))) problems.push(`state is ${state} but the current step says Not started`);
+    if (!/\|[^|\n]+\|\s*[0-9a-f]{7,40}\s*\|/.test(section("Done so far"))) problems.push(`state is ${state} but Done so far lists no commit`);
+  }
+  return problems;
+}
+
 export function digest(root, hours = 24, at = Date.now()) {
   const tasks = listTasks(root);
   const lines = [`Digest for the last ${hours} hours, ${new Date(at).toISOString().slice(0, 16)}Z`, ""];
