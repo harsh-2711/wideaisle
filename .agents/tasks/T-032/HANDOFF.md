@@ -8,39 +8,43 @@ See TASK.md. Draft alt text for 200 product images through the Batch API; cost p
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+Running. Builder agent. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| 1. Branch, pinned `@anthropic-ai/sdk` 0.132.1 and `tsx` 4.23.15, `/data/` ignored | (this commit) |
 
 ## Current step
 
-Not started.
+2: the batch client in `app/lib/alt-text/` with unit tests.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. Client, prompt, parser, cost and resume state in `app/lib/alt-text/`, tests in `tests/unit/alt-text/`.
+2. `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
+3. Rating sheet script and doc, then the spike doc `docs/spikes/spike-c-alt-text.md`.
 
 ## Blockers and open questions
 
-- None yet.
+- Q-04: no Anthropic API key yet. Nothing may call the real API. All tests use a mocked SDK client.
+- Q-26: the owner rates 50 drafts after the real run.
 
 ## Decisions used
 
-D-11
+D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (buy nothing).
 
 ## Files touched
 
-- None yet.
+- package.json, package-lock.json (two pinned dependencies)
+- .gitignore (`/data/`)
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- `npm ci --ignore-scripts && npm ls @anthropic-ai/sdk tsx`
 
 ## Lessons and gotchas
 
-- None yet.
+- shopify.dev does not resolve from this cloud environment (Q-01). Shopify sources are "via search, not opened".
+- `npm ci --ignore-scripts` skips husky, so run commitlint by hand before each commit.

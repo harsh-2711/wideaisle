@@ -31,6 +31,9 @@ blob-report/
 # Local Claude Code settings
 .claude/settings.local.json
 
+# Local run data: alt-text batch state, drafts and rating sheets (T-032)
+/data/
+
 # Logs and OS files
 *.log
 npm-debug.log*
