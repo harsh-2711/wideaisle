@@ -13,13 +13,52 @@ function patch(file: string, before: string, after: string, fixer: Fixer, notes:
 }
 
 // Makes a value safe inside a double-quoted HTML attribute. Text outside
-// Liquid is HTML-escaped; inside Liquid, double quotes become single quotes,
-// which Liquid treats the same.
+// Liquid is HTML-escaped (entities stay as they are); inside Liquid, double
+// quotes become single quotes, which Liquid treats the same.
 export function attrSafe(value: string): string {
   return value
     .split(/(\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\})/)
-    .map((part, i) => (i % 2 === 1 ? part.replace(/"/g, "'") : part.replace(/&(?!(amp|quot|lt|gt|#\d+);)/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")))
+    .map((part, i) => (i % 2 === 1 ? part.replace(/"/g, "'") : part.replace(/&(?!#?\w+;)/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")))
     .join("");
+}
+
+const BLOCK_TAG = /^(if|unless|case|for|capture|tablerow|comment|raw)$/;
+
+// True when every {{ }} and {% %} in the value closes, and every Liquid
+// block (if, for, case...) ends inside the value. Only such values can be
+// copied into a new attribute without breaking the template.
+export function liquidBalanced(value: string): boolean {
+  const open: string[] = [];
+  let i = 0;
+  while (i < value.length) {
+    const two = value.slice(i, i + 2);
+    if (two === "{{" || two === "{%") {
+      const close = two === "{{" ? "}}" : "%}";
+      const j = value.indexOf(close, i + 2);
+      if (j < 0) return false;
+      const body = value.slice(i + 2, j);
+      if (/\{\{|\{%/.test(body)) return false;
+      if (two === "{%") {
+        const word = /^-?\s*(\w+)/.exec(body)?.[1] ?? "";
+        if (BLOCK_TAG.test(word)) open.push(word);
+        else if (/^end\w+$/.test(word) && open.pop() !== word.slice(3)) return false;
+      }
+      i = j + 2;
+      continue;
+    }
+    if (two === "}}" || two === "%}") return false;
+    i++;
+  }
+  return open.length === 0;
+}
+
+// A value attrSafe can carry into a new attribute unchanged in meaning.
+// Liquid strings in double quotes that hold an apostrophe cannot switch to
+// single quotes, so they are refused too.
+function copyable(value: string): boolean {
+  if (!liquidBalanced(value)) return false;
+  const liquidParts = value.match(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g) ?? [];
+  return !liquidParts.some((part) => /"[^"]*'[^"]*"/.test(part));
 }
 
 function line(src: string, index: number): number {
@@ -57,7 +96,7 @@ function nameFixer(id: string, type: "empty-link" | "empty-button", tagName: "a"
       for (const tag of findTags(content, [tagName])) {
         if (isNamed(tag.attrs)) continue;
         // Hidden from assistive tech on purpose (decorative duplicate links).
-        if (/aria-hidden\s*=\s*["']?true/i.test(tag.attrs)) continue;
+        if (attrValue(tag.attrs, "aria-hidden")?.trim().toLowerCase() === "true") continue;
         if (tagName === "a" && !hasAttr(tag.attrs, "href")) continue;
         const el = elementFor(content, tag);
         if (!el || !hasNoText(el.inner)) continue;
@@ -109,6 +148,10 @@ export const missingLabel: Fixer = {
       let value: string | null = null;
       let source = "";
       if (placeholder && placeholder.trim()) {
+        if (!copyable(placeholder)) {
+          notes.push(`Needs review: <${tag.name}> on line ${line(content, tag.start)} has no label, and its placeholder holds Liquid that cannot be copied safely.`);
+          continue;
+        }
         value = placeholder;
         source = "its placeholder text";
       } else {

@@ -17,11 +17,12 @@ Fixing review findings on PR #35 (16 items). Three of four exit criteria pass. T
 | Liquid tag scanner and name inference | 88e747f |
 | Six fixers, engine, contrast maths; test theme and Dawn 16 runs | 99350a2 |
 | Escape values copied into attributes | 887f510 |
-| Review 1: theme walk skips .git; Dawn test fails under CI when Dawn is missing | this commit |
+| Review 1: theme walk skips .git; Dawn test fails under CI when Dawn is missing | a10d61d |
+| Review 2, 9, 12 to 15: attribute parser, Liquid balance check, doc blocks, snippet text | this commit |
 
 ## Current step
 
-Review findings on PR #35. Done: 1 (CI). Next: 2, 9, 12 to 15 (scanner), then 6 to 8 and 10 (names), 3 to 5 (contrast), 16 (engine), 11 (Dawn excerpt tests, docs).
+Review findings on PR #35. Done: 1, 2, 9, 12 to 15. Next: 6 to 8 and 10 (names), 3 to 5 (contrast), 16 (engine), 11 (Dawn excerpt tests, docs).
 
 ## Next three steps
 
@@ -42,6 +43,7 @@ D-08, D-11
 - app/lib/fixers/: types.ts, color.ts, liquid-html.ts, names.ts, fixers.ts, engine.ts
 - tests/unit/fixers.test.ts, tests/a11y/render.ts, tests/a11y/fixers.spec.ts, tests/a11y/themes/mini/
 - tests/integration/dawn.test.ts, tests/integration/dawn-source.ts, tests/unit/theme-source.test.ts
+- tests/unit/fixers-review.test.ts (regressions from the PR #35 review)
 - docs/spikes/spike-b-fixers.md, package.json (test:unit, test:integration)
 
 ## How to verify
@@ -57,4 +59,5 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/fixers.spec.ts
 - axe treats a placeholder as a label, so fixtures that test missing labels must drop it.
 - Dawn hides decorative links with aria-hidden; the empty-link fixer skips them.
 - Values copied into attributes must be escaped (attrSafe), or a translation with a quote breaks the tag.
+- Copy an attribute value only when its Liquid balances (liquidBalanced). Read values with parseAttrs, never a regex.
 - loadTheme reads theme folders only. Walking .git failed in CI when git removed a lock file mid-walk.

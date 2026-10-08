@@ -1,7 +1,7 @@
 // A small scanner for HTML tags inside Liquid templates. It understands
 // Liquid output and tags inside attributes, skips regions that are not markup
-// (comments, raw, schema, scripts, styles), and never rewrites text it does
-// not have to.
+// (comments, doc, raw, schema, scripts, styles), and never rewrites text it
+// does not have to.
 
 export interface Tag {
   name: string;
@@ -16,15 +16,22 @@ export interface Element extends Tag {
   inner: string;
 }
 
-const SKIP_BLOCKS: [RegExp, RegExp][] = [
+// Liquid blocks whose body is not markup: skipped whole.
+const LIQUID_BLOCKS: [RegExp, RegExp][] = [
   [/\{%-?\s*comment\s*-?%\}/y, /\{%-?\s*endcomment\s*-?%\}/g],
+  [/\{%-?\s*doc\s*-?%\}/y, /\{%-?\s*enddoc\s*-?%\}/g],
   [/\{%-?\s*raw\s*-?%\}/y, /\{%-?\s*endraw\s*-?%\}/g],
   [/\{%-?\s*schema\s*-?%\}/y, /\{%-?\s*endschema\s*-?%\}/g],
   [/\{%-?\s*javascript\s*-?%\}/y, /\{%-?\s*endjavascript\s*-?%\}/g],
   [/\{%-?\s*stylesheet\s*-?%\}/y, /\{%-?\s*endstylesheet\s*-?%\}/g],
   [/\{%-?\s*style\s*-?%\}/y, /\{%-?\s*endstyle\s*-?%\}/g],
-  [/<script\b/iy, /<\/script\s*>/gi],
-  [/<style\b/iy, /<\/style\s*>/gi],
+];
+
+// HTML regions that are not markup. The lookahead keeps custom elements
+// such as <script-loader> or <style-x> out.
+const HTML_BLOCKS: [RegExp, RegExp][] = [
+  [/<script(?=[\s>/])/iy, /<\/script\s*>/gi],
+  [/<style(?=[\s>/])/iy, /<\/style\s*>/gi],
   [/<!--/y, /-->/g],
 ];
 
@@ -37,7 +44,7 @@ function skipLiquid(src: string, i: number): number {
     return j < 0 ? src.length : j + 2;
   }
   if (two === "{%") {
-    for (const [open, close] of SKIP_BLOCKS) {
+    for (const [open, close] of LIQUID_BLOCKS) {
       open.lastIndex = i;
       if (open.test(src)) {
         close.lastIndex = i;
@@ -53,7 +60,7 @@ function skipLiquid(src: string, i: number): number {
 
 function skipHtmlBlock(src: string, i: number): number {
   if (src[i] !== "<") return -1;
-  for (const [open, close] of SKIP_BLOCKS.slice(6)) {
+  for (const [open, close] of HTML_BLOCKS) {
     open.lastIndex = i;
     if (open.test(src)) {
       close.lastIndex = i;
@@ -159,13 +166,78 @@ export function elementFor(src: string, tag: Tag): Element | null {
   return null;
 }
 
-export function hasAttr(attrs: string, name: string): boolean {
-  return new RegExp(`(^|[\\s"'}%])${name}(\\s*=|[\\s>/{]|$)`, "i").test(attrs);
+export interface Attr {
+  name: string; // lower case
+  value: string | null; // null when the attribute has no "="
 }
 
+// Index just past the Liquid at i, or i + 1 when no Liquid starts there.
+function stepOver(src: string, i: number): number {
+  const k = src[i] === "{" ? skipLiquid(src, i) : -1;
+  return k >= 0 ? k : i + 1;
+}
+
+const NAME_END = /[\s=>/"']/;
+
+// The attributes of a tag, in source order, read with the same quote and
+// Liquid rules as readTag. Liquid between attributes is skipped, so an
+// attribute inside {% if %} counts as present.
+export function parseAttrs(attrs: string): Attr[] {
+  const out: Attr[] = [];
+  const n = attrs.length;
+  let i = 0;
+  while (i < n) {
+    if (/[\s/"']/.test(attrs[i])) {
+      i++;
+      continue;
+    }
+    const lq = skipLiquid(attrs, i);
+    if (lq >= 0) {
+      i = lq;
+      continue;
+    }
+    let j = i;
+    while (j < n && !NAME_END.test(attrs[j]) && !(attrs[j] === "{" && /[{%]/.test(attrs[j + 1] ?? ""))) j++;
+    if (j === i) {
+      i++;
+      continue;
+    }
+    const name = attrs.slice(i, j).toLowerCase();
+    let k = j;
+    while (k < n && /\s/.test(attrs[k])) k++;
+    if (attrs[k] !== "=") {
+      out.push({ name, value: null });
+      i = j;
+      continue;
+    }
+    k++;
+    while (k < n && /\s/.test(attrs[k])) k++;
+    const quote = attrs[k];
+    if (quote === '"' || quote === "'") {
+      let e = k + 1;
+      while (e < n && attrs[e] !== quote) e = stepOver(attrs, e);
+      out.push({ name, value: attrs.slice(k + 1, Math.min(e, n)) });
+      i = e + 1;
+    } else {
+      let e = k;
+      while (e < n && !/[\s>]/.test(attrs[e])) e = stepOver(attrs, e);
+      out.push({ name, value: attrs.slice(k, Math.min(e, n)) });
+      i = e;
+    }
+  }
+  return out;
+}
+
+export function hasAttr(attrs: string, name: string): boolean {
+  const want = name.toLowerCase();
+  return parseAttrs(attrs).some((a) => a.name === want);
+}
+
+// The first value of the attribute, "" when it has no value, null when absent.
 export function attrValue(attrs: string, name: string): string | null {
-  const m = new RegExp(`(?:^|[\\s"'}%])${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i").exec(attrs);
-  return m ? (m[2] ?? m[3] ?? m[4] ?? "") : null;
+  const want = name.toLowerCase();
+  const a = parseAttrs(attrs).find((x) => x.name === want);
+  return a ? (a.value ?? "") : null;
 }
 
 // Inserts text right after the tag name, so it is never inside Liquid.
@@ -182,22 +254,34 @@ export function insertAll(src: string, edits: { tag: Tag; attr: string }[]): str
   return out;
 }
 
-const ICON_RENDER = /\{%-?\s*(?:render|include)\s+['"]([^'"]*icon[^'"]*)['"][^%]*-?%\}/gi;
+const RENDER = /\{%-?\s*(?:render|include)\s+['"]([^'"]+)['"][^%]*-?%\}/gi;
 const ICON_ASSET = /\{\{-?\s*['"]([^'"]*icon[^'"]*\.svg)['"]\s*\|\s*inline_asset_content\s*-?\}\}/gi;
+
+// A snippet that draws only an icon: "icon-cart", "icon", "svg-icon",
+// "cart-icon". Names that also draw text ("icon-with-text",
+// "cart-icon-with-count") are not icons.
+export function isIconSnippet(name: string): boolean {
+  return /^(icons?|svg-icons?)([-_]|$)|[-_]icons?$/i.test(name) && !/text|label|count|title|with/i.test(name);
+}
 
 // Icon names used inside an element, for example ["icon-cart"].
 export function iconNames(inner: string): string[] {
-  const names = [...inner.matchAll(ICON_RENDER)].map((m) => m[1]);
+  const names = [...inner.matchAll(RENDER)].map((m) => m[1]).filter(isIconSnippet);
   names.push(...[...inner.matchAll(ICON_ASSET)].map((m) => m[1].replace(/\.svg$/, "")));
   return names;
 }
+
+// Liquid tags that can print text: a snippet, an echo or a section.
+const PRINTS_TEXT = /\{%-?\s*(?:render|include|echo|liquid|sections?|content_for)\b/i;
 
 // True when the element's content gives it no accessible name: only icons,
 // hidden elements, images with empty alt, Liquid logic and whitespace.
 export function hasNoText(inner: string): boolean {
   let t = inner;
   t = t.replace(/\{%-?\s*comment\s*-?%\}[\s\S]*?\{%-?\s*endcomment\s*-?%\}/gi, "");
-  t = t.replace(ICON_RENDER, "").replace(ICON_ASSET, "");
+  t = t.replace(RENDER, (m, name: string) => (isIconSnippet(name) ? "" : m)).replace(ICON_ASSET, "");
+  // Any other snippet, echo or section could print a name: assume it does.
+  if (PRINTS_TEXT.test(t)) return false;
   t = t.replace(/<svg\b[\s\S]*?<\/svg\s*>/gi, "");
   // Elements hidden from assistive tech contribute no name.
   t = t.replace(/<(\w+)\b[^>]*aria-hidden\s*=\s*["']?true["']?[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
