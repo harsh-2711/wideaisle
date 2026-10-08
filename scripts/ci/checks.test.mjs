@@ -74,9 +74,9 @@ describe("claims and writing", () => {
   });
 
   it("flags em dashes in changed text files", () => {
-    write("docs/a.md", "Fine line.\nBad — line.");
-    write("docs/licenses/x.md", "Licence — text");
-    write("img.png", "—");
+    write("docs/a.md", "Fine line.\nBad \u2014 line.");
+    write("docs/licenses/x.md", "Licence \u2014 text");
+    write("img.png", "\u2014");
     const errors = checkWriting(["docs/a.md", "docs/licenses/x.md", "img.png", "gone.md"], root);
     assert.deepEqual(errors, ["docs/a.md:2: em dash; use a period, comma or colon"]);
   });

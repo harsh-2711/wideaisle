@@ -116,7 +116,7 @@ export function checkWriting(files, root = ROOT) {
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
     fs.readFileSync(full, "utf8").split("\n").forEach((line, i) => {
-      if (line.includes("—")) errors.push(`${f}:${i + 1}: em dash; use a period, comma or colon`);
+      if (line.includes("\u2014")) errors.push(`${f}:${i + 1}: em dash; use a period, comma or colon`);
     });
   }
   return errors;
