@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adjustForContrast, contrast, parseHex, toHex } from "../../app/lib/fixers/color";
 import { applyFixes, fixTheme, revertFixes } from "../../app/lib/fixers/engine";
-import { emptyButton, emptyLink, lowContrast, missingAlt, missingLabel, missingLang } from "../../app/lib/fixers/fixers";
+import { attrSafe, emptyButton, emptyLink, lowContrast, missingAlt, missingLabel, missingLang } from "../../app/lib/fixers/fixers";
 import { elementFor, findTags, hasNoText } from "../../app/lib/fixers/liquid-html";
 
 const ctx = {};
@@ -123,6 +123,26 @@ describe("missing-label", () => {
     expect(p.after).toContain('<label>Name <input type="text" name="contact[name]"></label>');
     expect(p.after).toContain('<input type="hidden"');
     expect(p.notes.some((n) => n.startsWith("Needs review"))).toBe(true);
+  });
+});
+
+describe("attribute safety", () => {
+  it("escapes copied text and keeps Liquid intact", () => {
+    expect(attrSafe('Say "hi" & <go>')).toBe("Say &quot;hi&quot; &amp; &lt;go>");
+    expect(attrSafe(`{{ "newsletter.label" | t }}`)).toBe(`{{ 'newsletter.label' | t }}`);
+    expect(attrSafe("Tom &amp; Jerry")).toBe("Tom &amp; Jerry");
+  });
+
+  it("never breaks out of the attribute when a placeholder holds quotes", () => {
+    const src = `<input type="email" placeholder='Your "best" email'>`;
+    const p = missingLabel.fixFile("sections/x.liquid", src, {})!;
+    expect(p.after).toContain('aria-label="Your &quot;best&quot; email"');
+  });
+
+  it("skips images whose source expression holds quotes", () => {
+    const src = `<img src="{{ product.images["front"] | image_url }}">`;
+    const p = missingAlt.fixFile("sections/x.liquid", src, {});
+    expect(p?.after ?? src).not.toContain("alt=");
   });
 });
 

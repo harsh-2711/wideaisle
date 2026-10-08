@@ -12,6 +12,16 @@ function patch(file: string, before: string, after: string, fixer: Fixer, notes:
   return after === before ? null : { file, before, after, type: fixer.type, fixer: fixer.id, notes };
 }
 
+// Makes a value safe inside a double-quoted HTML attribute. Text outside
+// Liquid is HTML-escaped; inside Liquid, double quotes become single quotes,
+// which Liquid treats the same.
+export function attrSafe(value: string): string {
+  return value
+    .split(/(\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\})/)
+    .map((part, i) => (i % 2 === 1 ? part.replace(/"/g, "'") : part.replace(/&(?!(amp|quot|lt|gt|#\d+);)/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")))
+    .join("");
+}
+
 function line(src: string, index: number): number {
   return src.slice(0, index).split("\n").length;
 }
@@ -56,7 +66,7 @@ function nameFixer(id: string, type: "empty-link" | "empty-button", tagName: "a"
           notes.push(`Needs review: <${tagName}> on line ${line(content, tag.start)} has no accessible name and no clue to name it.`);
           continue;
         }
-        edits.push({ tag, attr: `aria-label="${name.value}"` });
+        edits.push({ tag, attr: `aria-label="${attrSafe(name.value)}"` });
         notes.push(`Named the ${name.role} ${tagName === "a" ? "link" : "button"} on line ${line(content, tag.start)} (${name.source}).`);
       }
       if (!edits.length) return notes.length ? { file: path, before: content, after: content, type, fixer: id, notes } : null;
@@ -112,7 +122,7 @@ export const missingLabel: Fixer = {
         notes.push(`Needs review: <${tag.name}> on line ${line(content, tag.start)} has no label and no clue to name it.`);
         continue;
       }
-      edits.push({ tag, attr: `aria-label="${value}"` });
+      edits.push({ tag, attr: `aria-label="${attrSafe(value)}"` });
       notes.push(`Labelled the <${tag.name}> on line ${line(content, tag.start)} from ${source}.`);
     }
     if (!edits.length) return notes.length ? { file: path, before: content, after: content, type: this.type, fixer: this.id, notes } : null;
@@ -134,7 +144,7 @@ export const missingAlt: Fixer = {
       if (/role\s*=\s*["']presentation["']/.test(tag.attrs) || /aria-hidden\s*=\s*["']true["']/.test(tag.attrs)) continue;
       const src = attrValue(tag.attrs, "src") ?? attrValue(tag.attrs, "srcset") ?? "";
       const object = /\{\{-?\s*([a-z_][\w.[\]'"]*?)\s*\|\s*(image_url|img_url|product_img_url|collection_img_url)/i.exec(src)?.[1];
-      if (object && !/^['"]/.test(object)) {
+      if (object && !/['"]/.test(object)) {
         edits.push({ tag, attr: `alt="{{ ${object}.alt | escape }}"` });
         notes.push(`Added alt from ${object}.alt to the image on line ${line(content, tag.start)}. Images with no alt text in the admin also need alt text (Spike C).`);
       } else if (/logo/i.test(tag.attrs)) {
