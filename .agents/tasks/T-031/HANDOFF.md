@@ -21,7 +21,7 @@ Review findings on PR #35 fixed (16 of 16); back in review. Three of four exit c
 | Review 2, 9, 12 to 15: attribute parser, Liquid balance check, doc blocks, snippet text | 6a7ecd4 |
 | Review 6 to 8, 10: alt only from image objects, shop-logo clues, icon-x, keys with variables | 16f3cac |
 | Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | e318ca8 |
-| Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | this commit |
+| Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | ac725af |
 
 ## Current step
 
