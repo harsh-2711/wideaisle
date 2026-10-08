@@ -35,12 +35,17 @@ describe("decisions", () => {
     assert.deepEqual(decisionsUsed("| Decisions used | none |"), []);
   });
 
-  it("fails a task that uses a Pending or unknown decision, unless it is Done", () => {
+  it("fails active tasks that use a Pending or unknown decision; queued, blocked and done tasks may wait", () => {
     write(".agents/tasks/T-001/TASK.md", "| Decisions used | D-05, D-20 |");
+    write(".agents/tasks/T-001/status.json", JSON.stringify({ state: "Running" }));
     write(".agents/tasks/T-002/TASK.md", "| Decisions used | D-99 |");
+    write(".agents/tasks/T-002/status.json", JSON.stringify({ state: "In review" }));
     write(".agents/tasks/T-003/TASK.md", "| Decisions used | D-20 |");
     write(".agents/tasks/T-003/status.json", JSON.stringify({ state: "Done" }));
     write(".agents/tasks/T-004/TASK.md", "| Decisions used | D-01 |");
+    write(".agents/tasks/T-004/status.json", JSON.stringify({ state: "Running" }));
+    write(".agents/tasks/T-005/TASK.md", "| Decisions used | D-20 |");
+    write(".agents/tasks/T-005/status.json", JSON.stringify({ state: "Blocked on you" }));
     const errors = checkDecisions(root);
     assert.equal(errors.length, 2);
     assert.match(errors[0], /T-001 uses D-20, which is still Pending/);
@@ -49,11 +54,20 @@ describe("decisions", () => {
 });
 
 describe("handoff", () => {
-  beforeEach(() => write(".agents/tasks/T-007/status.json", JSON.stringify({ branch: "claude/feat-scanner" })));
+  beforeEach(() => {
+    write(".agents/tasks/T-007/status.json", JSON.stringify({ branch: "claude/feat-scanner", state: "Running" }));
+    write(".agents/tasks/T-008/status.json", JSON.stringify({ branch: "claude/feat-scanner", state: "Queued" }));
+    write(".agents/tasks/T-001/status.json", JSON.stringify({ branch: "claude/feat-scanner", state: "Done" }));
+    write(".agents/tasks/T-009/status.json", JSON.stringify({ branch: "", state: "Queued" }));
+  });
 
   it("requires HANDOFF.md on a task branch with work in it", () => {
     assert.equal(checkHandoff("claude/feat-scanner", ["app/lib/scanner/a.ts"], root).length, 1);
     assert.deepEqual(checkHandoff("claude/feat-scanner", ["app/lib/scanner/a.ts", ".agents/tasks/T-007/HANDOFF.md"], root), []);
+    // Any open task on the branch counts; a Done task with the same branch does not.
+    assert.deepEqual(checkHandoff("claude/feat-scanner", ["app/lib/scanner/a.ts", ".agents/tasks/T-008/HANDOFF.md"], root), []);
+    assert.equal(checkHandoff("claude/feat-scanner", ["app/lib/scanner/a.ts", ".agents/tasks/T-001/HANDOFF.md"], root).length, 1);
+    assert.deepEqual(checkHandoff("", ["app/a.ts"], root), []);
   });
 
   it("ignores branches with no task and task-only changes", () => {
@@ -67,7 +81,8 @@ describe("claims and writing", () => {
     write("app/routes/app._index.tsx", "<p>Your store is now ADA compliant</p>\n<p>We fixed 12 issues</p>");
     write("docs/growth/landing.md", "Become lawsuit-proof today\nQuote: never say certified <!-- claims-ok -->");
     write("docs/research/legal-brief.md", "Vendors claim to make sites compliant.");
-    const errors = checkClaims(["app/routes/app._index.tsx", "docs/growth/landing.md", "docs/research/legal-brief.md"], root);
+    write("app/routes/b.tsx", "<p>We are not certified and never claim to be ADA compliant.</p>\n<p>Overlays leave sites non-compliant.</p>");
+    const errors = checkClaims(["app/routes/app._index.tsx", "docs/growth/landing.md", "docs/research/legal-brief.md", "app/routes/b.tsx"], root);
     assert.equal(errors.length, 2);
     assert.match(errors[0], /app\._index\.tsx:1/);
     assert.match(errors[1], /landing\.md:1/);

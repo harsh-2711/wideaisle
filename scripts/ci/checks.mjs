@@ -34,6 +34,8 @@ export function decisionsUsed(taskMd) {
   return [...row.matchAll(/D-\d+/g)].map((m) => m[0]);
 }
 
+const ACTIVE = new Set(["Running", "In review", "Stalled"]);
+
 export function checkDecisions(root = ROOT) {
   const index = path.join(root, "decisions", "INDEX.md");
   const statuses = parseDecisionIndex(fs.readFileSync(index, "utf8"));
@@ -45,7 +47,9 @@ export function checkDecisions(root = ROOT) {
     const statusFile = path.join(tasksDir, id, "status.json");
     if (!fs.existsSync(taskFile)) continue;
     const state = fs.existsSync(statusFile) ? JSON.parse(fs.readFileSync(statusFile, "utf8")).state : "Queued";
-    if (state === "Done") continue;
+    // Only work in progress is blocked; a queued or blocked task may wait on
+    // a Pending decision.
+    if (!ACTIVE.has(state)) continue;
     for (const d of decisionsUsed(fs.readFileSync(taskFile, "utf8"))) {
       if (!statuses[d]) errors.push(`${id} uses ${d}, which is not in decisions/INDEX.md`);
       else if (statuses[d] === "Pending") errors.push(`${id} uses ${d}, which is still Pending. Wait for the owner's decision.`);
@@ -62,29 +66,33 @@ function git(args, root = ROOT) {
 }
 
 export function changedFiles(base, root = ROOT) {
-  return git(["diff", "--name-only", `${base}...HEAD`], root).split("\n").filter(Boolean);
+  // -z keeps non-ASCII paths unquoted.
+  return git(["diff", "-z", "--name-only", `${base}...HEAD`], root).split("\0").filter(Boolean);
 }
 
-export function taskForBranch(branch, root = ROOT) {
+// Open tasks whose branch is this one. Several tasks may share a branch.
+export function tasksForBranch(branch, root = ROOT) {
   const tasksDir = path.join(root, ".agents", "tasks");
-  if (!fs.existsSync(tasksDir)) return null;
+  if (!branch || !fs.existsSync(tasksDir)) return [];
+  const ids = [];
   for (const id of fs.readdirSync(tasksDir)) {
     const f = path.join(tasksDir, id, "status.json");
     if (!fs.existsSync(f)) continue;
     try {
-      if (JSON.parse(fs.readFileSync(f, "utf8")).branch === branch) return id;
+      const s = JSON.parse(fs.readFileSync(f, "utf8"));
+      if (s.branch === branch && s.state !== "Done") ids.push(id);
     } catch {}
   }
-  return null;
+  return ids.sort();
 }
 
 export function checkHandoff(branch, files, root = ROOT) {
-  const id = taskForBranch(branch, root);
-  if (!id) return [];
-  const handoff = `.agents/tasks/${id}/HANDOFF.md`;
-  const work = files.filter((f) => !f.startsWith(`.agents/tasks/${id}/`));
-  if (work.length && !files.includes(handoff)) {
-    return [`Branch ${branch} is task ${id}, but this pull request does not update ${handoff}.`];
+  const ids = tasksForBranch(branch, root);
+  if (!ids.length) return [];
+  const work = files.filter((f) => !ids.some((id) => f.startsWith(`.agents/tasks/${id}/`)));
+  const updated = ids.some((id) => files.includes(`.agents/tasks/${id}/HANDOFF.md`));
+  if (work.length && !updated) {
+    return [`Branch ${branch} belongs to ${ids.join(", ")}, but this pull request updates none of their HANDOFF.md files.`];
   }
   return [];
 }
@@ -92,6 +100,8 @@ export function checkHandoff(branch, files, root = ROOT) {
 // ---------- claims and writing ----------
 
 const BANNED_CLAIMS = /\b(ada[- ]compliant|wcag[- ]compliant|fully compliant|compliant|certified|lawsuit[- ]proof|100% accessible|guarantee[sd]? (compliance|accessibility))\b/i;
+// Saying what something is not ("not certified", "non-compliant") is allowed.
+const NEGATED = /\b(non-?|not\s+(\w+\s+){0,4}|never\s+(\w+\s+){0,4}|no\s+)(ada[- ]|wcag[- ]|fully )?(compliant|certified|lawsuit[- ]proof)/gi;
 // Where a claim would reach a merchant: app UI and marketing drafts.
 const CLAIM_PATHS = [/^app\/routes\//, /^app\/components\//, /^docs\/growth\//, /^extensions\//];
 const CLAIM_ALLOW = /claims-ok/; // a line may opt out, for example to quote what we never say
@@ -102,7 +112,7 @@ export function checkClaims(files, root = ROOT) {
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
     fs.readFileSync(full, "utf8").split("\n").forEach((line, i) => {
-      if (BANNED_CLAIMS.test(line) && !CLAIM_ALLOW.test(line)) errors.push(`${f}:${i + 1}: banned claim (D-06): ${line.trim().slice(0, 120)}`);
+      if (BANNED_CLAIMS.test(line.replace(NEGATED, "")) && !CLAIM_ALLOW.test(line)) errors.push(`${f}:${i + 1}: banned claim (D-06): ${line.trim().slice(0, 120)}`);
     });
   }
   return errors;

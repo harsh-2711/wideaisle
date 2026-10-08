@@ -3,3 +3,10 @@
 /app/db/ @harsh-2711
 /drizzle/ @harsh-2711
 /decisions/ @harsh-2711
+/.github/ @harsh-2711
+/scripts/ci/ @harsh-2711
+/.claude/ @harsh-2711
+/AGENTS.md @harsh-2711
+/CLAUDE.md @harsh-2711
+/shopify.app.toml @harsh-2711
+/app/routes/webhooks.* @harsh-2711
