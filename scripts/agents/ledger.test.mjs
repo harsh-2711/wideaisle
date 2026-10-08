@@ -238,6 +238,61 @@ describe("events", () => {
   });
 });
 
+describe("handoff lint", () => {
+  // Builds a handoff from HANDOFF_SECTIONS, so the test does not depend on
+  // the template file. body overrides a section's text; omit drops sections.
+  function handoff({ body = {}, omit = [] } = {}) {
+    const text = {
+      "Done so far": "| Step | Commit |\n|---|---|\n| 1. Write the check | abc1234 |",
+      "Current step": "2. Tests for the check.",
+      ...body,
+    };
+    const parts = L.HANDOFF_SECTIONS.filter((s) => !omit.includes(s)).map((s) => `## ${s}\n\n${text[s] ?? "Some text."}\n`);
+    return `# Handoff: T-900 Test\n\n${parts.join("\n")}`;
+  }
+  const notStarted = { "Current step": "Not started.", "Done so far": "| Step | Commit |\n|---|---|" };
+
+  it("passes a complete handoff with a commit while Running", () => {
+    assert.deepEqual(L.lintHandoff(handoff(), "Running"), []);
+  });
+
+  it("names each missing section", () => {
+    for (const name of L.HANDOFF_SECTIONS) {
+      assert.deepEqual(L.lintHandoff(handoff({ omit: [name] })), [`missing section: ${name}`]);
+    }
+    const all = L.lintHandoff("# Handoff: T-900 Test\n");
+    assert.deepEqual(all, L.HANDOFF_SECTIONS.map((s) => `missing section: ${s}`));
+  });
+
+  it("reports a (fill in) placeholder", () => {
+    const text = handoff({ body: { "Next three steps": "1. Read TASK.md.\n2. (fill in)\n3. (fill in)" } });
+    assert.deepEqual(L.lintHandoff(text, "Running"), ["placeholder left: (fill in)"]);
+  });
+
+  it("reports Running with Not started as the current step", () => {
+    const text = handoff({ body: { "Current step": "Not started." } });
+    assert.deepEqual(L.lintHandoff(text, "Running"), ["state is Running but the current step says Not started"]);
+  });
+
+  it("reports In review with an empty Done so far table", () => {
+    const text = handoff({ body: { "Done so far": "| Step | Commit |\n|---|---|" } });
+    assert.deepEqual(L.lintHandoff(text, "In review"), ["state is In review but Done so far lists no commit"]);
+  });
+
+  it("checks Stalled like Running", () => {
+    assert.deepEqual(L.lintHandoff(handoff({ body: notStarted }), "Stalled"), [
+      "state is Stalled but the current step says Not started",
+      "state is Stalled but Done so far lists no commit",
+    ]);
+  });
+
+  it("skips the state checks for Queued and Done", () => {
+    for (const state of ["Queued", "Done"]) {
+      assert.deepEqual(L.lintHandoff(handoff({ body: notStarted }), state), []);
+    }
+  });
+});
+
 describe("planSync", () => {
   const project = {
     fields: {
