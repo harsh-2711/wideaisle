@@ -18,9 +18,9 @@ Prove a fresh agent can resume a task stopped mid-step from HANDOFF.md alone.
 
 Each one is a test or a check someone can run.
 
-- [ ] A test task stopped mid-step is finished by a fresh agent
-- [ ] At most one step is lost
-- [ ] Report filed in children/
+- [x] A test task stopped mid-step is finished by a fresh agent
+- [x] At most one step is lost
+- [x] Report filed in children/
 
 ## Out of scope
 

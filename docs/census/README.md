@@ -5,12 +5,12 @@ The census finds about 2,000 live Shopify stores, reads each store's public them
 ## Rules it follows
 
 - Public storefront pages only. No logins, no admin, no checkout.
-- robots.txt first. Disallowed pages are skipped and logged. A 5xx or unreachable robots.txt means stay out.
-- At least 2 seconds between requests to one store, more if robots.txt sets Crawl-delay.
+- robots.txt first, matched by our product token `WideAisleCensus`. Disallowed pages are skipped and logged. A 5xx, a 429 or an unreachable robots.txt means stay out; a later run retries. Every redirect hop is checked against robots.txt too.
+- At least 2 seconds between page loads on one store, more if robots.txt sets Crawl-delay. Redirect hops are spaced like page loads. A store that asks for more than 30 seconds is skipped. The browser loads a page's scripts and styles together, as any visitor would, but not its images or media.
 - A user agent that names the project and a contact address (Q-02). The crawler refuses to run without one.
 - Results stay private in `data/` (gitignored). Only summaries are committed.
 - Public addresses only, on ports 80 and 443. A host is resolved once, every address is checked, and the connection goes to a checked address, so a second DNS answer cannot point at a private one. IPv6 must be global unicast (2000::/3), without the documentation, Teredo and 6to4 ranges.
-- The scan browser sends every request through a local egress proxy (`app/lib/scanner/egress.ts`) that applies the same checks. Service workers and WebSockets are off, and WebRTC may not send UDP around the proxy. Hosts the proxy refused are listed in each scan record as `blockedHosts`.
+- The scan browser sends every request through a local egress proxy (`app/lib/scanner/egress.ts`) that applies the same checks. Service workers, WebSockets and WebRTC are off; WebRTC is removed from every page because its UDP traffic would not go through the proxy. Main-frame navigations stay on the store's site. Hosts the proxy refused are listed in each scan record as `blockedHosts`.
 
 ## What it waits on
 
@@ -30,7 +30,7 @@ CENSUS_CONTACT=you@example.com npm run census -- discover --input tranco.csv --o
 CENSUS_CONTACT=you@example.com npm run census -- scan --input data/census/stores.jsonl --out data/census/scans.jsonl --limit 2000 --concurrency 4
 ```
 
-Both steps resume: stores already in the output file are skipped, so a stopped run can be restarted.
+Both steps resume: stores already in the output file are skipped, so a stopped run can be restarted. Records for errors that may pass (robots.txt unreachable, a 5xx, a crash) carry `retry: true` and are tried again, up to 3 times. `--delay` cannot go below 2000 ms.
 
 ```bash
 # 4. Write the gap report (T-021). Only this summary is committed.
@@ -41,8 +41,8 @@ Time, from the 2-second gap and 4 to 6 requests a store: about 10 to 15 seconds 
 
 ## Output
 
-`stores.jsonl`, one line per domain: whether it is Shopify, theme name, schema name, version, Theme Store id, and the apps whose scripts load.
+`stores.jsonl`, one line per attempt for each domain (a retried domain has several; readers take the last one, see `latest()`): whether it is Shopify, theme name, schema name, version, Theme Store id, and the apps whose scripts load.
 
-`scans.jsonl`, one line per store: per page, axe violations by rule with node counts, counts for the six v1 types, a guess at each node's source (theme, app or unknown), and three sample nodes per rule.
+`scans.jsonl`, one line per attempt for each store (readers take the last one): per page, axe violations by rule with node counts, counts for the six v1 types, a guess at each node's source (theme, app or unknown), and three sample nodes per rule.
 
 `gap-report.md`: theme share among Shopify stores, how often each of the six types appears, the most common failure patterns, the apps behind the most failures, and whether each pattern needs a theme patch, a content edit or an app change.

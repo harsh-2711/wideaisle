@@ -23,7 +23,9 @@ export interface PageScan {
 }
 
 // App blocks and app embeds render inside these wrappers.
-const APP_MARKERS = /shopify-app-block|shopify-block-.*__app|#shopify-section-.*apps?|\[data-app\]|klaviyo|judgeme|jdgm|yotpo|loox|privy|omnisend|rebuy|recharge|afterpay|klarna|tidio|gorgias|acsb|userway/i;
+// Section and block ids are anchored so theme classes such as
+// "media-wrapper" or "card-wrapper" are not read as apps.
+const APP_MARKERS = /shopify-app-block|shopify-block-[^\s>]*__app|#shopify-section-[^\s>]*__apps?(?![a-z0-9])|\[data-app\]|klaviyo|judgeme|jdgm|yotpo|loox|privy|omnisend|rebuy|recharge|afterpay|klarna|tidio|gorgias|acsb|userway/i;
 
 export function sourceOf(target: string, html: string): Source {
   if (APP_MARKERS.test(target) || APP_MARKERS.test(html)) return "app";

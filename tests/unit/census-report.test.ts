@@ -69,6 +69,6 @@ describe("gap report", () => {
     const md = renderReport(buildReport(stores, scans), "2026-10-08");
     expect(md).toContain("## Proposed v1 themes (D-08)");
     expect(md).toContain("| Dawn | 2 | 50.0% |");
-    expect(md).not.toContain("—");
+    expect(md).not.toContain("\u2014");
   });
 });

@@ -2,12 +2,12 @@
   "title": "Resume test from HANDOFF.md",
   "milestone": "M0",
   "lane": "ledger",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "planner",
+  "state": "In review",
+  "step": "done; lead to decide on lint-handoff --all findings",
   "branch": "claude/test-handoff-resume",
   "issue": 14,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T07:01:24Z",
   "id": "T-008"
 }

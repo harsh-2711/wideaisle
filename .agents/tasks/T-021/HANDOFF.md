@@ -8,7 +8,7 @@ See TASK.md. Failures by theme and by app; share inside the six types; what a th
 
 ## Status
 
-In review, stacked on T-020 (harsh-2711/wideaisle#34). The generator is tested on fixture data. The real report waits on the census run (T-020, Q-01, Q-02). Last updated 2026-10-08.
+In review. T-020 merged in harsh-2711/wideaisle#34 and main is merged in. The generator is tested on fixture data. The real report waits on the census run (T-020, Q-01, Q-02). Last updated 2026-10-08.
 
 ## Done so far
 
@@ -19,11 +19,11 @@ In review, stacked on T-020 (harsh-2711/wideaisle#34). The generator is tested o
 
 ## Current step
 
-Wait for T-020 to merge, merge main, then open the pull request.
+Pull request review, then merge.
 
 ## Next three steps
 
-1. After T-020 merges: merge main into this branch, open the pull request, review, merge.
+1. Review and merge the pull request.
 2. Set the state to Blocked on you with needs Q-01, Q-02 (through T-020).
 3. After the census run: `npm run census -- report ...` (docs/census/README.md), commit docs/census/gap-report.md, and feed the top themes into D-08.
 
@@ -49,3 +49,4 @@ npx vitest run tests/unit/census-report.test.ts
 ## Lessons and gotchas
 
 - The source guess (theme, app, unknown) is a heuristic from selectors and markup. Treat app shares as a lower bound.
+- Census output files can hold several lines per domain after retries. The report reads the last one (latest()).

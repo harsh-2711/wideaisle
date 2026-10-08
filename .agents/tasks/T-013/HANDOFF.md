@@ -4,30 +4,33 @@ Update after every step, before compaction, before stopping and before handing o
 
 ## Goal and exit criteria
 
-See TASK.md. The written policy behind D-06 with allowed and banned sentences.
+See TASK.md. A written claims policy for D-06: words we never use, what we may say, and the evidence behind each claim.
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Claims policy draft | 2f267f9 |
+| Reviewer fixes: describes the existing CI claims check and its gaps, "audit" banned, "failures automated tools can detect" wording, items pending lawyer questions 4 and 11, D-06 scope and hype-word source corrected | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Not started.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After merge, set the state to Blocked on you with needs Q-23.
+2. The owner approves the policy (Q-23).
+3. Planner follow-up: widen the claims check in scripts/ci/checks.mjs to the policy's word list and folders (see "How we enforce it").
 
 ## Blockers and open questions
 
-- None yet.
+- Q-23: the owner's approval is an exit criterion.
+- The cloud environment blocks most sites (Q-01). Sources marked "via search, not opened" were read through search results only.
 
 ## Decisions used
 
@@ -35,12 +38,12 @@ D-06
 
 ## Files touched
 
-- None yet.
+- docs/policy/claims-policy.md
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- node scripts/ci/checks.mjs claims --base origin/main
 
 ## Lessons and gotchas
 
-- None yet.
+- Mark every source as opened or via search, with the date checked.
