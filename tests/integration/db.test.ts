@@ -59,6 +59,8 @@ describe.skipIf(!url)("Postgres", () => {
             "x-shopify-hmac-sha256": createHmac("sha256", secret).update(body).digest("base64"),
             "x-shopify-shop-domain": "gone.myshopify.com",
             "x-shopify-topic": topic,
+            "x-shopify-triggered-at": new Date().toISOString(),
+            "x-shopify-webhook-id": `${topic}-${secret}-${Math.random()}`,
           },
         }),
       }) as never;
@@ -73,6 +75,7 @@ describe.skipIf(!url)("Postgres", () => {
     expect((await uninstalled.action(signed("app/uninstalled"))).status).toBe(200);
     expect(await count()).toBe(0);
 
+    expect((await uninstalled.action(signed("shop/redact"))).status).toBe(401);
     await insert("offline_gone_2");
     expect((await compliance.action(signed("customers/redact"))).status).toBe(200);
     expect(await count()).toBe(1);

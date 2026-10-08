@@ -7,7 +7,7 @@ import { verifyShopifyWebhook } from "../lib/webhooks/verify.server";
 // Verified by HMAC only: after an uninstall the shop's token is gone, so the
 // library's session load and token refresh would fail before this runs.
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "");
+  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "", { topics: ["app/uninstalled"] });
   if (!hook) return new Response("Unauthorized", { status: 401 });
 
   console.log(`Received ${hook.topic} webhook for ${hook.shop}`);
