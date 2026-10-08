@@ -43,3 +43,14 @@ D-05
 ## Files touched
 
 - app/, drizzle/, scripts/migrate.mjs, tests/, Dockerfile, docker-compose.yml, shopify.app.toml, package.json
+
+## How to verify
+
+- `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` pass.
+- With Postgres up (`npm run db:up`) and DATABASE_URL set, `REQUIRE_DATABASE=1 npx vitest run tests/integration` stores a session in Postgres. CI runs the same job.
+- `npm run test:a11y` passes after `npx playwright install chromium`.
+
+## Lessons and gotchas
+
+- The integration test skips when DATABASE_URL is unset. Set REQUIRE_DATABASE=1 to make a missing database fail instead, as CI does.
+- These two sections were dropped in 090077a and restored by T-008.
