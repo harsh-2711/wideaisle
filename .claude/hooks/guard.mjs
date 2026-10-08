@@ -22,6 +22,26 @@ const READERS = new Set([
   "nl", "sort", "uniq", "cut", "paste", "tr", "wc", "jq", "yq", "python", "python3", "node", "openssl",
 ]);
 const PATTERN_FIRST = new Set(["grep", "egrep", "fgrep", "rg", "ag", "sed", "awk", "jq", "yq"]);
+// Options that take a value, per command, so the value is not mistaken for a
+// file or a pattern. Anything not listed is a boolean flag.
+const VALUE_FLAGS = {
+  grep: ["-e", "-f", "-A", "-B", "-C", "-m", "-d", "-D", "--regexp", "--file", "--max-count", "--include", "--exclude", "--exclude-dir", "--label"],
+  rg: ["-e", "-f", "-A", "-B", "-C", "-m", "-g", "-t", "-T", "-j", "-M", "-E", "--regexp", "--file", "--glob", "--type", "--type-not", "--max-count"],
+  ag: ["-A", "-B", "-C", "-m", "-G", "--file-search-regex"],
+  head: ["-n", "-c", "--lines", "--bytes"],
+  tail: ["-n", "-c", "--lines", "--bytes"],
+  cut: ["-d", "-f", "-c", "-b"],
+  sed: ["-e", "-f", "-l", "--expression", "--file"],
+  awk: ["-f", "-v", "-F"],
+  sort: ["-k", "-t", "-o", "-S", "-T"],
+  jq: ["--arg", "--argjson", "--slurpfile", "--rawfile", "-f", "--from-file"],
+  diff: ["-U", "-C", "--label"],
+  openssl: ["-in", "-out", "-pass"],
+};
+VALUE_FLAGS.egrep = VALUE_FLAGS.grep;
+VALUE_FLAGS.fgrep = VALUE_FLAGS.grep;
+// Environment variables that change how git or the commit hooks behave.
+const RISKY_ENV = /^(GIT_CONFIG\w*|GIT_DIR|GIT_WORK_TREE|GIT_EXEC_PATH|GIT_SSH(_COMMAND)?|HUSKY|HUSKY_SKIP_HOOKS|SKIP_HOOKS)=/;
 const RESERVED = new Set(["if", "then", "elif", "else", "fi", "do", "done", "while", "until", "for", "in", "case", "esac", "!", "time", "coproc", "select", "function", "{", "}"]);
 const ENV_CANDIDATES = [".env", ".env.local", ".env.development", ".env.production", ".env.test", ".env.staging"];
 
@@ -309,6 +329,7 @@ export function argv(seg) {
   while (args.length && changed) {
     changed = false;
     if (/^HUSKY=0$/.test(args[0])) return { args: ["husky-off"], redirects };
+    if (RISKY_ENV.test(args[0]) && !/^HUSKY=1$/.test(args[0])) return { args: ["risky-env"], redirects };
     if (/^[A-Za-z_]\w*=/.test(args[0]) || RESERVED.has(args[0])) {
       args.shift();
       changed = true;
@@ -334,6 +355,7 @@ export function argv(seg) {
       const valueFlags = WRAPPER_VALUE_FLAGS[w] ?? new Set();
       while (args.length && (args[0].startsWith("-") || (w === "env" && /^[A-Za-z_]\w*=/.test(args[0])))) {
         if (/^HUSKY=0$/.test(args[0])) return { args: ["husky-off"], redirects };
+        if (RISKY_ENV.test(args[0]) && !/^HUSKY=1$/.test(args[0])) return { args: ["risky-env"], redirects };
         const f = args.shift();
         if (w === "env" && (f === "-S" || f.startsWith("--split-string"))) {
           splitString = f.includes("=") ? f.split("=").slice(1).join("=") : args.shift();
@@ -385,7 +407,7 @@ function positionals(args, valueFlags = new Set()) {
 // ---------- git ----------
 
 const GIT_GLOBAL_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env", "--super-prefix"]);
-const RISKY_CONFIG = /^(alias\.|core\.hookspath|core\.sshcommand|core\.fsmonitor|core\.editor|sequence\.editor|credential\.)/i;
+const RISKY_CONFIG = /^(alias\.|core\.hookspath|core\.sshcommand|core\.fsmonitor|core\.editor|core\.pager|sequence\.editor|credential\.|include\.|includeif\.)/i;
 
 function checkGit(args) {
   let k = 0;
@@ -547,13 +569,14 @@ export function isEnvFile(p) {
 
 function checkSecrets(cmd, args, redirects, words) {
   const rest = args.slice(1);
-  const pos = positionals(rest, new Set(["-e", "-f", "--file", "--regexp", "-A", "-B", "-C", "-m", "--max-count", "-d", "-D", "--include", "--exclude", "-g", "--glob", "-t", "--type", "-n", "-c"].filter((x) => !(cmd === "cat" && (x === "-n")))));
+  const pos = positionals(rest, new Set(VALUE_FLAGS[cmd] ?? []));
   if (redirects.some((r) => /<|<>/.test(r.op) && !r.op.includes("<<") && isEnvFile(r.target))) {
     return block("Reading .env files is blocked. Use .env.example for variable names.");
   }
   if (READERS.has(cmd)) {
     let files = pos;
-    if (PATTERN_FIRST.has(cmd) && !rest.some((a) => a === "-e" || a === "-f" || a.startsWith("--regexp"))) files = pos.slice(1);
+    const patternFromFlag = rest.some((a) => ["-e", "-f", "--regexp", "--file", "--expression", "--from-file"].includes(a.split("=")[0]));
+    if (PATTERN_FIRST.has(cmd) && !patternFromFlag) files = pos.slice(1);
     if (["cp", "scp", "rsync", "mv"].includes(cmd)) files = pos.slice(0, -1);
     if (files.some(isEnvFile)) return block("Reading .env files is blocked. Use .env.example for variable names.");
     if (files.some((p) => /\/proc\/[^/]+\/environ$/.test(p))) return block("Reading a process environment is blocked.");
@@ -649,12 +672,28 @@ function scriptCommand(args) {
 
 // ---------- main check ----------
 
+// True when the command's first word is not written out: a variable, an
+// xargs placeholder or a substitution. Its real command is unknown.
+function runsDynamicCode(text) {
+  let segs;
+  try {
+    segs = parse(text, LIMITS.depth - 1);
+  } catch {
+    return true;
+  }
+  return segs.some((s) => {
+    const first = argv(s).args[0];
+    return first !== undefined && (/^\$|\$SUB/.test(first) || first.includes("{}") || first === "%");
+  });
+}
+
 function checkArgs(args, redirects, env, depth, seg) {
   if (!args.length) return null;
   const cmd = args[0];
   const rest = args.slice(1);
 
   if (cmd === "husky-off") return block("HUSKY=0 skips the commit hooks. Fix what the hook reports.");
+  if (cmd === "risky-env") return block("Setting GIT_CONFIG_*, GIT_DIR or hook variables is blocked. They change what git and the hooks do.");
   const runner = unwrapRunner(args);
   if (runner) return checkArgs(runner, redirects, env, depth + 1, seg);
   const script = scriptCommand(args);
@@ -670,10 +709,14 @@ function checkArgs(args, redirects, env, depth, seg) {
     const ci = rest.findIndex((a) => /^-\w*c\w*$/.test(a));
     if (ci >= 0) {
       if (rest[ci + 1] === undefined) return block("A shell -c with no command is blocked.");
+      if (runsDynamicCode(rest[ci + 1])) return block("A shell -c whose command comes from a variable, a placeholder or a substitution is blocked. Write the command out.");
       const r = checkCommand(rest[ci + 1], env, depth + 1);
       if (!r.allow) return r;
     } else if (seg) {
       const scriptFile = positionals(rest, new Set(["-o", "+o", "-O", "+O", "--rcfile", "--init-file"]))[0];
+      if (scriptFile && /\$SUB|^\/dev\/(stdin|fd\/)|^\/proc\/self\/fd\//.test(scriptFile)) {
+        return block("Running a script from stdin, a file descriptor or a substitution is blocked. Save it to a file, read it, then run it.");
+      }
       for (const body of seg.heredocs) {
         const r = checkCommand(body, env, depth + 1);
         if (!r.allow) return r;
@@ -694,9 +737,13 @@ function checkArgs(args, redirects, env, depth, seg) {
       }
     }
   }
-  if (cmd === "eval" || cmd === "source" && false) {
+  if (cmd === "eval") {
+    if (runsDynamicCode(rest.join(" "))) return block("eval of a variable, a placeholder or a substitution is blocked. Write the command out.");
     const r = checkCommand(rest.join(" "), env, depth + 1);
     if (!r.allow) return r;
+  }
+  if ((cmd === "source" || cmd === ".") && rest.some((a) => /\$SUB|^\/dev\/(stdin|fd\/)|^\/proc\/self\/fd\//.test(a))) {
+    return block("Sourcing stdin, a file descriptor or a substitution is blocked.");
   }
 
   return (
