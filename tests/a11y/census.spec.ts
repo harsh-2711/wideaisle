@@ -116,3 +116,43 @@ try {
     udp.close();
   }
 });
+
+test("browser redirects are vetted before the browser requests them", async ({ browser }) => {
+  const hits: string[] = [];
+  const server = http.createServer((req, res) => {
+    hits.push(req.url ?? "");
+    const redirects: Record<string, string> = { "/a": "/b", "/c": "/secret", "/d": `http://localhost:${port}/x` };
+    if (req.url === "/robots.txt") return res.end("User-agent: *\nDisallow: /secret\n");
+    const to = redirects[req.url ?? ""];
+    if (to) {
+      res.writeHead(302, { location: to });
+      return res.end();
+    }
+    res.writeHead(200, { "content-type": "text/html" });
+    // A page script tries to navigate somewhere the scan did not ask for.
+    res.end(`<!doctype html><html lang="en"><title>b</title><script>setTimeout(() => { location.href = "/e"; }, 10)</script></html>`);
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const port = (server.address() as { port: number }).port;
+  const origin = `http://127.0.0.1:${port}`;
+  const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 0, allowPrivate: true });
+  const ctx = await openScanContext(browser, client, `127.0.0.1:${port}`);
+  try {
+    const page = await ctx.context.newPage();
+    expect(await client.pageTurn(origin + "/a")).toBeNull();
+    const ok = await ctx.goto(page, origin + "/a");
+    expect("res" in ok && ok.res?.status()).toBe(200);
+    expect("url" in ok && ok.url).toBe(origin + "/b");
+    await page.waitForTimeout(300);
+
+    expect(await ctx.goto(page, origin + "/c")).toMatchObject({ skip: expect.stringMatching(/robots.txt disallows .*\/secret/) });
+    expect(await ctx.goto(page, origin + "/d")).toMatchObject({ skip: expect.stringMatching(/another site/) });
+
+    expect(hits).not.toContain("/secret");
+    expect(hits).not.toContain("/x");
+    expect(hits).not.toContain("/e");
+  } finally {
+    await ctx.close();
+    server.close();
+  }
+});

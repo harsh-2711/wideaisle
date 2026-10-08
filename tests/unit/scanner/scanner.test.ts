@@ -55,10 +55,22 @@ Disallow: /collections/*sort_by*
     expect(parseRobots("User-agent: WideAisleCensus/0.1\nDisallow: /", ua).isAllowed("/")).toBe(false);
   });
 
-  it("keeps a group together across Crawl-delay and Sitemap lines", () => {
-    const r = parseRobots("User-agent: other\nCrawl-delay: 1\nSitemap: https://s.example/sitemap.xml\nUser-agent: WideAisleCensus\nDisallow: /private", "WideAisleCensus/0.1");
+  it("keeps a group together across Sitemap lines, and ends it at Crawl-delay", () => {
+    const r = parseRobots("User-agent: other\nSitemap: https://s.example/sitemap.xml\nUser-agent: WideAisleCensus\nDisallow: /private", "WideAisleCensus/0.1");
     expect(r.isAllowed("/private/x")).toBe(false);
-    expect(r.crawlDelaySeconds).toBe(1);
+    // Another bot's lower Crawl-delay must not replace ours.
+    const d = parseRobots("User-agent: *\nCrawl-delay: 10\nUser-agent: bingbot\nCrawl-delay: 5", "WideAisleCensus/0.1");
+    expect(d.crawlDelaySeconds).toBe(10);
+    const mine = parseRobots("User-agent: WideAisleCensus\nCrawl-delay: 20\nUser-agent: Pinterest\nCrawl-delay: 1", "WideAisleCensus/0.1");
+    expect(mine.crawlDelaySeconds).toBe(20);
+    const bad = parseRobots("User-agent: *\nCrawl-delay: 2\nUser-agent: BadBot\nDisallow: /", "WideAisleCensus/0.1");
+    expect(bad.isAllowed("/")).toBe(true);
+  });
+
+  it("compares non-ASCII rules in percent-encoded form", () => {
+    const r = parseRobots("User-agent: *\nDisallow: /café", "WideAisleCensus/0.1");
+    expect(r.isAllowed(new URL("https://s.example/café").pathname)).toBe(false);
+    expect(r.isAllowed("/cafe")).toBe(true);
   });
 
   it("matches wildcards without backtracking blow-up", () => {

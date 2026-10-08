@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { chromium, type Browser, type BrowserContext, type Request, type Response } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
@@ -136,6 +136,11 @@ function noWebRtc() {
 export interface ScanContext {
   context: BrowserContext;
   proxy: EgressProxy;
+  // Loads a page the way PoliteClient fetches one: every redirect hop is
+  // checked against robots.txt and the store's site, and gets its own slot,
+  // before the browser requests it. The first URL must already have had its
+  // turn (client.pageTurn).
+  goto(page: Page, url: string): Promise<{ res: Response | null; url: string } | { skip: string; retry: boolean }>;
   close(): Promise<void>;
 }
 
@@ -146,6 +151,8 @@ export interface ScanContext {
 // does not need them, and the store's servers are spared.
 export async function openScanContext(browser: Browser, client: PoliteClient, domain: string): Promise<ScanContext> {
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
+  // The one main-frame navigation the scan asked for, and where it redirected.
+  const nav: { expected: string | null; redirect: string | null } = { expected: null, redirect: null };
   let context: BrowserContext | undefined;
   try {
     context = await browser.newContext({
@@ -155,14 +162,28 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
     });
     await context.addInitScript(noWebRtc);
     await context.routeWebSocket(/.*/, (ws) => ws.close());
-    await context.route("**/*", (route) => {
+    await context.route("**/*", async (route) => {
       const req = route.request();
       if (["image", "media"].includes(req.resourceType())) return route.abort("blockedbyclient");
-      // The main frame stays on the store's site.
-      if (req.isNavigationRequest() && req.frame().parentFrame() === null && !sameSite(domain, new URL(req.url()).host)) {
-        return route.abort("blockedbyclient");
+      if (!req.isNavigationRequest() || req.frame().parentFrame() !== null) return route.continue();
+      // Main-frame navigations: only the one the scan asked for, on the
+      // store's site. Anything else gets an empty 204, which keeps the page
+      // where it is (an abort would leave an error page behind).
+      const url = new URL(req.url()).href;
+      if (url !== nav.expected || !sameSite(domain, new URL(url).host)) return route.fulfill({ status: 204 });
+      nav.expected = null;
+      try {
+        // Fetch without following redirects, so the scan can vet each hop.
+        const res = await route.fetch({ maxRedirects: 0 });
+        const location = res.headers()["location"];
+        if (res.status() >= 300 && res.status() < 400 && location) {
+          nav.redirect = new URL(location, url).href;
+          return route.fulfill({ status: 200, contentType: "text/html", body: "" });
+        }
+        return route.fulfill({ response: res });
+      } catch {
+        return route.fulfill({ status: 502, contentType: "text/plain", body: "" });
       }
-      return route.continue();
     });
   } catch (err) {
     await context?.close();
@@ -173,25 +194,28 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
   return {
     context: ctx,
     proxy,
+    async goto(page, url) {
+      let current = url;
+      for (let hop = 0; hop <= 5; hop++) {
+        if (hop > 0) {
+          const host = new URL(current).host;
+          if (!sameSite(domain, host)) return { skip: `redirected to another site (${host})`, retry: false };
+          const skip = await client.pageTurn(current);
+          if (skip) return { skip: describeSkip(skip), retry: skip.retry };
+        }
+        nav.expected = new URL(current).href;
+        nav.redirect = null;
+        const res = await page.goto(current, { waitUntil: "load", timeout: 30000 });
+        if (!nav.redirect) return { res, url: current };
+        current = nav.redirect;
+      }
+      return { skip: "too many redirects", retry: false };
+    },
     close: async () => {
       await ctx.close();
       await proxy.close();
     },
   };
-}
-
-// Redirects inside the browser are followed without a route callback, so
-// check every hop after the fact and drop the page if a hop was off-limits.
-async function badRedirect(res: Response, client: PoliteClient, domain: string): Promise<string | null> {
-  const hops: string[] = [];
-  for (let req: Request | null = res.request(); req; req = req.redirectedFrom()) hops.unshift(req.url());
-  // The first URL was checked before the page loaded.
-  for (const hop of hops.slice(1)) {
-    if (!sameSite(domain, new URL(hop).host)) return `redirected to another site (${new URL(hop).host})`;
-    const skip = await client.verdict(hop);
-    if (skip) return describeSkip(skip);
-  }
-  return null;
 }
 
 export async function scan(stores: StoreRecord[], out: string, client: PoliteClient, opts: { concurrency?: number; browser?: Browser } = {}) {
@@ -230,20 +254,21 @@ export async function scan(stores: StoreRecord[], out: string, client: PoliteCli
             if (skip.retry) record.retry = true;
             continue;
           }
-          const res = await page.goto(url, { waitUntil: "load", timeout: 30000 });
-          if (!res || res.status() >= 400) {
-            record.skipped.push({ kind, reason: `HTTP ${res?.status() ?? "no response"}` });
+          const loaded = await ctx.goto(page, url);
+          if ("skip" in loaded) {
+            record.skipped.push({ kind, reason: loaded.skip });
+            if (loaded.retry) record.retry = true;
             continue;
           }
-          const bad = await badRedirect(res, client, store.domain);
-          if (bad) {
-            record.skipped.push({ kind, reason: bad });
+          const { res } = loaded;
+          if (!res || res.status() >= 400) {
+            record.skipped.push({ kind, reason: `HTTP ${res?.status() ?? "no response"}` });
             continue;
           }
           // Links come from the page the browser already loaded, so the home
           // page is fetched once.
           if (kind === "home") links = sampleLinks(await page.content(), origin);
-          record.pages.push({ kind, ...(await scanPage(page, url)) });
+          record.pages.push({ kind, ...(await scanPage(page, loaded.url)) });
         }
       } catch (err) {
         record.error = (err as Error).message.slice(0, 200);

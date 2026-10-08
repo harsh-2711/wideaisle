@@ -57,5 +57,6 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/census.spec.ts
 - Playwright sends loopback through a context proxy by default (`<-loopback>`), so the egress proxy also covers localhost.
 - The a11y test uses `allowPrivate: true` to reach its local server. Never set it for a real run.
 - WebRTC UDP does not go through a browser proxy, and the Chromium policy flag did not stop STUN to a private address. The scan removes RTCPeerConnection with an init script; the strict browser test proves it.
-- Playwright does not call route handlers for redirect hops. Browser redirects are checked after the load, and the page is dropped if a hop was off-limits.
+- Playwright does not call route handlers for redirect hops. The scan fetches each main-frame navigation with route.fetch({ maxRedirects: 0 }) and follows redirects itself through ScanContext.goto, so every hop is checked against robots.txt and spaced before the browser requests it. Unexpected main-frame navigations get an empty 204; an abort would leave an error page that breaks the next goto.
+- Crawl-delay belongs to a group: a User-agent line after it starts a new group. Only Sitemap lines sit outside groups.
 - robots.txt patterns are matched without regular expressions to avoid ReDoS from hostile patterns.

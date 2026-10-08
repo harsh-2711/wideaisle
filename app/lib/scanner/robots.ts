@@ -52,6 +52,12 @@ export function productToken(value: string): string {
   return (/^[a-z_-]+/i.exec(value.trim())?.[0] ?? "").toLowerCase();
 }
 
+// RFC 9309 compares percent-encoded paths, and URL paths arrive encoded, so
+// encode any non-ASCII text in a rule the same way.
+function encodePattern(pattern: string): string {
+  return pattern.replace(/[^\p{ASCII}]+/gu, (run) => encodeURIComponent(run));
+}
+
 export function parseRobots(text: string, userAgent: string): Robots {
   const agent = productToken(userAgent);
   const groups: { agents: string[]; rules: Rule[]; delay: number | null }[] = [];
@@ -65,8 +71,8 @@ export function parseRobots(text: string, userAgent: string): Robots {
     const key = m[1].toLowerCase();
     const value = m[2].trim();
     if (key === "user-agent") {
-      // A user-agent line after rules starts a new group. Crawl-delay and
-      // Sitemap lines do not end the list of agents.
+      // A user-agent line after rules (or a Crawl-delay, which belongs to
+      // a group) starts a new group. Sitemap lines are not part of a group.
       if (!current || inRules) {
         current = { agents: [], rules: [], delay: null };
         groups.push(current);
@@ -80,8 +86,9 @@ export function parseRobots(text: string, userAgent: string): Robots {
     if (key === "allow" || key === "disallow") {
       inRules = true;
       if (key === "disallow" && value === "") continue; // empty Disallow allows all
-      current.rules.push({ allow: key === "allow", pattern: value });
+      current.rules.push({ allow: key === "allow", pattern: encodePattern(value) });
     } else if (key === "crawl-delay") {
+      inRules = true;
       const n = Number(value);
       if (Number.isFinite(n) && n >= 0) current.delay = n;
     }
