@@ -16,9 +16,10 @@ Do these in order. The path fits the roadmap's M1 budget of about 6 hours, inclu
 | 6 | WebAIM on alternative text, forms, contrast and links | WebAIM [P6] | 30 min | The four techniques behind five of the six failure types |
 | 7 | Screen-reader basics below, plus WebAIM's VoiceOver or NVDA guide | WebAIM [P7, P8] | 45 min | Set up and practise on any page |
 | 8 | Our legal brief: docs/research/legal-brief.md | Wide Aisle | 45 min | The law, overlays and the questions for the lawyer |
-| 9 | Walk three stores with the script below | Wide Aisle | 60 min | Hear what shoppers hear |
-| 10 | Quiz: docs/research/quiz.md | Wide Aisle | 30 min | Pass mark 80% (16 of 20) |
-| | **Total** | | **6 h** | |
+| 9 | Our claims policy: docs/policy/claims-policy.md | Wide Aisle | 15 min | What we may and may not say about a store, our app or a fix |
+| 10 | Walk three stores with the script below | Wide Aisle | 60 min | Hear what shoppers hear |
+| 11 | Quiz: docs/research/quiz.md | Wide Aisle | 30 min | Pass mark 80% (16 of 20) |
+| | **Total** | | **6 h 15 min** | |
 
 **Optional, later:** W3C's free "Digital Accessibility Foundations" course on edX, which a third-party listing puts at 4 to 5 hours [P9] (via search, not opened). W3C's "Easy Checks" for a quick first review of any page [P10]. The ARIA Authoring Practices Guide patterns for Disclosure (menus), Dialog (drawers) and Radio Group (swatches) [P11].
 
@@ -31,7 +32,7 @@ Use VoiceOver if you are on a Mac, NVDA if you are on Windows. You only need one
 **Set up once (10 minutes).**
 
 1. Safari, Settings, Advanced: turn on "Press Tab to highlight each item on a webpage" [P7] (via search, not opened).
-2. Turn VoiceOver on and off with Command+F5, or triple-press Touch ID on newer Macs [P7] (via search, not opened).
+2. Turn VoiceOver on and off with Command+F5. On a Mac with Touch ID, hold Command and press Touch ID three times [P7] (via search, not opened).
 3. Leave the caption panel on. It shows on screen what VoiceOver says, which helps you take notes.
 4. Turn speech rate down at first if it is too fast (VoiceOver Utility, Speech).
 

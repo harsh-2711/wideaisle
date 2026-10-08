@@ -15,10 +15,11 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | Learning path, VoiceOver script and quiz | 00ccfc6 |
+| Reviewer fixes: Touch ID shortcut, claims policy added as step 9, quiz questions 4, 15 and 17 and answers 13, 15, 17 and 18 updated | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Pull request review, then merge.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 

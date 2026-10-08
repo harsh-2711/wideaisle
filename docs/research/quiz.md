@@ -22,7 +22,7 @@ Task T-012 · 20 questions · Pass mark 80% (16 of 20)
 - C. 2.2.2 Pause, Stop, Hide
 - D. 2.4.4 Link Purpose and 4.1.2 Name, Role, Value
 
-**4. A newsletter field has the placeholder "Email" and no label. What does axe-core 4.14's `label` rule report?**
+**4. A newsletter field has the placeholder "Email" and no label. What does axe-core 4.13.0's `label` rule report?**
 - A. A pass, because axe accepts a non-empty placeholder as the field's name
 - B. A failure for a missing label
 - C. A contrast error
@@ -91,7 +91,7 @@ Task T-012 · 20 questions · Pass mark 80% (16 of 20)
 **15. Since when has the European Accessibility Act applied to online stores selling to EU consumers?**
 - A. 28 June 2025
 - B. 1 January 2030
-- C. It applies only to stores registered in the EU
+- C. 1 January 2024
 - D. It applies only to public bodies
 
 **16. Which business is exempt from the EAA's rules for services?**
@@ -100,7 +100,7 @@ Task T-012 · 20 questions · Pass mark 80% (16 of 20)
 - C. Any store hosted on Shopify
 - D. A microenterprise: fewer than 10 staff and turnover or balance sheet of €2 million or less
 
-**17. After the April 2026 interim final rule, when must US state and local governments serving 50,000 people or more meet WCAG 2.1 AA under Title II?**
+**17. What deadline does the April 2026 interim final rule set for US state and local governments serving 50,000 people or more to meet WCAG 2.1 AA under Title II?**
 - A. 24 April 2026
 - B. 26 April 2027
 - C. 26 April 2028

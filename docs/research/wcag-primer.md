@@ -8,15 +8,15 @@ Task T-010 · M1 research lane · Checked 2026-10-08 · Not legal advice
 - Laws and courts mostly cite WCAG 2.1 AA today. The EU's next harmonised standard (EN 301 549 V4.1.1) moves to WCAG 2.2 [S11] (via search, not opened). WCAG 2.2 keeps everything in 2.1 except 4.1.1 Parsing, which W3C removed [S3] (via search, not opened). Building to 2.2 AA covers 2.1 AA.
 - Conformance is all or nothing per page and per process. WCAG's own example is an online store: every page from product selection to the end of checkout must conform before any page in that process can [S1] (opened). Shopify checkout sits outside the theme, so no theme app can make a whole purchase process conform on its own.
 - Six failure types make up 96% of errors detected on the top million home pages [S5] (via search, not opened). They map to six criteria groups: 1.4.3, 1.1.1, 1.3.1/3.3.2/4.1.2, 2.4.4, 4.1.2 and 3.1.1. v1 fixes those six where the cause sits in theme code, theme settings or product image alt text.
-- Automated tools catch a minority of failures. axe-core 4.14 has rules that can report a failure for 17 of the 55 A and AA criteria, and review-only flags for 4 more [S4] (opened). For most of those 17 it tests one way the criterion can fail, not all of them.
-- Shopify's free themes ship with most controls named. In Dawn 16.0.0 the menu drawer, cart drawer, variant picker, price and newsletter form all carry labels or hidden text [S7] (opened). On real stores, failures mostly come from colour settings, missing alt text, apps, custom sections and older or paid themes. Our M2 census will measure this; until then treat it as a working assumption.
+- Automated tools catch a minority of failures. Our scanner runs axe-core 4.13.0, the version the repo pins. It has rules that can report a failure for 16 of the 55 A and AA criteria, and review-only flags for 4 more [S4] (opened). The newer 4.14.0 adds a default rule for 2.5.3 Label in Name, which makes 17. For most of these criteria axe tests one way the criterion can fail, not all of them.
+- Dawn 16.0.0 ships with most controls named: its menu drawer, cart drawer, variant picker, price and newsletter form all carry labels or hidden text [S7] (opened). We read Dawn's code only, not Shopify's other free themes. On real stores, failures mostly come from colour settings, missing alt text, apps, custom sections and older or paid themes. Our M2 census will measure this; until then treat it as a working assumption.
 
 ## How to read this primer
 
 - **Level A** is the floor. **Level AA** adds criteria such as contrast, focus visibility and reflow. AAA is not required by any law we track.
 - **Full pages.** Every responsive variation must conform, so the mobile menu drawer counts as much as the desktop menu [S1] (opened).
-- **Partial conformance.** Where third-party content cannot be fixed, WCAG lets the author say so in a "Statement of Partial Conformance" [S1] (opened). This is the honest frame for app widgets and checkout in our evidence pack.
-- **"Automated?" column.** Yes means axe-core has a rule that flags the common failure. Partly means it flags some forms of it, or only asks for human review. No means a person (or a scripted test) must check it. Rule names are axe-core 4.14 [S4] (opened).
+- **Partial conformance.** WCAG allows a "Statement of Partial Conformance" where third-party content cannot be fixed [S1] (opened). We do not use one, because it is still a conformance claim (D-06). The evidence pack lists checkout and app widgets under known limitations instead.
+- **"Automated?" column.** Yes means axe-core has a rule that flags the common failure. Partly means it flags some forms of it, or only asks for human review. No means a person (or a scripted test) must check it. Rule names are from axe-core 4.13.0, the version our scanner runs [S4] (opened).
 - **"In v1?" column.** Yes means a v1 fixer targets it. No means it is out of v1 per the roadmap's "Not in v1" list or because no theme fix can solve it.
 - **"What fails" column.** These are the common failures reported in public audits and Shopify's theme guidance, plus what we saw in Dawn's code. They are not yet measured by us. M2 replaces them with census data.
 
@@ -154,6 +154,36 @@ Dawn's newsletter field has a `<label>`, `aria-required`, `aria-invalid` and `ar
 | 2.4.11, 2.1.1 (AA, A) | Cookie banners, chat bubbles and pop-ups from apps that cover focus or trap it | Tab through each page with the widgets present | No | No (third-party apps) |
 | 3.3.8 Accessible Authentication (Minimum) (AA, new in 2.2) | Customer login that needs a puzzle CAPTCHA or blocks paste into password fields | Try signing in with a password manager | No | No (unverified whether Shopify's own CAPTCHA passes) |
 
+## The other 23 A and AA criteria
+
+The tables above cover 32 of the 55 A and AA criteria. These are the rest. None is a v1 fix target, but 2.5.3 limits every name a v1 fixer adds. Names and levels are from W3C's WCAG 2.2 source [S1] (opened); rule notes are axe-core 4.13.0 [S4] (opened).
+
+| Criterion | Level | Relevance to Shopify themes | Automated? |
+|---|---|---|---|
+| 1.2.1 Audio-only and Video-only (Prerecorded) | A | Silent product videos and audio clips need a text alternative. Merchant content | No (`audio-caption` is off by default) |
+| 1.2.3 Audio Description or Media Alternative (Prerecorded) | A | Product videos whose visuals carry information need a description or a transcript. Merchant content | No |
+| 1.2.4 Captions (Live) | AA | Live-stream shopping only; rare on theme pages | No |
+| 1.2.5 Audio Description (Prerecorded) | AA | The same videos as 1.2.3; at AA a transcript alone is not enough | No |
+| 1.3.2 Meaningful Sequence | A | CSS that reorders sections or grid items so the reading order makes no sense | No |
+| 1.3.3 Sensory Characteristics | A | Instructions such as "tap the green button" or "see the size chart on the right" | No |
+| 1.3.4 Orientation | AA | Pages or pop-ups locked to portrait or landscape | No (`css-orientation-lock` is experimental) |
+| 2.1.4 Character Key Shortcuts | A | Single-key shortcuts, mostly from search or chat apps; rare in themes | No |
+| 2.2.1 Timing Adjustable | A | Countdown offers, cart reservation timers and time-outs with no way to extend | Partly: `meta-refresh` catches timed page refresh only |
+| 2.3.1 Three Flashes or Below Threshold | A | Flashing sale banners or GIFs | No |
+| 2.4.5 Multiple Ways | AA | Menu plus search or a sitemap; header search usually meets it | No |
+| 2.4.6 Headings and Labels | AA | Vague headings such as "Featured" or field labels that do not say what to enter | No |
+| 2.5.1 Pointer Gestures | A | Image zoom or sliders that need a pinch or two-finger gesture, with no single-tap way | No |
+| 2.5.2 Pointer Cancellation | A | Controls that act on press rather than release, such as some quick-add buttons | No |
+| 2.5.3 Label in Name | A | Visible text missing from the accessible name, such as `aria-label="Open cart"` on a button that shows "Bag (2)". Limits every v1 fixer | No (`label-content-name-mismatch` is experimental in 4.13.0) |
+| 2.5.4 Motion Actuation | A | Shake or tilt features; rare on storefronts | No |
+| 3.1.2 Language of Parts | AA | Phrases in another language, such as French product names on an English store, with no `lang` | Partly: `valid-lang` checks a `lang` value is valid, not that one is present |
+| 3.2.1 On Focus | A | Menus or pop-ups that open, or pages that change, when a control only receives focus | No |
+| 3.2.3 Consistent Navigation | AA | Header or footer links in a different order on some templates, such as landing pages | No |
+| 3.2.4 Consistent Identification | AA | The same control named differently across pages, such as "Cart" in the header and "Bag" in the drawer | No |
+| 3.3.3 Error Suggestion | AA | Contact, newsletter and account form errors that say "Invalid" without saying how to fix it | No |
+| 3.3.4 Error Prevention (Legal, Financial, Data) | AA | Orders and payments happen in Shopify checkout, outside the theme | No |
+| 3.3.7 Redundant Entry | A | Asking again for details given earlier in the same process; mostly checkout | No |
+
 ## What v1 fixes and what it does not
 
 | v1 fixes | Where | Limits |
@@ -163,6 +193,7 @@ Dawn's newsletter field has a `<label>`, `aria-required`, `aria-invalid` and `ar
 | Missing form labels | Theme Liquid: search, newsletter, contact, quantity | Labels only; error and success announcements are not covered |
 | Empty links | Theme Liquid: logo, social, cart, account icons | Names only; vague text such as "Read more" is not covered |
 | Empty buttons | Theme Liquid: menu, close, quantity, slider controls | Names only; no change to focus or keyboard behaviour |
+| Any name a fixer adds (links, buttons, fields) | Theme Liquid | Must contain the visible text, to meet 2.5.3 Label in Name (A). `aria-label="Open cart"` on a button that shows "Bag (2)" fails 2.5.3. axe-core 4.13.0's rule for it (`label-content-name-mismatch`) is experimental and does not run by default, so our scans miss it. Fixer tests must check it |
 | Missing page language | Theme layout file | Sets the store locale; mixed-language content is not covered |
 | Regressions in the six types | Re-scan after theme publish or app install | Detects new axe findings only |
 
@@ -184,16 +215,16 @@ What this means for the product and for claims (D-06): v1 can say how many detec
 1. Census: which themes and apps produce each failure, and how often variant pickers and cart drawers break outside Dawn.
 2. Spike B: confirm each fixer on Dawn 16 and Horizon 4.2, and decide whether the `label` fixer should also replace placeholder-only fields that pass axe.
 3. Spike C: confirm what Dawn and Horizon output for images with no alt text on a live store.
-4. Scanner setup: run axe with WCAG 2.2 tags and turn on `target-size` explicitly, or say in reports that target size is not tested.
+4. Scanner setup: run axe with WCAG 2.2 tags and turn on `target-size` explicitly, or say in reports that target size is not tested. Decide whether to turn on `label-content-name-mismatch` in 4.13.0 or move to 4.14.0, where it runs by default.
 
 ## Sources
 
 Checked 2026-10-08. "Opened" means we fetched the file and read it. Most sites were blocked from this container (WebFetch could not resolve hosts and the proxy refused w3.org, webaim.org and others), so many sources are search summaries only.
 
-- S1. W3C, WCAG 2.2 source in W3C's own repository, main branch: `guidelines/index.html` (conformance requirements, "Full pages", "Complete processes", partial conformance) and the files under `guidelines/sc/20`, `sc/21` and `sc/22` for criteria 1.4.3, 1.4.11, 2.4.4, 4.1.2, 2.4.11, 2.5.7, 2.5.8, 3.2.6, 3.3.7 and 3.3.8. https://github.com/w3c/wcag (opened through raw.githubusercontent.com). This is the editors' source; the published Recommendation is https://www.w3.org/TR/WCAG22/ (not opened). The 31 A and 24 AA counts are ours, from WCAG 2.1's 30 A and 20 AA, minus 4.1.1, plus the six new A and AA criteria in 2.2.
+- S1. W3C, WCAG 2.2 source in W3C's own repository, main branch: `guidelines/index.html` (conformance requirements, "Full pages", "Complete processes", partial conformance) and the files under `guidelines/sc/20`, `sc/21` and `sc/22` for criteria 1.4.3, 1.4.11, 2.4.4, 4.1.2, 2.4.11, 2.5.7, 2.5.8, 3.2.6, 3.3.7 and 3.3.8, plus the name and level of each of the 23 criteria in "The other 23 A and AA criteria" and the text of 2.5.3 Label in Name (rechecked 2026-10-08). https://github.com/w3c/wcag (opened through raw.githubusercontent.com). This is the editors' source; the published Recommendation is https://www.w3.org/TR/WCAG22/ (not opened). The 31 A and 24 AA counts are ours, from WCAG 2.1's 30 A and 20 AA, minus 4.1.1, plus the six new A and AA criteria in 2.2.
 - S2. W3C WAI, "What's New in WCAG 2.2", page source dated 2023-10-05. https://github.com/w3c/wai-website/blob/main/pages/standards-guidelines/wcag/new-in-22.md (opened). Published at https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/ (not opened).
 - S3. W3C, WCAG 2 FAQ (4.1.1 obsolete and removed in 2.2), https://www.w3.org/WAI/standards-guidelines/wcag/faq/ ; WCAG 2.2 Recommendation of 2023-10-05, https://www.w3.org/TR/2023/REC-WCAG22-20231005/ ; update of 2024-12-12, https://www.w3.org/TR/2024/REC-WCAG22-20241212/ (via search, not opened).
-- S4. Deque, axe-core 4.14.0 rule list, `doc/rule-descriptions.md`, and rule files `lib/rules/label.json` (accepts `non-empty-placeholder`), `lib/rules/image-alt.json` and `lib/rules/target-size.json` (`"enabled": false`). https://github.com/dequelabs/axe-core (opened). Coverage counts (17 criteria with failure rules, 4 with review-only rules) are ours, from the WCAG tags in that list, excluding AAA and best-practice rules.
+- S4. Deque, axe-core. Our scanner runs 4.13.0 (pinned through `@axe-core/playwright` in package-lock.json). We read its rules with `axe.getRules()` from the installed package and its `doc/rule-descriptions.md` at tag v4.13.0 (opened 2026-10-08): `label` accepts `non-empty-placeholder`, `target-size` is off by default, and `label-content-name-mismatch` is experimental. We also read 4.14.0's `doc/rule-descriptions.md`, `lib/rules/label.json`, `lib/rules/image-alt.json`, `lib/rules/target-size.json` (`"enabled": false`) and `lib/rules/label-content-name-mismatch.json` (no longer experimental). https://github.com/dequelabs/axe-core (opened). Coverage counts (16 criteria with failure rules in 4.13.0 and 17 in 4.14.0, 4 with review-only rules in both) are ours, from the WCAG tags in those lists, excluding AAA and best-practice rules.
 - S5. WebAIM, "The WebAIM Million: 2026", https://webaim.org/projects/million/ (via search, not opened; blocked). Figures as reported by https://prioritypixels.co.uk/insights/web-accessibility-is-getting-worse-according-to-the-2026-webaim-million-report/ and https://www.nexerdigital.com/news-and-thoughts/the-webaim-million-report-2026-what-it-tells-us (via search, not opened). Check against WebAIM before quoting externally.
 - S6. Shopify home pages averaging 75.1 errors (sample of 42,516): https://www.pandacodegen.com/blog/web-accessibility-statistics-2026 and https://appifycommerce.com/blog/shopify-accessibility-errors-webaim-2026-fix-wcag-compliance/ (via search, not opened; vendor sources quoting WebAIM; unverified against WebAIM).
 - S7. Shopify, Dawn theme 16.0.0 source: `layout/theme.liquid`, `sections/header.liquid`, `snippets/header-drawer.liquid`, `snippets/cart-drawer.liquid`, `snippets/product-variant-picker.liquid`, `snippets/product-variant-options.liquid`, `snippets/price.liquid`, `snippets/quantity-input.liquid`, `snippets/card-product.liquid`, `sections/main-product.liquid`, `sections/footer.liquid`, `config/settings_schema.json`. https://github.com/Shopify/dawn (opened). Code, not a live store; behaviour still needs a keyboard and screen-reader check.

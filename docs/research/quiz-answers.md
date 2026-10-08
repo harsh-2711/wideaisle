@@ -18,12 +18,12 @@ Task T-012 · For the grading agent · Pass mark 16 of 20
 | 10 | C | H is next heading; K is link, F is form field, D is landmark | Learning path: "NVDA on Windows" |
 | 11 | A | Focus moves into the dialog and returns to the trigger on close | Primer: "Cart drawer" |
 | 12 | D | 3,117 federal suits in 2025, up 27% on 2024 | Legal brief: "The numbers" |
-| 13 | B | Federal Title III gives an injunction and fees; $4,000 is California's Unruh Act, per violation, not per visit | Legal brief: "How the law works" |
+| 13 | B | Federal Title III gives an injunction and fees; $4,000 is California's Unruh Act, per violation, and courts have mostly rejected counting each visit | Legal brief: "How the law works" |
 | 14 | C | The order bars unsupported claims that the tool makes or keeps sites WCAG-conformant | Legal brief: "The FTC order" |
-| 15 | A | The EAA has applied to services since 28 June 2025, including to non-EU sellers serving EU consumers | Legal brief: "What it is and who it covers" |
+| 15 | A | The EAA has applied to services since 28 June 2025. Sources say it reaches sellers outside the EU (lawyer question 15) | Legal brief: "What it is and who it covers" |
 | 16 | D | Microenterprises: under 10 staff and €2 million or less | Legal brief: "What it is and who it covers" |
-| 17 | B | Moved from 24 April 2026 to 26 April 2027; smaller bodies moved to 26 April 2028 | Legal brief: "US Title II rule" |
-| 18 | C | We state dated, detected, fixed issues. A, B and D use words the claims policy bans | Claims policy |
+| 17 | B | The rule moved it from 24 April 2026 to 26 April 2027; smaller bodies moved to 26 April 2028. The NFB sued on 21 May 2026 to reverse the extension, so both dates are under challenge | Legal brief: "US Title II rule" |
+| 18 | C | We state dated, detected, fixed issues. A, B and D use words the claims policy bans | Claims policy (learning path step 9): "Words we never use" |
 | 19 | A | About 96%, as reported for the WebAIM Million 2026 | Primer: "The six failure types" |
 | 20 | D | Options need a group name, for example `<fieldset>` and `<legend>` | Primer: "Variant picker" |
 

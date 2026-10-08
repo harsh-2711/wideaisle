@@ -15,10 +15,11 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | WCAG 2.2 AA primer | 48e69e8 |
+| Reviewer fixes: partial conformance not used (D-06), table of the other 23 A and AA criteria, 2.5.3 Label in Name limit for fixers, axe-core 4.13.0 named, Dawn 16.0.0 scope | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Pull request review, then merge.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 

@@ -15,7 +15,7 @@ We say what our scan detected, what we fixed, when, on which pages, and what we 
 
 ## Where it applies
 
-Everything we write that a merchant, shopper, agency or reviewer can read: the App Store listing, the landing page, ads, emails and outreach, reports and the evidence pack, accessibility statement drafts, in-app text, support replies, case studies, social posts, sales scripts, the agency kit and white-label report templates. D-06 adds code comments and commit messages.
+Everything we write that a merchant, shopper, agency or reviewer can read: the App Store listing, the landing page, ads, emails and outreach, reports and the evidence pack, accessibility statement drafts, in-app text, support replies, case studies, social posts, sales scripts, the agency kit and white-label report templates. D-06 also lists code comments. This draft adds commit messages, because the repository is public.
 
 ## Words we never use
 
@@ -23,21 +23,24 @@ Banned in any form, tense or language, about a store, our app, a fix or a report
 
 | Never say | Why | Say instead |
 |---|---|---|
-| compliant, compliance (as a result), ADA-compliant, WCAG-compliant, EAA-compliant | A legal status we cannot test or promise | "fixed N of M detected issues", "checked against the WCAG 2.2 AA criteria our scan tests" |
-| conforms to WCAG, meets WCAG 2.2 AA, WCAG conformant | WCAG conformance needs every criterion on every page and through checkout; automated scans test a minority | "results for the criteria our automated scan covers" |
+| compliant, compliance (as a result), ADA-compliant, WCAG-compliant, EAA-compliant | A legal status we cannot test or promise | "fixed N of M detected issues", "checked for WCAG 2.2 AA failures our scan can detect" |
+| conforms to WCAG, meets WCAG 2.2 AA, WCAG conformant | WCAG conformance needs every criterion on every page and through checkout; automated scans test a minority | "results for the WCAG 2.2 AA failures our automated scan can detect" |
 | certified, certification, accessibility certificate | Implies a third party vouched for the store or product | "dated scan history", "remediation log" |
+| audit, accessibility audit (for our automated or AI-assisted checks) | Implies a full review by an expert | "automated scan", "automated and AI-assisted checks" |
 | lawsuit-proof, sue-proof, lawsuit protection, avoid lawsuits, reduce legal risk, protect you | An outcome no one can promise; FTC risk | "documentation you can share with your lawyer" |
 | 100% accessible, fully accessible, completely accessible, barrier-free | No tool can show this | "fixes six common failure types" |
 | guaranteed, guarantee | Promises an outcome | "you review every fix before it goes live" |
 | instant, automatic or one-click accessibility; AI makes your store accessible; fixes everything | Overstates what automation does | "AI drafts alt text; you approve each one" |
 | accessibility badge, seal, trust mark for the storefront | Reads as a status claim to shoppers | Do not offer one |
 | approved or endorsed by Shopify, Shopify-certified | Not true unless Shopify says so in writing | The exact program name, only once earned (for example "Built for Shopify") |
-| seamless, robust, leverage, delve | Hype words banned by AGENTS.md | Plain verbs |
+| seamless, robust, leverage, delve | Hype words the writing rules in docs/plan/roadmap.md ban | Plain verbs |
 
 **Two narrow exceptions.**
 
 1. Quoting what we never say, in this policy, training material and quizzes.
 2. Quoting a third party with attribution, such as a law's title or a court's words, never as our own claim.
+
+In a file the CI claims check scans (see "How we enforce it"), mark a line that quotes a banned word under these exceptions with `claims-ok`.
 
 **Open for the owner:** may we name a human tester's personal credential, for example "checked by Jane Doe (IAAP CPACC)", if D-13 leads to paid human checks? The draft says yes, only as a person's credential and never next to the store, app or report.
 
@@ -82,9 +85,9 @@ Use these sentences as written. Change numbers and dates only.
 1. Every number has a dated scan or a named source on file. Keep the scan ID with the copy.
 2. Use counts with their base: "212 of 240 detected issues", not "88% accessible".
 3. Totals across stores state the stores, pages, failure types, dates and method, for example "detected errors of six types on key pages of 10 pilot stores fell 82% between 3 and 24 November 2026".
-4. Third-party figures (lawsuit counts, WebAIM) name the source and year and link to it. No fear framing such as "you could be next".
+4. Third-party figures (lawsuit counts, WebAIM) name the source and year and link to it. No fear framing such as "you could be next". Lawsuit counts in outreach or ads wait on lawyer question 11 (legal brief).
 5. Testimonials and case studies come from real merchants, with written consent, and say if the merchant got a discount or anything else of value. The exact disclosure waits on the lawyer (legal brief, question 3).
-6. Comparisons with overlays or competitors are factual, sourced and dated. "We change your theme code; we do not add a widget" is fine. "Overlays get you sued" is not.
+6. Comparisons with overlays or competitors are factual, sourced and dated. "Overlays get you sued" is never allowed. "We change your theme code; we do not add a widget" waits on lawyer question 4 (legal brief).
 
 ## Allowed and banned sentences
 
@@ -95,15 +98,15 @@ Use these sentences as written. Change numbers and dates only.
 | Make your store ADA and WCAG compliant in minutes. | Find and fix six common accessibility failures in your theme code, with a dated record of each fix. |
 | Lawsuit protection for your Shopify store. | Keep a dated scan history and remediation log you can share with your lawyer. |
 | AI makes your store 100% accessible. | AI drafts alt text for product images. You review each one before it goes live. |
-| Certified WCAG 2.2 AA. | Checks your key pages against the WCAG 2.2 AA criteria automated tools can test. |
+| Certified WCAG 2.2 AA. | Checks your key pages for WCAG 2.2 AA failures that automated tools can detect. |
 | Guaranteed results or your money back. | Preview every fix before you publish it, and undo any fix in one click. |
 
 ### Landing page
 
 | Banned | Allowed |
 |---|---|
-| Stop ADA lawsuits before they start. | Real fixes in your theme code, not a widget, with the paperwork to show it. |
-| Over 5,000 stores were sued last year. You could be next. | [Number] digital accessibility suits were filed in US courts in 2025 ([source], [year]). Fixing common barriers helps shoppers who use assistive technology. (Verify the figure before use.) |
+| Stop ADA lawsuits before they start. | Fixes go into your theme code, and alt text into your product images, not a widget, with a dated record of each fix. (Pending lawyer question 4: "not a widget" is a comparison with overlays.) |
+| Over 5,000 stores were sued last year. You could be next. | [Number] digital accessibility suits were filed in US courts in 2025 ([source], [year]). Fixing common barriers helps shoppers who use assistive technology. (Pending lawyer question 11; do not use until answered. Verify the figure before use.) |
 | Fully accessible in one click. | Install, scan, review the fixes and publish. You approve every change. |
 
 ### Emails and outreach
@@ -119,7 +122,7 @@ Use these sentences as written. Change numbers and dates only.
 | Banned | Allowed |
 |---|---|
 | Status: Compliant. | Detected issues on scanned pages: 240 on 1 November, 28 on 3 November. Fixed: 212. Open: 28 (see known limitations). |
-| Your store now meets WCAG 2.2 AA. | These results cover the criteria our automated scan tests, on the pages listed, on the dates shown. They are not a WCAG conformance claim. |
+| Your store now meets WCAG 2.2 AA. | These results cover the WCAG 2.2 AA failures our automated scan can detect, on the pages listed, on the dates shown. They are not a WCAG conformance claim. |
 | Accessibility certificate | Accessibility statement (draft for you to review and publish) |
 
 ### In the app and in support replies
@@ -151,13 +154,15 @@ The merchant publishes the statement, not us. Our draft:
 
 1. Growth drafts copy; a reviewer agent checks it against this policy; the owner approves outreach batches (D-16) and the listing (G3).
 2. The lawyer reviews the listing, landing page, report template and statement template before launch (D-14).
-3. Suggested for the planner: a CI check that flags the banned words in copy, templates and code comments, with this file and the quiz on an allow list.
-4. Agencies using white-label reports get this policy in the agency kit, and the report template keeps the required limits text.
+3. CI runs a claims check on every pull request: `node scripts/ci/checks.mjs claims`. It reads changed files under app/routes/, app/components/, docs/growth/ and extensions/. It flags "compliant" (including ADA-, WCAG- and fully compliant), "certified", "lawsuit-proof", "100% accessible", and "guarantee" with "compliance" or "accessibility" (also "guarantees" and "guaranteed"). It skips negations such as "not certified" or "non-compliant", and a line can opt out with `claims-ok`.
+4. That check catches only part of this policy. "Your store now meets WCAG 2.2 AA", "Lawsuit protection", "Accessibility certificate", "fully accessible", "audit" and "guaranteed results" all pass it. It does not read other folders or commit messages, so templates, code comments and copy kept elsewhere go unchecked. Follow-up for the planner: widen the check to this policy's word list and to every folder that holds merchant-facing copy, with this file and the quiz on an allow list. Until then, the reviewer agent checks the rest by hand.
+5. Agencies using white-label reports get this policy in the agency kit, and the report template keeps the required limits text.
 
 ## Sources
 
 - D-06 claims policy memo and the roadmap sections "What we never claim" and "Risks and legal guardrails" (in this repo).
 - WCAG 2.2 conformance requirements, "Complete processes", in W3C's source at https://github.com/w3c/wcag (opened 2026-10-08).
-- axe-core 4.14 rule list, https://github.com/dequelabs/axe-core (opened 2026-10-08).
+- axe-core 4.13.0 (the version the scanner runs) and 4.14.0 rule lists, https://github.com/dequelabs/axe-core (opened 2026-10-08).
+- The claims check in scripts/ci/checks.mjs (in this repo, read 2026-10-08).
 - FTC order against accessiBe, April 2025, as summarised in docs/research/legal-brief.md, source L9 (via search, not opened).
 - Commission Implementing Decision (EU) 2018/1523, legal brief source L16 (via search, not opened).

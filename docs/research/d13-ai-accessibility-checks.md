@@ -5,8 +5,8 @@ Task T-014 · M1 research lane · Checked 2026-10-08
 ## The answer first
 
 - **Not fully.** AI-driven checks can take over most of the repeatable part of a release check: keyboard paths, focus moving into and out of drawers, what a real screen reader says for each control, whether "added to cart" is announced, and a first read of alt text. They cannot judge whether a store is usable for a disabled shopper, they do not cover JAWS or phone screen readers, and LLM output is not stable enough to be the only check.
-- **They are cheap.** About $4 to $8 per release for scripted screen-reader runs plus an LLM review of each key page, and about $6 to $25 more for a keyboard-only agent run (all estimates; a spike measures them). The plan's human check is about $100 to $300 per release (estimate in D-13).
-- **Recommendation: option D.** AI checks on every release, the owner's 30-minute VoiceOver check on every release (already in the plan), and a paid expert check only at milestones: before pilots go live (G2), before App Store submission (G3), then quarterly or when a new theme joins the library. Test it first: before G2, run the AI checks and an expert on the same golden store and compare.
+- **The AI part is cheap; the expert checks it keeps are not.** API costs are about $2 to $4 per release for an LLM review of each page state, plus $6 to $25 per keyboard-only agent run, monthly. Scripted screen-reader runs use GitHub Actions minutes: free while this repo is public, about $2 to $4 a release at list prices if it turns private and runs past the free allowance (all estimates; a spike measures them). A full expert check of five themes costs about $800 to $3,000. The plan's per-release human check is $100 to $300 (estimate in D-13), which buys about one theme's check, often less.
+- **Proposal: option D, pending the owner's pick (Q-30).** AI checks on every release, the owner's 30-minute VoiceOver check on every release (already in the plan), and a paid expert check of all five themes only at milestones: before pilots go live (G2), before App Store submission (G3), then quarterly or when a new theme joins the library. Over the first 12 releases D costs about $1,650 to $6,150 and B at the plan's estimate $1,200 to $3,600, so D is not cheaper at first. It buys more coverage: every theme on every release by machine, plus two full expert checks. Test it first: before G2, run the AI checks and an expert on the same golden store and compare.
 
 ## What a release check must cover
 
@@ -15,14 +15,14 @@ A "release" here is a change to the fix library or the app that reaches pilot st
 - Key pages: home, one collection, one product, cart.
 - Five flows: open and close the menu drawer; search; choose a variant and add to cart; change a quantity in the cart drawer; sign up to the newsletter.
 
-That is about 20 page states and 25 flows per release across five themes.
+Per theme that is 12 page states: the 4 key pages on load, plus 8 states the flows reach (menu drawer open, search results, variant changed, added to cart, cart drawer open, quantity changed, newsletter error, newsletter success). Across five themes: about 60 page states and 25 flows per release.
 
 ## Three kinds of AI-driven check
 
 | Approach | How it works | Strong at | Weak at |
 |---|---|---|---|
 | **1. Scripted screen-reader runs** | Guidepup drives real VoiceOver (macOS) and NVDA (Windows) through each flow from Playwright tests, records the spoken phrases and compares them with an approved baseline. No LLM needed to pass or fail; an LLM can summarise the diff | Names, roles, states, announcements and focus moves, as a real screen reader speaks them. Same steps every run, so regressions stand out | Only VoiceOver and NVDA; desktop only; timing can make runs flaky; checks only the paths we script |
-| **2. Keyboard-only agent** | An LLM drives a browser through Playwright MCP using only Tab, Enter, Space, arrows and Escape, given a task such as "add a medium blue shirt to the cart and set quantity to 2", and reports where it got stuck | Keyboard traps, unreachable controls, focus lost after a dialog, unnamed controls it cannot identify. Finds paths we did not script | Agents fail tasks for their own reasons: one benchmark found tree-only agents completed 7.25% of visual web tasks [G5] (via search, not opened), so failures need a person to confirm. Non-deterministic |
+| **2. Keyboard-only agent** | An LLM drives a browser through Playwright MCP using only Tab, Enter, Space, arrows and Escape, given a task such as "add a medium blue shirt to the cart and set quantity to 2", and reports where it got stuck | Keyboard traps, unreachable controls, focus lost after a dialog, unnamed controls it cannot identify. Finds paths we did not script | Agents fail tasks for their own reasons: on VisualWebArena (2024), tree-only agents completed 7.25% of tasks [G5] (via search, not opened). That benchmark's tasks are built to need vision, so the figure does not predict keyboard tasks on a store, but agent failures still need a person to confirm. Non-deterministic |
 | **3. LLM review of the accessibility tree** | For each page state, capture Playwright's accessibility snapshot (YAML of roles, names and states) and a screenshot, and ask a model to flag vague or duplicate names, alt text that does not match the image, missing group names, odd reading order and visible text missing from the name | Judgement calls that rules miss: "link: click here", alt text that says "IMG_2041", a swatch group with no "Size" | Sees one state at a time; misses behaviour; can invent problems. Published studies report high recall on planted errors but false positives and unstable output [G4] (via search, not opened) |
 
 Tool status, opened on 2026-10-08: Guidepup 0.35.0 was published on 2026-10-01 under the MIT licence and supports VoiceOver on macOS and NVDA on Windows; its Playwright adapter 0.19.1 was published on 2026-08-16 [G1] (opened). Automated NVDA output is visible only in NVDA's speech viewer, and Guidepup has a GitHub Actions setup action [G2] (via search, not opened). Playwright produces accessibility snapshots as YAML and Playwright MCP gives agents the same tree [G6] (via search, not opened).
@@ -55,16 +55,19 @@ Tool status, opened on 2026-10-08: Guidepup 0.35.0 was published on 2026-10-01 u
 
 ## Cost per release
 
-All figures are estimates. Assumptions: five golden stores, 20 page states, 25 flows. Model prices are from the Claude API price table cached on 2026-10-06 [G7] (opened): Haiku 5.5 $0.10 in and $0.50 out per million tokens, Sonnet 5.5 $2 and $10, Opus 5.5 $4 and $20; the Batch API halves these. GitHub-hosted runners: macOS $0.062 a minute, Windows $0.010 [G8] (via search, not opened).
+All figures are estimates. Assumptions: five golden stores, about 60 page states and 25 flows per release (see "What a release check must cover"). Model prices are from the Claude API price table cached on 2026-10-06 [G7] (opened): Haiku 5.5 $0.10 in and $0.50 out per million tokens, Sonnet 5.5 $2 and $10, Opus 5.5 $4 and $20; the Batch API halves these. GitHub-hosted runners at list prices: macOS $0.062 a minute, Windows $0.010, Linux $0.006 [G8] (opened). Expert time, one basis throughout: 2 to 3 hours per theme at $80 to $200 an hour [G9] (via search, not opened; vendor sources), so $160 to $600 per theme and $800 to $3,000 for all five.
 
 | Item | Basis | Per release |
 |---|---|---|
-| Scripted SR runs on CI | 25 flows at 1 to 2 minutes on macOS and on Windows | About $2 to $4 |
-| LLM tree review | About 60 states at about 15,000 tokens in and 1,000 to 3,000 out | Haiku 5.5 about $0.10 to $0.30; Sonnet 5.5 about $2 to $4; Opus 5.5 about $5 to $8 |
-| Keyboard-only agent | 25 tasks; one vendor measured about 114,000 tokens a task with Playwright MCP [G6]; our own estimate runs higher | Sonnet 5.5 about $6 to $25; Haiku 5.5 about $0.50 to $1.50, quality unknown |
+| LLM tree review (API) | 60 states at about 15,000 tokens in and 1,000 to 3,000 out | Haiku 5.5 about $0.10 to $0.30; Sonnet 5.5 about $2 to $4; Opus 5.5 about $5 to $8 |
+| Keyboard-only agent (API) | 25 tasks; one vendor measured about 114,000 tokens a task with Playwright MCP [G6]; our own estimate runs higher | Sonnet 5.5 about $6 to $25 a run; Haiku 5.5 about $0.50 to $1.50, quality unknown. Monthly, not every release |
+| Scripted SR runs (CI minutes) | 25 flows at 1 to 2 minutes on macOS and on Windows: 25 to 50 minutes on each | Public repo: $0. Private repo: drawn from the free allowance first; at list prices about $2 to $4 (see below) |
 | Owner check | 30 minutes, already in the plan | Owner time |
-| Paid expert spot check | D-13 estimate | $100 to $300 |
-| Paid expert, market rates | $80 to $200 an hour [G9] (via search, not opened; vendor sources); 2 to 3 hours per theme | $160 to $600 per theme |
+| Paid expert, plan's estimate (B) | D-13 estimate | $100 to $300, about one theme's check at the low end of market rates, less at the high end |
+| Paid expert, one theme | 2 to 3 hours | $160 to $600 |
+| Paid expert, all five themes | 10 to 15 hours | $800 to $3,000 |
+
+**CI minutes depend on repo visibility.** Standard GitHub-hosted runners are free for public repositories, and this repo is public today. If the owner makes it private (Q-32), the runs draw on the plan's included minutes: 2,000 a month on GitHub Free [G8] (opened). GitHub's billing pages, as seen through search, say macOS minutes count 10 times and Windows minutes 2 times against that allowance [G8] (via search, not opened). At weekly releases the screen-reader runs alone would use about 1,200 to 2,400 of those 2,000 minutes a month, before lint, tests and scans. Past the allowance GitHub blocks runs unless a payment method is on file [G8] (opened). Paying for minutes, about $7 to $15 a month at list prices if all were billed, is a purchase that needs owner approval under D-04.
 
 Running the agent from a Claude Code session on the Claude Pro plan (D-01) costs nothing extra in money but uses plan limits that builder lanes also need.
 
@@ -73,15 +76,17 @@ Running the agent from a Claude Code session on the Claude Pro plan (D-01) costs
 | Option | What | Cost (est.) |
 |---|---|---|
 | A | Owner check only | $0 and 6 hours of owner time |
-| B | Expert every release (the D-13 fallback) | $1,200 to $3,600 at the plan's estimate; more at market rates for five themes |
+| B | Expert every release (the D-13 fallback) | $1,200 to $3,600 at the plan's estimate, which buys about one theme a release. All five themes every release on the same basis as D: $9,600 to $36,000 |
 | C | Monthly expert retainer | Not priced; no quote found |
-| D | AI checks every release, keyboard agent monthly, owner check every release, expert at G2 and G3 | AI about $70 to $170 (12 runs at $4 to $8, plus 3 agent runs at $6 to $25); two expert checks of 4 to 6 hours across themes at $80 to $200 an hour, $640 to $2,400; total about $710 to $2,570 |
+| D | AI checks every release, keyboard agent monthly, owner check every release, expert at G2 and G3 | API about $40 to $125 (12 tree reviews at $2 to $4, 3 agent runs at $6 to $25). CI minutes $0 while public, up to about $45 at list prices if private. Two expert checks of all five themes, $1,600 to $6,000. Total about $1,650 to $6,150, or up to about $6,200 if private |
 
-After launch, D drops to a quarterly expert check (about $320 to $1,200 each) while B keeps costing every week. Expert checks are one-offs outside the D-02 cap, and each needs owner approval under D-04. The AI checks fall in the API line of the budget ($20 to $40 a month in M4 to M6). To stay inside it, run the tree review on Haiku 5.5 or through the Batch API, review only themes that changed, and run the keyboard agent monthly rather than every release.
+**How D compares with B.** Over the first 12 releases D costs about as much as B at the plan's estimate, or more, because two full expert checks dominate its cost. What D buys is coverage: all five themes on every release by machine, plus two expert checks that cover every theme, JAWS and iPhone VoiceOver. B at $100 to $300 buys about one theme's check a release. A cheaper D checks two themes per milestone (4 to 6 hours, $320 to $1,200 each) and leaves the other three to the AI checks and the owner.
+
+After launch, D costs about $850 to $3,150 a quarter (one full expert check plus about $14 to $41 a month in API), and B at the plan's estimate about $1,200 to $3,600 a quarter at 12 releases. The ranges overlap. D stays cheaper only while releases are frequent; with fewer releases, B costs less. Each new theme adds an expert check of $160 to $600. Expert checks are one-offs outside the D-02 cap, and each needs owner approval under D-04. The API costs fall in the API line of the budget ($20 to $40 a month in M4 to M6). To stay inside it, run the tree review on Haiku 5.5 or through the Batch API, review only themes that changed, and run the keyboard agent monthly rather than every release.
 
 ## Recommendation
 
-**Pick D**, and prove it before relying on it.
+**Propose D to the owner (Q-30)**, and prove it before relying on it.
 
 1. **Build in M4 (lane G, test harness).** Guidepup and Playwright flows for VoiceOver on a macOS runner and NVDA on a Windows runner, one golden store per theme, with an approved baseline of spoken output. A change in names, announcements or focus fails CI. Add the LLM tree review as warnings, not a gate.
 2. **Keep the owner's check.** Each release, the owner spends 30 minutes with VoiceOver on what the AI flagged plus one random flow, using the script in docs/research/learning-path.md.
@@ -89,52 +94,11 @@ After launch, D drops to a quarterly expert check (about $320 to $1,200 each) wh
 4. **Expert checks at milestones.** Before pilots go live (G2), before App Store submission (G3), then quarterly or when a new theme joins the library. Ask for JAWS and iPhone VoiceOver, which our automation does not cover.
 5. **Claims.** Reports call these "automated and AI-assisted checks" and list what they did not cover. Never "audit" or "certified" (D-06, docs/policy/claims-policy.md).
 
-**Needs from the owner:** an API key with a spend limit (Q-04) for the LLM review, golden dev stores (Q-03), and approval of the first expert check as a one-off purchase (D-04).
+**Needs from the owner:** the pick between B and D (Q-30), an API key with a spend limit (Q-04) for the LLM review, golden dev stores (Q-03), approval of the first expert check as a one-off purchase (D-04), and D-04 approval before paying for any CI minutes, which applies only if the repo turns private.
 
-## Draft memo section for decisions/D-13.md
+## Memo section in decisions/D-13.md
 
-The planner can paste this below the existing content of decisions/D-13.md.
-
-```markdown
-## Research result (T-014, 2026-10-08)
-
-AI-driven checks can replace most of the repeatable part of a per-release
-check, but not all of it. They cannot judge real usability, they do not
-cover JAWS or phone screen readers, and LLM output is not stable enough
-to be the only check. Full brief: docs/research/d13-ai-accessibility-checks.md.
-
-| Option | What | Cost (est.) |
-|---|---|---|
-| A | Owner's 30-minute check only | $0 |
-| B | Paid expert every release | $100 to $300 a release |
-| C | Monthly expert retainer | Not priced |
-| D | AI checks every release (scripted VoiceOver and NVDA runs, LLM review of the accessibility tree, monthly keyboard-only agent) plus the owner's check, plus a paid expert at G2, G3, then quarterly or per new theme | About $4 to $8 a release plus $6 to $25 a month in API and CI; expert checks about $320 to $1,200 each |
-
-### Agents' pick
-
-D. It checks every theme on every release for a few dollars and keeps
-paid experts for the moments that matter, with JAWS and phone screen
-readers added there.
-
-### Risk
-
-AI checks may miss a serious barrier in a covered flow. Before G2, run
-the AI checks and an expert on the same golden store; if the AI misses a
-serious barrier, fall back to B until the gap is closed.
-
-### What this means for agents
-
-- Lane G builds Guidepup and Playwright screen-reader flows per golden
-  store in M4 and gates CI on changes to spoken output.
-- The LLM review reports warnings only. It never gates a release.
-- Each expert check reaches the owner as a purchase memo first (D-04).
-- Reports say "automated and AI-assisted checks" and list what was not covered (D-06).
-
-### Needs
-
-Q-03 golden stores, Q-04 API key with a spend limit, owner approval of
-the first expert check.
-```
+The research result, the options with costs and the proposal pending the owner's pick are in decisions/D-13.md, section "Research result (T-014, 2026-10-08)". Keep the two files in step.
 
 ## Sources
 
@@ -142,12 +106,12 @@ Checked 2026-10-08. "Opened" means we fetched and read it.
 
 - G1. npm registry metadata and README for `@guidepup/guidepup` (0.35.0, published 2026-10-01, MIT, "VoiceOver on MacOS and NVDA on Windows with a single API") and `@guidepup/playwright` (0.19.1, published 2026-08-16): https://registry.npmjs.org/@guidepup/guidepup , https://registry.npmjs.org/@guidepup/playwright (opened). Also `@axe-core/playwright` 4.13.0, published 2026-08-11, https://registry.npmjs.org/@axe-core/playwright (opened).
 - G2. Guidepup setup and CI notes: https://unpkg.com/@guidepup/setup@0.19.2/README.md , https://dev.to/craigmorten/a11y-unlocked-screen-reader-automation-tests-3mc8 , https://assistivlabs.com/articles/automating-screen-readers-for-accessibility-testing (via search, not opened).
-- G3. axe-core 4.14 rule list, https://github.com/dequelabs/axe-core (opened); coverage figures in docs/research/wcag-primer.md.
+- G3. axe-core 4.13.0 (the version the scanner runs) and 4.14.0 rule lists, https://github.com/dequelabs/axe-core (opened); coverage figures in docs/research/wcag-primer.md.
 - G4. LLM accessibility evaluation studies: https://arxiv.org/pdf/2511.03471 (MLLMs as audit copilots), https://press.um.si/index.php/ump/en/catalog/book/1128/chapter/1235 (LLM automation of manual WCAG testing, 2026), https://arxiv.org/pdf/2504.02110 (ScreenAudit), https://arxiv.org/pdf/2501.03572 (ChatGPT case study), https://arxiv.org/pdf/2605.13873 (literature review) (via search, not opened).
 - G5. A11y-CUA dataset summary, https://a11y-paradise.onrender.com/reviews/69e44b8d1f05966ee4971623 ; tree-only agents on VisualWebArena, https://current.tinyfish.ai/issue/31/foundations/article/18062/what-browser-agents-see-before-they-think (via search, not opened).
 - G6. Playwright ARIA snapshots, https://playwright.dev/docs/aria-snapshots ; Playwright MCP snapshots, https://playwright.dev/mcp/snapshots ; token use per task, https://morphllm.com/playwright-mcp (via search, not opened; the last is a vendor figure).
 - G7. Claude API model price table in Claude Code's bundled claude-api skill, cached 2026-10-06 (opened). Official page: https://docs.claude.com/en/docs/about-claude/pricing (not opened). Batch API at 50% of standard prices, per the same skill.
-- G8. GitHub Actions runner pricing, https://docs.github.com/en/enterprise-server@3.17/billing/reference/actions-runner-pricing ; 2026 price cut, https://itbrief.news/story/github-cuts-actions-runner-prices-adds-new-usage-fee (via search, not opened). Whether macOS minutes count extra against a private repo's free minutes is unverified.
+- G8. GitHub Actions billing. Opened 2026-10-08 in GitHub's docs source (github/docs repo, read through raw.githubusercontent.com): `content/billing/concepts/product-billing/github-actions.md` (free for public repos on standard runners; private repos get a plan quota; usage past it is blocked without a payment method), `data/reusables/billing/actions-included-quotas.md` (GitHub Free: 2,000 minutes a month) and `data/reusables/billing/actions-standard-runner-prices.md` (macOS $0.062, Windows $0.010, Linux $0.006 a minute). Published at https://docs.github.com/en/billing/concepts/product-billing/github-actions (not opened; the proxy refused it). The 10 times macOS and 2 times Windows minute multipliers: https://docs.github.com/en/billing/managing-billing-for-your-products/managing-billing-for-github-actions/about-billing-for-github-actions (via search, not opened, 2026-10-08); the current source folds that page into runner pricing, so check how included minutes are counted before relying on it. Also https://docs.github.com/en/enterprise-server@3.17/billing/reference/actions-runner-pricing ; 2026 price cut, https://itbrief.news/story/github-cuts-actions-runner-prices-adds-new-usage-fee (via search, not opened).
 - G9. Freelance and audit rates: https://www.jobbers.io/qa-testing-automation-freelancing-guide-2026/ , https://dynomapper.com/?p=5363 , https://accessible.org/pricing/ (via search, not opened; vendor sources).
 - G10. WebAIM Screen Reader User Survey #10, https://webaim.org/projects/screenreadersurvey10/ ; mobile figure via https://webaxe.org/category/screenreader (via search, not opened).
 - G11. Assistiv Labs, cloud access to NVDA and JAWS; third-party listings show $19 to $99 a month tiers, https://www.preqin.com/data/profile/asset/assistiv-labs/490996 (via search, not opened). A possible way to add JAWS later; it would need D-04 approval.

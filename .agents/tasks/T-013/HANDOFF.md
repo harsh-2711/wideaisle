@@ -15,16 +15,17 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | Claims policy draft | 2f267f9 |
+| Reviewer fixes: describes the existing CI claims check and its gaps, "audit" banned, "failures automated tools can detect" wording, items pending lawyer questions 4 and 11, D-06 scope and hype-word source corrected | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Pull request review, then merge.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 
 1. After merge, set the state to Blocked on you with needs Q-23.
 2. The owner approves the policy (Q-23).
-3. Keep scripts/ci/checks.mjs claims rules in line with the policy.
+3. Planner follow-up: widen the claims check in scripts/ci/checks.mjs to the policy's word list and folders (see "How we enforce it").
 
 ## Blockers and open questions
 

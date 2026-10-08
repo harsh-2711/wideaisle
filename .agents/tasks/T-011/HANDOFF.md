@@ -15,16 +15,17 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | Legal brief | a8d0f30 |
+| Reviewer fixes: EN 301 549 V3.2.1 as de facto benchmark, NFB suit against the Title II extension, non-EU sellers pending lawyer question 15, FTC disclosure row and narrower question 2 | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Pull request review, then merge.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 
 1. After merge, set the state to Done.
 2. The owner reads it (Q-20).
-3. Open the FTC's own documents when Q-01 allows; the brief cites them through search.
+3. Open the FTC's final order and the NFB case docket (D. Md., 1:26-cv-02007) when Q-01 allows; the brief cites both through search.
 
 ## Blockers and open questions
 
