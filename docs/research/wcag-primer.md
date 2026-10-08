@@ -8,7 +8,7 @@ Task T-010 · M1 research lane · Checked 2026-10-08 · Not legal advice
 - Laws and courts mostly cite WCAG 2.1 AA today. The EU's next harmonised standard (EN 301 549 V4.1.1) moves to WCAG 2.2 [S11] (via search, not opened). WCAG 2.2 keeps everything in 2.1 except 4.1.1 Parsing, which W3C removed [S3] (via search, not opened). Building to 2.2 AA covers 2.1 AA.
 - Conformance is all or nothing per page and per process. WCAG's own example is an online store: every page from product selection to the end of checkout must conform before any page in that process can [S1] (opened). Shopify checkout sits outside the theme, so no theme app can make a whole purchase process conform on its own.
 - Six failure types make up 96% of errors detected on the top million home pages [S5] (via search, not opened). They map to six criteria groups: 1.4.3, 1.1.1, 1.3.1/3.3.2/4.1.2, 2.4.4, 4.1.2 and 3.1.1. v1 fixes those six where the cause sits in theme code, theme settings or product image alt text.
-- Automated tools catch a minority of failures. Our scanner runs axe-core 4.13.0, the version the repo pins. It has rules that can report a failure for 16 of the 55 A and AA criteria, and review-only flags for 4 more [S4] (opened). The newer 4.14.0 adds a default rule for 2.5.3 Label in Name, which makes 17. For most of these criteria axe tests one way the criterion can fail, not all of them.
+- Automated tools catch a minority of failures. Our scanner runs axe-core 4.13.0, the version the repo pins. It has rules that can report a failure for 16 of the 55 A and AA criteria (15 in a default scan, because `target-size` is off), and review-only flags for 4 more [S4] (opened). The newer 4.14.0 adds a default rule for 2.5.3 Label in Name, which makes 17. For most of these criteria axe tests one way the criterion can fail, not all of them.
 - Dawn 16.0.0 ships with most controls named: its menu drawer, cart drawer, variant picker, price and newsletter form all carry labels or hidden text [S7] (opened). We read Dawn's code only, not Shopify's other free themes. On real stores, failures mostly come from colour settings, missing alt text, apps, custom sections and older or paid themes. Our M2 census will measure this; until then treat it as a working assumption.
 
 ## How to read this primer
@@ -168,7 +168,7 @@ The tables above cover 32 of the 55 A and AA criteria. These are the rest. None 
 | 1.3.3 Sensory Characteristics | A | Instructions such as "tap the green button" or "see the size chart on the right" | No |
 | 1.3.4 Orientation | AA | Pages or pop-ups locked to portrait or landscape | No (`css-orientation-lock` is experimental) |
 | 2.1.4 Character Key Shortcuts | A | Single-key shortcuts, mostly from search or chat apps; rare in themes | No |
-| 2.2.1 Timing Adjustable | A | Countdown offers, cart reservation timers and time-outs with no way to extend | Partly: `meta-refresh` catches timed page refresh only |
+| 2.2.1 Timing Adjustable | A | Cart reservation timers and session time-outs with no way to extend | Partly: `meta-refresh` catches timed page refresh only |
 | 2.3.1 Three Flashes or Below Threshold | A | Flashing sale banners or GIFs | No |
 | 2.4.5 Multiple Ways | AA | Menu plus search or a sitemap; header search usually meets it | No |
 | 2.4.6 Headings and Labels | AA | Vague headings such as "Featured" or field labels that do not say what to enter | No |
@@ -176,7 +176,7 @@ The tables above cover 32 of the 55 A and AA criteria. These are the rest. None 
 | 2.5.2 Pointer Cancellation | A | Controls that act on press rather than release, such as some quick-add buttons | No |
 | 2.5.3 Label in Name | A | Visible text missing from the accessible name, such as `aria-label="Open cart"` on a button that shows "Bag (2)". Limits every v1 fixer | No (`label-content-name-mismatch` is experimental in 4.13.0) |
 | 2.5.4 Motion Actuation | A | Shake or tilt features; rare on storefronts | No |
-| 3.1.2 Language of Parts | AA | Phrases in another language, such as French product names on an English store, with no `lang` | Partly: `valid-lang` checks a `lang` value is valid, not that one is present |
+| 3.1.2 Language of Parts | AA | Phrases in another language, such as a product description written in French on an English store, with no `lang` | Partly: `valid-lang` checks a `lang` value is valid, not that one is present |
 | 3.2.1 On Focus | A | Menus or pop-ups that open, or pages that change, when a control only receives focus | No |
 | 3.2.3 Consistent Navigation | AA | Header or footer links in a different order on some templates, such as landing pages | No |
 | 3.2.4 Consistent Identification | AA | The same control named differently across pages, such as "Cart" in the header and "Bag" in the drawer | No |
