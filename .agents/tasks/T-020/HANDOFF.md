@@ -17,7 +17,7 @@ In review. The crawler and its tests are done. The full run waits on Q-01 (netwo
 | robots.txt parser, PoliteClient, theme detection, axe scan, resumable JSONL | be3d59b |
 | Public addresses only, checked on every redirect hop | 31b59a5 |
 | Connections pinned to vetted addresses; egress proxy for the browser | 46f2e52 |
-| Review fixes: WebRTC off, robots and spacing on every hop, Crawl-delay on scans, retries | (this commit) |
+| Review fixes: WebRTC off, robots and spacing on every hop, Crawl-delay on scans, retries | fdcc80d |
 
 ## Current step
 
