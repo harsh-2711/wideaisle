@@ -1,0 +1,17 @@
+.cache
+build
+node_modules
+.git
+.env
+.env.*
+!.env.example
+.agents
+.claude
+.husky
+.shopify
+coverage
+playwright-report
+test-results
+tests
+docs
+decisions

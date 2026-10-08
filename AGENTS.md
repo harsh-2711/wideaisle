@@ -41,5 +41,16 @@ decisions treated as final.
 - Never buy or sign up for anything without approval (D-04).
 - Never claim compliant, certified, lawsuit-proof or 100% accessible (D-06).
 
+## Shopify work
+Use the Shopify AI Toolkit (Dev MCP server and skills) for every Shopify API
+and Liquid change: validate GraphQL and theme patches before committing.
+
 ## Commands
-Filled in during M0: install, dev, test, lint, scan.
+- Install: `npm install` (Node 22.12 or later; also sets up the commit hook)
+- Database: `npm run db:up` (Docker Postgres), then `npm run db:migrate`
+- Dev: `npm run dev` (Shopify CLI; needs a Partner app and a dev store)
+- Test: `npm test` (unit and agent tooling), `npm run test:a11y` (axe on fixtures)
+- Lint and types: `npm run lint`, `npm run typecheck`
+- Build: `npm run build`
+- Board: `npm run board -- list`
+- Scan: added with the scanner lane (M2 census, M4 lane A)

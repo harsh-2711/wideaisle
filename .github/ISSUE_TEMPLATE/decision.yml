@@ -1,0 +1,29 @@
+name: Decision
+description: A choice only the owner can make. The memo lives in decisions/.
+title: "D-xx: "
+labels: [decision]
+body:
+  - type: input
+    id: needed-by
+    attributes:
+      label: Needed by
+      placeholder: M2 or G1
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options with monthly cost
+    validations:
+      required: true
+  - type: textarea
+    id: pick
+    attributes:
+      label: Agents' pick and why
+    validations:
+      required: true
+  - type: input
+    id: memo
+    attributes:
+      label: Memo
+      placeholder: decisions/D-xx.md
