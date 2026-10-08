@@ -2,12 +2,12 @@
   "title": "Spike D: scan benchmark",
   "milestone": "M3",
   "lane": "scanner",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "builder",
+  "state": "Running",
+  "step": "read context, plan benchmark",
   "branch": "claude/feat-scan-benchmark",
   "issue": 29,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T11:52:25Z",
   "id": "T-033"
 }
