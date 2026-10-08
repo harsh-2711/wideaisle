@@ -5,7 +5,7 @@ import { sessionTable } from "../db/schema";
 import { verifyShopifyWebhook } from "../lib/webhooks/verify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "");
+  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "", { topics: ["app/scopes_update"] });
   if (!hook) return new Response("Unauthorized", { status: 401 });
 
   console.log(`Received ${hook.topic} webhook for ${hook.shop}`);

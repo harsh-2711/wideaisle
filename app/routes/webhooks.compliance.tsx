@@ -10,7 +10,7 @@ import { verifyShopifyWebhook } from "../lib/webhooks/verify.server";
 // after uninstall and erases what we hold for the shop. Scans and evidence
 // join this list when those tables exist (M6 compliance lane).
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "");
+  const hook = await verifyShopifyWebhook(request, process.env.SHOPIFY_API_SECRET ?? "", { topics: ["customers/data_request", "customers/redact", "shop/redact"] });
   if (!hook) return new Response("Unauthorized", { status: 401 });
 
   switch (hook.topic) {
