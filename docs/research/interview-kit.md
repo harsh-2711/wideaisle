@@ -1,6 +1,6 @@
 # Interview kit: merchants and agencies
 
-Task T-024 · M2 · Written 2026-10-08, revised 2026-10-08 after review · Decisions used: D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
+Task T-024 · M2 · Written 2026-10-08, revised 2026-10-08 after review · Decisions used: D-01, D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
 
 ## The answer
 
@@ -10,7 +10,7 @@ Task T-024 · M2 · Written 2026-10-08, revised 2026-10-08 after review · Decis
 - You send every message and run every call. Agents draft messages and write the summaries.
 - Never promise compliance (D-06). Never cold-contact stores recently named in lawsuits (D-16). Every message has an easy opt-out.
 - Until a lawyer answers section 15, cold messages go only to stores and agencies based in the US.
-- This repo is public (Q-32). Recordings, transcripts, per-call summaries and contact lists never go in it. They live in the private ledger repo once you create it (Q-07), and on your machine until then. Only a combined, anonymous synthesis goes in this repo.
+- This repo is public (Q-32). Recordings, transcripts, contact lists, batch files and the ID key never go in any git repo, because git keeps deleted files in its history. They stay in a private folder on your machine, or one you already have. Per-call summaries, coded by participant ID, go in the private ledger repo once you create it (Q-07). Only a combined, anonymous synthesis goes in this repo.
 - Five choices wait on you before the first batch. See "Decide before the first batch" at the end.
 
 ## Contents
@@ -114,7 +114,7 @@ Agencies, in this order:
 
 Run these steps on every list before you approve it (Q-25).
 
-Batch files hold names, emails and stores. Keep them, the opt-out list and the suppression list in private storage (section 8), never in this repo.
+Batch files hold names, emails and stores. Keep them, the opt-out list and the suppression list in your private folder (section 8), never in a git repo. Build them there too, not in a session inside the repo clone (section 8).
 
 1. Remove every address and store on the opt-out list.
 2. Remove every store recently named in an accessibility lawsuit. Until the team has a lawsuit list, an agent searches each store name and company name with "ADA lawsuit" and "accessibility lawsuit". It drops any store with a hit inside the window you set (section 14) and adds it to the suppression list. The batch file lists dropped stores without the reason, so it is not a list of sued stores. Never write a sued store's name in this repo.
@@ -249,7 +249,7 @@ Subject: How do your clients handle accessibility?
 
 > Thanks, {first name}. We're set for {day, date, time in their time zone} at {call link}.
 >
-> I'll ask about your store, how accessibility has come up, what you've tried and what it cost. With your OK I'll record the call so I can take fewer notes. The recording, transcript and my notes stay in private storage that only I and my research tools can open. I delete the recording and transcript within {recording retention} and my notes within {notes retention}. I may publish a combined summary of all my calls, with no names or stores. You can ask me to delete anything about you at any time by replying to this email.
+> I'll ask about your store, how accessibility has come up, what you've tried and what it cost. With your OK I'll record the call so I can take fewer notes. Only I and the AI tools I use to transcribe and summarise see the recording and transcript, and I delete them within {recording retention}. My notes use a code instead of your name, and after {notes retention} I delete the key that links the code to you. I may publish a combined summary of all my calls, with no names or stores. You can ask me to delete anything about you at any time by replying to this email or message.
 >
 > If the time stops working, reply and we'll move it.
 
@@ -267,38 +267,47 @@ Add the address to the opt-out list the same day.
 4. Send the confirmation (message G) as soon as they book. Show the time in their time zone.
 5. Send one reminder 24 hours before.
 6. If someone does not show, offer one new time. If they miss that too, stop.
-7. Aim for 4 to 6 calls a week. After call 5 and call 10, the research agent reads the summaries where they live (section 8) and suggests script changes. Keep the price questions the same throughout, so answers stay comparable.
-8. Give each participant an ID: M01 to M15 for merchants, A01 to A05 for agencies. Keep the key that links IDs to names and stores in private storage (section 8).
+7. Aim for 4 to 6 calls a week. After call 5 and call 10, the research agent reads the ID-coded summaries where they live (section 8) and suggests script changes. Keep the price questions the same throughout, so answers stay comparable.
+8. Give each participant an ID: M01 to M15 for merchants, A01 to A05 for agencies. Keep the key that links IDs to names and stores in your private folder (section 8).
 
 ## 8. Consent, recording and where notes live
 
 ### Where notes live
 
-This repo is public (Q-32). Nothing that names a participant, or points to one, goes in it.
+This repo is public (Q-32). Nothing that names a participant, or points to one, goes in it. Git keeps every deleted file in its history. So recordings, transcripts and contact details stay out of every git repo, including the ledger repo. Summaries go in the ledger only under a participant ID, and deleting the ID key unlinks them.
 
 | What | Where it lives |
 |---|---|
-| Recordings, transcripts and per-call summaries | Private storage: the private ledger repo harsh-2711/wideaisle-ledger (D-18) once you create it (Q-07). Until then, your machine only, in a folder outside the repo clone |
-| Batch files with names, emails and stores; screener answers; the key that links IDs to people | Private storage, as above |
-| The opt-out list and the suppression list, including sued stores | Private storage, as above |
+| Recordings, transcripts, screener answers, batch files with names and emails, the key that links IDs to people, the opt-out list and the suppression list | Your private folder: a folder on your machine outside the repo clone, or a private folder you already have. Never a git repo. Do not sign up for new storage (D-04) |
+| Per-call summaries, under the participant ID only | The private ledger repo harsh-2711/wideaisle-ledger (D-18) once you create it (Q-07). Until then, your private folder |
 | The combined, anonymous synthesis (section 12) | This repo: docs/research/interview-synthesis.md |
 
-An agent writes or reads per-call summaries only where it can reach private storage: on your machine, or in a clone of the ledger repo. Agents never commit them to this repo. Revisit this table once you decide Q-32.
+This repo's hooks copy agent sessions into git:
+
+- The ledger hook saves every agent session transcript to the ledger folder, which becomes the ledger repo (D-18).
+- It also files every child agent's last message in .agents/tasks/<id>/children/, which this public repo tracks.
+
+So:
+
+- Never open a transcript, a contact list or a batch file in a Claude Code session inside the repo clone. Work on them in the Claude app, or in Claude Code opened in your private folder, where this repo's hooks do not run.
+- An agent that reads interview data ends its run with only the participant ID and the private path, never the content.
+- Agents never commit interview data to this repo. Revisit this section once you decide Q-32.
 
 ### Transcripts
 
 1. Record with the call tool you already use. Use its built-in transcript if your current plan has one.
 2. If it has none, transcribe on your own machine with Whisper, OpenAI's open-source speech-to-text model, which runs locally for free (via search, not opened). The audio does not leave your machine at this step.
-3. An agent summarises the transcript with the AI plan you already pay for (D-01).
-4. Do not sign up for, or pay for, a transcription or note-taker service without your approval (D-04). A meeting bot that joins the call counts as a new service.
+3. Summarise the transcript with the Claude plan you already pay for (D-01), outside the repo clone (see above). Save the summary under the participant ID only.
+4. Before you share a transcript, turn off the plan's setting that lets chats be used for model training. In Claude it is "Help improve Claude" under Settings, Privacy (via search, not opened).
+5. Do not sign up for, or pay for, a transcription or note-taker service without your approval (D-04). A meeting bot that joins the call counts as a new service.
 
 ### Consent script
 
 Read this out at the start of every call, before you press record:
 
-> Before we start, a word on notes. I'd like to record this call so I can listen instead of typing. I use AI tools to transcribe the recording and summarise it. The recording, the transcript and my notes stay in private storage that only I and my research tools can open. I delete the recording and transcript within {recording retention}, and my notes within {notes retention}. My notes use a code, not your name or your store's name. I may publish a combined summary of all my calls. It has no names, no stores and nothing that points to you. I won't quote you by name, or name your store, unless you say yes in writing. You can ask me to delete anything about you at any time by replying to my email. Is it OK to record?
+> Before we start, a word on notes. I'd like to record this call so I can listen instead of typing. I use AI tools to transcribe the recording and summarise it. Only I and those tools see the recording and transcript, and I delete them within {recording retention}. My notes use a code instead of your name or your store's name, and only my research tools and I read them. After {notes retention} I delete the key that links the code to you. I may publish a combined summary of all my calls. It has no names, no stores and nothing that points to you, and once it is published I can't pull it back. I won't quote you by name, or name your store, unless you say yes in writing. You can ask me to delete anything about you at any time by replying to my email or message. Is it OK to record? And may I quote your words, without your name or store, in that summary?
 
-Then, once recording starts: "Just so it's on the recording: you're OK with me recording this call?"
+Then, once recording starts: "Just so it's on the recording: you're OK with me recording this call? And may I quote your words, without your name or store, in the combined summary?" Write both answers in the summary.
 
 Rules:
 
@@ -307,7 +316,14 @@ Rules:
 - For people in the EU or UK, also tell them the purpose, who sees the data, how long you keep it, and how to ask for deletion. The script above covers this; keep it.
 - Never share a recording outside the project.
 - Per-call summaries never go in this repo. Only the combined synthesis does (section 12).
-- If someone asks for deletion, delete their recording, transcript, summary, screener answers and contact details, and confirm by reply. Take their quotes out of the synthesis. If they also opted out, keep only their address on the opt-out list.
+- If someone asks for deletion:
+  1. Delete their row in the ID key first, so nothing left can be tied to them.
+  2. Delete their recording, transcript, screener answers and contact details from your private folder, and empty its trash.
+  3. Delete their summary from the ledger repo, then purge it from the ledger's history. You do the purge, since it rewrites history and agents never force-push. Until it is purged, step 1 keeps the copy in history unlinked.
+  4. Take their quotes out of the next version of the synthesis. Earlier versions stay in this repo's history, but they never named them.
+  5. If they also opted out, keep only their address on the opt-out list.
+  6. Confirm by reply.
+- When the notes period ends (section 14), delete the ID key. Summaries left in the ledger then cannot be tied to anyone.
 - If someone describes a demand letter or lawsuit, do not ask for documents, names of law firms or amounts they do not offer. Do not write any detail they share into any note. The summary records only yes, no or declined. Do not give legal advice. If asked, say: "I can't advise on that. A lawyer can."
 
 ## 9. Call script: merchants (25 minutes)
@@ -337,7 +353,7 @@ Ask about the past, not the future. "Tell me about the last time..." beats "Woul
 - Probe each route by name if they do not mention it: an accessibility widget or overlay, a freelancer or agency, an accessibility app that edits code, switching themes, doing it themselves.
 - "What would make you uninstall an app like that?"
 
-**5. Demand letters and fears (4 minutes).** Sensitive. Let them skip.
+**5. Demand letters and fears (4 minutes).** Sensitive. Let them skip. Before the first question, offer to pause the recording: "The next question is about legal letters. Would you like me to pause the recording?" If yes, pause it, and resume it before the fears question.
 - "Some merchants have had a demand letter or lawsuit about accessibility. Has that come up for you, or for someone you know? You're welcome to skip this."
 - If yes: "What happened first? Who did you call? What did you need to show them? What do you wish you'd had on hand?" Ask about cost only as a rough range, and only if they seem open.
 - For everyone: "What worries you most about changing your site for accessibility?" Listen for broken theme, slower site, an ugly widget, cost, time, not knowing what is enough.
@@ -412,12 +428,13 @@ Same opening, consent and closing as the merchant script. The middle changes.
 
 ## 11. Per-call summary template
 
-The research agent fills one table per call within 24 hours, from the transcript. Save each as `interviews/<ID>.md` in private storage (section 8), never in this repo. Use the participant ID only. Quotes are verbatim, short and anonymous.
+The research agent fills one table per call within 24 hours, from the transcript, outside the repo clone (section 8). Save each as `interviews/<ID>.md` in the ledger repo, or in your private folder until Q-07 is done (section 8). Never in this repo. Use the participant ID only. Quotes are verbatim, short and anonymous.
 
 | Field | Answer |
 |---|---|
 | ID, date, length | M01, 2026-10-xx, 24 min |
 | Recorded | Yes or no |
+| Quote consent | Yes or no, as said on the recording: may we quote their words, without name or store, in the combined summary |
 | Segment | Merchant small, mid or larger; or agency small, mid or larger |
 | Role | Owner, ecommerce manager, developer, agency founder |
 | Theme and version | From the storefront |
@@ -439,7 +456,7 @@ The research agent fills one table per call within 24 hours, from the transcript
 | Commitment given | What exactly, with a date, or none |
 | Evidence level (section 12) | 0 to 5 |
 | H1 to H6 | For each: supports, against or no signal |
-| Best quote | Verbatim, anonymous, with consent |
+| Best quote | Verbatim and anonymous. Only if quote consent is yes |
 | Surprises | What we did not expect |
 | Follow-ups | Who does what by when |
 
@@ -475,7 +492,7 @@ Write `docs/research/interview-synthesis.md`. It is the only interview file in t
 - No names, emails, store addresses, participant IDs or details that point to one person or store.
 - Report counts by segment, never one row per call.
 - Report demand letters and lawsuits only as one total across all calls. Never split that total by segment, theme or market, and never put it next to a quote.
-- Quote only people who agreed on the recording, and strip any detail that points to them.
+- Quote only people whose summary says yes to quote consent, and strip any detail that points to them.
 - If a segment has fewer than 3 people, merge it with the next one before you report it.
 
 Sections, point first:
@@ -513,7 +530,7 @@ These go to the owner through the planner.
 
 1. **What "recently" means for D-16.** Proposal: any accessibility lawsuit naming the store or its company in the last 24 months. Also confirm the check in section 4, step 2, until a lawsuit list exists.
 2. **The founding price to offer on calls.** D-12 says "for example 50% off for 12 months", which would be $14.50 a month for Starter and $39.50 for Pro. Confirm before anyone hears a number.
-3. **How long to keep recordings, transcripts and notes.** Proposal: delete recordings and transcripts 30 days after the summary is written. Delete per-call summaries 12 months after the call. The consent script and message G quote both periods.
+3. **How long to keep recordings, transcripts and notes.** Proposal: delete recordings and transcripts 30 days after the summary is written. Delete the ID key, which links summaries to people, 12 months after the call. The consent script and message G quote both periods.
 4. **The willingness-to-pay bar** in section 12.
 5. **A thank-you for participants.** The free scan report costs nothing. Any gift card or paid incentive needs your approval first (D-04).
 
@@ -526,7 +543,7 @@ This kit is not legal advice. Add these to the D-14 review list.
 3. What applies to cold B2B email and DMs to people in Canada (CASL), the UK (PECR and UK GDPR) and the EU (each country's ePrivacy rules and GDPR)? Until you answer, cold messages go only to stores and agencies based in the US.
 4. Is it a problem to run an automated scan of a store's public pages and send the owner the result without being asked?
 5. If a participant tells us about a demand letter or lawsuit, what can we keep in our notes, and for how long?
-6. Is the consent script enough notice under GDPR and UK GDPR for recording, AI transcription, keeping summaries and publishing a combined anonymous summary? Do we also need a written privacy notice?
+6. Is the consent script enough notice under GDPR and UK GDPR for recording, AI transcription, keeping summaries and publishing a combined anonymous summary? It must also cover sending transcripts to AI vendors: the call tool's transcription service and Anthropic, through the Claude plan (D-01). Do we also need a written privacy notice, and does deleting the ID key count as deletion for summaries left in git history?
 7. Can we quote participants anonymously in public material later, and what written permission do we need?
 
 ## 16. Sources
@@ -538,6 +555,8 @@ Checked 2026-10-08. This container could not open these pages (the proxy denies 
 - Recording consent: lists of all-party consent states differ between sources, for example [Kilpatrick Townsend, July 2024](https://ktslaw.com/Insights/Alert/2024/7/Wiretap-Laws-in-the-United-States) and [Kixie](https://www.kixie.com/sales-blog/what-are-the-laws-governing-call-recordings) (via search, not opened). The exact list is unverified.
 - CAN-SPAM covers B2B commercial email. It needs accurate header information, a subject line that matches the body, clear identification of an ad, a valid postal address and a clear opt-out. Opt-outs must be honoured within 10 business days, and the opt-out route must work for at least 30 days after sending. Opted-out addresses may not be sold or transferred. Source: [FTC compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) (via search, not opened; checked 2026-10-08).
 - Cold email outside the US: CASL generally needs consent before a commercial message, and its B2B exemption needs an existing relationship between the organisations ([Torys, June 2020](https://www.torys.com/insights/publications/2020/06/fca-confirms-casl-is-constitutional-but-limits-business-communications-exemption), via search, not opened). Under PECR, cold email to a UK company needs no prior consent, but sole traders and some partnerships count as individuals ([Sprintlaw UK](https://sprintlaw.co.uk/articles/unsolicited-emails-in-the-uk-what-businesses-can-send-and-stay-compliant/), via search, not opened). Both checked 2026-10-08. Law-firm and vendor commentary, not primary texts; a lawyer question (section 15).
+- Claude's model-training setting ("Help improve Claude", under Settings, Privacy) for consumer plans including Pro: [Anthropic privacy centre](https://privacy.claude.com/en/articles/12109829-how-do-i-change-my-model-improvement-privacy-settings) (via search, not opened; checked 2026-10-08).
+- The ledger hook that saves session transcripts and child reports: .claude/hooks/ledger-hook.mjs in this repo (opened).
 - Whisper, OpenAI's open-source speech-to-text model, runs on your own machine under the MIT licence: [github.com/openai/whisper](https://github.com/openai/whisper) (via search, not opened; seen through a mirror's metadata and third-party reviews; checked 2026-10-08).
 - r/shopify promotion rules described as strict by third parties: [The Hive Index](https://thehiveindex.com/communities/r-shopify/) (via search, not opened). The subreddit's own rules are unverified.
 - Shopify Partner Directory as a place to find agencies by service: [Shopify](https://www.shopify.com/partners/directory/partner/devxagency) (an example profile; via search, not opened).

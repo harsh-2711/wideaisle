@@ -498,7 +498,7 @@ The pain is settled; what we still need are our own numbers on themes, fixabilit
 - Shopify home pages average 75.1 detected errors, 33.9% worse than the average site ([WebAIM Million 2026](https://webaim.org/projects/million/)).
 - Six failure types make up 96% of detected errors, and they have barely changed in seven years (same source).
 - Overlay widgets do not change the underlying code, and the FTC fined the largest overlay vendor $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
-- Three known Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 a month to TestParty's Pro listing at $599 ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)). TestParty's own blog puts its service at $1,000 to $5,000 a month. AccessFix by MK-Way may also change code; unconfirmed (docs/research/competitor-teardown.md).
+- Three known Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 a month to TestParty's Pro listing at $599 ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)). TestParty's own blog gives $1,000 to $5,000 a month (October 2025 post) and $400 to $800 a month (a likely 2026 post; unverified). AccessFix by MK-Way may also change code; unconfirmed (docs/research/competitor-teardown.md).
 
 **Open questions and how the agents answer them.**
 
@@ -545,7 +545,7 @@ Shares are from the [WebAIM Million 2026](https://webaim.org/projects/million/).
 | Overlay widgets (accessiBe, UserWay) | Inject JavaScript at runtime; the code stays broken | Free to $479/mo (accessiBe Scale; docs/research/competitor-teardown.md) | We change the code and add no widget |
 | [Patrol](https://www.fudge.ai/blog/best-shopify-accessibility-apps/) | AI fixes in theme code | Fixes from $200/mo | A fraction of the price, a theme library, an evidence pack |
 | [Adafix](https://pickyourapp.com/products/adafix-app) | Alt text and contrast fixes in code | From $29/mo | All six types, forms and buttons, regression watch, agency plan |
-| [TestParty](https://pickyourapp.com/collections/store-design/products/testparty) | Managed fixes with monthly human audits | $599/mo Pro listing; $1,000 to $5,000/mo per its blog | Self-serve for small stores, human spot checks as an add-on |
+| [TestParty](https://pickyourapp.com/collections/store-design/products/testparty) | Managed fixes with monthly human audits | $599/mo Pro listing; its blog gives $1,000 to $5,000/mo (Oct 2025) and $400 to $800/mo (likely 2026, unverified) | Self-serve for small stores, human spot checks as an add-on |
 | A freelancer | One-off manual fixes | Per project | Fixes are re-checked and re-applied after theme updates |
 
 **What we never claim.** Not "compliant", "certified", "lawsuit-proof" or "100% accessible". We say how many detected issues we fixed, what we keep watching and what documentation you get. Automated tools cannot detect every WCAG failure, and WebAIM says so about its own scan.

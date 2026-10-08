@@ -16,6 +16,7 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 |---|---|
 | Interview kit | 9a40513 |
 | Fixes from the PR #37 review: notes and lists live outside this public repo, consent script says what is kept and where, US-only cold email, full CAN-SPAM list, opt-in pilot ask, Shopify billing, transcription approach | df0a4a0 |
+| Second review round: raw interview data stays out of every git repo, deletion steps include a ledger history purge, quote consent, training setting off, pause before the demand-letter question | pending |
 
 ## Current step
 
@@ -23,21 +24,22 @@ Pull request re-review after the fixes, then merge.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-24, Q-31, Q-32 and Q-07.
-2. The owner settles the five choices in section 14 (Q-31) and decides repo visibility (Q-32).
-3. Once private storage exists (Q-07, or a folder on the owner's machine), the growth agent drafts the first recruiting batch there for approval (Q-25). Never in this repo.
+1. After merge, set the state to Blocked on you with needs Q-24 and Q-31.
+2. The owner settles the five choices in section 14 (Q-31).
+3. The owner builds the first recruiting batch in their private folder, with an agent opened there, not in the repo clone (kit section 8), and approves it (Q-25).
 
 ## Blockers and open questions
 
 - Q-31: five choices before the first batch.
 - Q-24: the owner runs the calls.
-- Q-32: the repo is public. Recordings, transcripts, per-call summaries, batch files and suppression lists must live outside it.
-- Q-07: the private ledger repo that holds them. Until it exists, they stay on the owner's machine only.
+- Q-32 blocks no step. The kit already works with a public repo. The choice only settles whether ID-coded summaries could ever live in this repo.
+- Q-07 blocks no step. It is needed only to move ID-coded per-call summaries into the ledger repo (kit section 11). Until then they stay in the owner's private folder.
+- Recordings, transcripts, contact lists, batch files and the ID key never go in any git repo, the ledger included (kit section 8).
 - A lawyer (D-14, booked for G3) must answer the CASL, PECR and EU questions before any cold message leaves the US.
 
 ## Decisions used
 
-D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
+D-01, D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
 
 ## Files touched
 
@@ -52,6 +54,7 @@ D-04, D-06, D-07, D-08, D-12, D-14, D-16, D-18
 ## Lessons and gotchas
 
 - Keep outreach plain: no scare wording, a plain sender name, an easy opt-out.
-- The repo is public (Q-32). Anything that names or points to a participant, or names a sued store, lives in private storage. Only the anonymous synthesis goes in the repo.
+- The repo is public (Q-32). Anything that names or points to a participant, or names a sued store, lives in the private folder. Only the anonymous synthesis goes in the repo.
+- Git keeps deleted files, and the ledger hook copies session transcripts into the ledger repo and child reports into this repo. Keep raw interview data out of any Claude Code session inside the repo clone.
 - Do not promise "no pitch" and then ask for a pilot. Make the pilot an opt-in offer, billed through Shopify (D-12).
 - Mark every source as opened or via search, with the date checked.

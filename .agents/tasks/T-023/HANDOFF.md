@@ -16,6 +16,7 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 |---|---|
 | Partial review-mining pass | 369f30e |
 | Fixes from the PR #37 review: source keys per quote, summary counts match the tables, neutral label for a lawsuit thread, sued stores go to a private suppression list, TestParty Pro caveat | df0a4a0 |
+| Second review round: one counting rule (each review once, each thread once), every count matches its table, TestParty figures with years | pending |
 
 ## Current step
 
