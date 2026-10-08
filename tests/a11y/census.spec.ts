@@ -121,7 +121,12 @@ test("browser redirects are vetted before the browser requests them", async ({ b
   const hits: string[] = [];
   const server = http.createServer((req, res) => {
     hits.push(req.url ?? "");
-    const redirects: Record<string, string> = { "/a": "/b", "/c": "/secret", "/d": `http://localhost:${port}/x` };
+    const redirects: Record<string, string> = { "/a": "/b", "/c": "/secret", "/d": `http://localhost:${port}/x`, "/f": "/b#top" };
+    // A script that navigates while the page is still parsing.
+    if (req.url === "/g") {
+      res.writeHead(200, { "content-type": "text/html" });
+      return res.end(`<!doctype html><html lang="en"><head><title>g</title><script>location.href = "/h";</script></head><body>g</body></html>`);
+    }
     if (req.url === "/robots.txt") return res.end("User-agent: *\nDisallow: /secret\n");
     const to = redirects[req.url ?? ""];
     if (to) {
@@ -147,6 +152,15 @@ test("browser redirects are vetted before the browser requests them", async ({ b
 
     expect(await ctx.goto(page, origin + "/c")).toMatchObject({ skip: expect.stringMatching(/robots.txt disallows .*\/secret/) });
     expect(await ctx.goto(page, origin + "/d")).toMatchObject({ skip: expect.stringMatching(/another site/) });
+
+    // A fragment in Location does not break the match with what Chromium requests.
+    const frag = await ctx.goto(page, origin + "/f");
+    expect("url" in frag && frag.url).toBe(origin + "/b#top");
+    // A navigation during parsing is followed as a vetted hop, not a 30 s hang.
+    const started = Date.now();
+    const parsed = await ctx.goto(page, origin + "/g");
+    expect("url" in parsed && parsed.url).toBe(origin + "/h");
+    expect(Date.now() - started).toBeLessThan(10_000);
 
     expect(hits).not.toContain("/secret");
     expect(hits).not.toContain("/x");

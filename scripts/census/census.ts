@@ -19,7 +19,7 @@ import { chromium, type Browser, type BrowserContext, type Page, type Response }
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
-import { sameSite } from "../../app/lib/scanner/netguard";
+import { BlockedAddressError, sameSite } from "../../app/lib/scanner/netguard";
 import { describeSkip, isSkip, PoliteClient } from "../../app/lib/scanner/polite";
 
 export interface StoreRecord extends StoreFacts {
@@ -149,10 +149,31 @@ export interface ScanContext {
 // through it too. Service workers, WebSockets and WebRTC would get around
 // those controls, so they are off. Images and media are not loaded: axe
 // does not need them, and the store's servers are spared.
+// Chromium drops the fragment and escapes some characters that WHATWG URL
+// keeps, so compare URLs in one form.
+export function sameUrl(a: string, b: string): boolean {
+  const norm = (x: string) => {
+    const u = new URL(x);
+    u.hash = "";
+    try {
+      return decodeURI(u.href);
+    } catch {
+      return u.href;
+    }
+  };
+  return norm(a) === norm(b);
+}
+
 export async function openScanContext(browser: Browser, client: PoliteClient, domain: string): Promise<ScanContext> {
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
-  // The one main-frame navigation the scan asked for, and where it redirected.
-  const nav: { expected: string | null; redirect: string | null } = { expected: null, redirect: null };
+  // The one main-frame navigation the scan asked for, where it redirected,
+  // and a signal for a redirect that arrives while the page is loading.
+  const nav: { expected: string | null; redirect: string | null; loading: boolean; signal: () => void } = {
+    expected: null,
+    redirect: null,
+    loading: false,
+    signal: () => {},
+  };
   let context: BrowserContext | undefined;
   try {
     context = await browser.newContext({
@@ -170,7 +191,15 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
       // store's site. Anything else gets an empty 204, which keeps the page
       // where it is (an abort would leave an error page behind).
       const url = new URL(req.url()).href;
-      if (url !== nav.expected || !sameSite(domain, new URL(url).host)) return route.fulfill({ status: 204 });
+      if (!nav.expected || !sameUrl(url, nav.expected) || !sameSite(domain, new URL(url).host)) {
+        // A page script navigating while the page loads would stop the load
+        // event; treat it as a redirect, which goto vets like any other hop.
+        if (nav.loading && !nav.redirect && sameSite(domain, new URL(url).host)) {
+          nav.redirect = url;
+          nav.signal();
+        }
+        return route.fulfill({ status: 204 });
+      }
       nav.expected = null;
       try {
         // Fetch without following redirects, so the scan can vet each hop.
@@ -205,7 +234,15 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         }
         nav.expected = new URL(current).href;
         nav.redirect = null;
-        const res = await page.goto(current, { waitUntil: "load", timeout: 30000 });
+        const redirected = new Promise<void>((resolve) => (nav.signal = resolve));
+        nav.loading = true;
+        let res: Response | null;
+        try {
+          res = await page.goto(current, { waitUntil: "commit", timeout: 30000 });
+          if (!nav.redirect) await Promise.race([page.waitForLoadState("load", { timeout: 30000 }), redirected]);
+        } finally {
+          nav.loading = false;
+        }
         if (!nav.redirect) return { res, url: current };
         current = nav.redirect;
       }
@@ -242,33 +279,40 @@ export async function scan(stores: StoreRecord[], out: string, client: PoliteCli
           ["cart", () => "/cart"],
         ];
         for (const [kind, pathOf] of targets) {
-          const p = pathOf();
-          if (!p) {
-            record.skipped.push({ kind, reason: "no link found" });
-            continue;
+          // One page failing does not end the store's scan.
+          try {
+            const p = pathOf();
+            if (!p) {
+              record.skipped.push({ kind, reason: "no link found" });
+              continue;
+            }
+            const url = origin + p;
+            const skip = await client.pageTurn(url);
+            if (skip) {
+              record.skipped.push({ kind, reason: describeSkip(skip) });
+              if (skip.retry) record.retry = true;
+              continue;
+            }
+            const loaded = await ctx.goto(page, url);
+            if ("skip" in loaded) {
+              record.skipped.push({ kind, reason: loaded.skip });
+              if (loaded.retry) record.retry = true;
+              continue;
+            }
+            const { res } = loaded;
+            if (!res || res.status() >= 400) {
+              record.skipped.push({ kind, reason: `HTTP ${res?.status() ?? "no response"}` });
+              continue;
+            }
+            // Links come from the page the browser already loaded, so the
+            // home page is fetched once.
+            if (kind === "home") links = sampleLinks(await page.content(), origin);
+            record.pages.push({ kind, ...(await scanPage(page, loaded.url)) });
+          } catch (err) {
+            record.skipped.push({ kind, reason: (err as Error).message.split("\n")[0].slice(0, 200) });
+            // A blocked address or port fails the same way every time.
+            if (!(err instanceof BlockedAddressError)) record.retry = true;
           }
-          const url = origin + p;
-          const skip = await client.pageTurn(url);
-          if (skip) {
-            record.skipped.push({ kind, reason: describeSkip(skip) });
-            if (skip.retry) record.retry = true;
-            continue;
-          }
-          const loaded = await ctx.goto(page, url);
-          if ("skip" in loaded) {
-            record.skipped.push({ kind, reason: loaded.skip });
-            if (loaded.retry) record.retry = true;
-            continue;
-          }
-          const { res } = loaded;
-          if (!res || res.status() >= 400) {
-            record.skipped.push({ kind, reason: `HTTP ${res?.status() ?? "no response"}` });
-            continue;
-          }
-          // Links come from the page the browser already loaded, so the home
-          // page is fetched once.
-          if (kind === "home") links = sampleLinks(await page.content(), origin);
-          record.pages.push({ kind, ...(await scanPage(page, loaded.url)) });
         }
       } catch (err) {
         record.error = (err as Error).message.slice(0, 200);
