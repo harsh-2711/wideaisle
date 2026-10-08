@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "fixers",
   "agent": "",
-  "state": "Queued",
-  "step": "",
+  "state": "In review",
+  "step": "PR review",
   "branch": "claude/feat-dawn-fixers",
   "issue": 27,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:46:56Z",
   "id": "T-031"
 }
