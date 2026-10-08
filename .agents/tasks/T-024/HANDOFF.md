@@ -8,26 +8,28 @@ See TASK.md. Script, recruiting messages, scheduling and a per-call summary temp
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+In review in the M2 market research pull request. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Interview kit | 9a40513 |
 
 ## Current step
 
-Not started.
+Pull request review, then merge.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After merge, set the state to Blocked on you with needs Q-24, Q-31.
+2. The owner settles the five choices in section 14 (Q-31).
+3. The growth agent drafts the first recruiting batch for approval (Q-25).
 
 ## Blockers and open questions
 
-- None yet.
+- Q-31: five choices before the first batch.
+- Q-24: the owner runs the calls.
 
 ## Decisions used
 
@@ -35,12 +37,14 @@ D-07, D-16
 
 ## Files touched
 
-- None yet.
+- docs/research/interview-kit.md
+- .agents/owner-queue.md: Q-31
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- Open docs/research/interview-kit.md; sections 1 to 16 cover recruiting, consent, script, pricing questions, summary template and lawyer questions.
 
 ## Lessons and gotchas
 
-- None yet.
+- Keep outreach plain: no scare wording, a plain sender name, an easy opt-out.
+- Mark every source as opened or via search, with the date checked.

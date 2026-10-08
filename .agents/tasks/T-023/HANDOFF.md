@@ -8,26 +8,27 @@ See TASK.md. App Store reviews of accessibility apps, r/shopify and Shopify Comm
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+In review in the M2 market research pull request. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Partial review-mining pass | 369f30e |
 
 ## Current step
 
-Not started.
+Pull request review, then merge.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After merge, set the state to Blocked on you with needs Q-01.
+2. When Q-01 opens the web: read the App Store reviews and Community threads directly and add Reddit.
+3. Update the synthesis with direct quotes and links that were opened.
 
 ## Blockers and open questions
 
-- None yet.
+- Q-01: the App Store, Shopify Community and Reddit are blocked. No Reddit thread came up in search.
 
 ## Decisions used
 
@@ -35,12 +36,13 @@ none
 
 ## Files touched
 
-- None yet.
+- docs/research/review-mining.md
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- Open docs/research/review-mining.md. Every quote is marked "via search, not opened".
 
 ## Lessons and gotchas
 
-- None yet.
+- Merchants already complain about lawsuit mills and fake "make your store compliant" emails. Outreach must not look like them.
+- Mark every source as opened or via search, with the date checked.

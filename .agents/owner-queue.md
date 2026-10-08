@@ -30,6 +30,7 @@ These need you once agents finish their part. Agents will move each one to Open 
 | Q-23 | Approve the written claims policy (D-06) | 15 min | M1 exit | Policy merged |
 | Q-24 | Run 15 merchant and 5 agency calls (D-07), using the interview kit | 8 to 10 h over weeks 1 to 4 | M2 exit | Kit merged |
 | Q-25 | Approve each outreach and recruiting batch (D-16) | 15 min a batch | Interview recruiting | Drafts ready |
+| Q-31 | Before the first recruiting batch, settle the five choices in section 14 of docs/research/interview-kit.md: what "recently" means for D-16 (proposal: 24 months), the founding price to quote, how long to keep recordings (proposal: 30 days), the willingness-to-pay bar, and any paid thank-you (needs D-04 approval) | 15 min | Q-24, Q-25 | Kit merged |
 | Q-26 | Rate 50 AI alt texts in the rating sheet | 30 min | M3 Spike C | After Q-04 |
 | Q-27 | File the theme exemption request if Spike A shows it is needed (D-09) | 20 min | M3 Spike A | After Q-03 |
 | Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |

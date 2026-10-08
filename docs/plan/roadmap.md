@@ -498,7 +498,7 @@ The pain is settled; what we still need are our own numbers on themes, fixabilit
 - Shopify home pages average 75.1 detected errors, 33.9% worse than the average site ([WebAIM Million 2026](https://webaim.org/projects/million/)).
 - Six failure types make up 96% of detected errors, and they have barely changed in seven years (same source).
 - Overlay widgets do not change the underlying code, and the FTC fined the largest overlay vendor $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
-- Only three Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 to $599 a month ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)).
+- Only three Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 to $599 a month ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)). A fourth, AccessFix by MK-Way, may also change code; unconfirmed (docs/research/competitor-teardown.md).
 
 **Open questions and how the agents answer them.**
 
@@ -542,7 +542,7 @@ Shares are from the [WebAIM Million 2026](https://webaim.org/projects/million/).
 
 | Option | What it does | Price | Where we are better |
 |---|---|---|---|
-| Overlay widgets (accessiBe, UserWay) | Inject JavaScript at runtime; the code stays broken | $5 to $349/mo | We change the code and add no widget |
+| Overlay widgets (accessiBe, UserWay) | Inject JavaScript at runtime; the code stays broken | $5 to $479/mo (accessiBe Scale; docs/research/competitor-teardown.md) | We change the code and add no widget |
 | [Patrol](https://www.fudge.ai/blog/best-shopify-accessibility-apps/) | AI fixes in theme code | Fixes from $200/mo | A fraction of the price, a theme library, an evidence pack |
 | [Adafix](https://pickyourapp.com/products/adafix-app) | Alt text and contrast fixes in code | From $29/mo | All six types, forms and buttons, regression watch, agency plan |
 | [TestParty](https://pickyourapp.com/collections/store-design/products/testparty) | Managed fixes with monthly human audits | $599/mo app | Self-serve for small stores, human spot checks as an add-on |
