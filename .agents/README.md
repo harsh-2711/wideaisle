@@ -20,7 +20,7 @@ Each task's state lives in its own file, so parallel branches never edit the sam
 
 Queued, Running, Blocked on you, In review, Done, Stalled.
 
-The heartbeat is the last write to a task's event log or status file. A Running task with no heartbeat for 20 minutes is Stalled: `npm run board -- stale --mark`. Until the project server exists, the SessionStart hook runs this check.
+The heartbeat is the later of the last event logged on this machine and the task's recorded `updated` time. A Running task with no heartbeat for 20 minutes is Stalled. `npm run board -- stale --mark` marks the current branch's task; add `--all` to mark every task. Until the project server exists, the SessionStart hook runs this check.
 
 ## Raw logs (D-18)
 
