@@ -88,6 +88,41 @@ describe("claims and writing", () => {
     assert.match(errors[1], /landing\.md:1/);
   });
 
+  it("covers the claims policy word list and its allowed negations", () => {
+    const banned = [
+      "Your store now meets WCAG 2.2 AA.",
+      "Lawsuit protection for every plan",
+      "Get your accessibility certificate",
+      "Make your shop fully accessible",
+      "A free accessibility audit",
+      "Guaranteed results in a week",
+      "One-click accessibility for Shopify",
+      "Approved by Shopify",
+      "WCAG conformant themes",
+      "We protect you from demand letters",
+    ];
+    const allowed = [
+      "We do not guarantee any legal outcome.",
+      "This is not an audit and not a certification.",
+      "We never claim your store is fully accessible.",
+      "Automated scans cannot make your store accessible on their own.",
+      "Fixed 12 of 40 detected issues.",
+      "console.log(`Unexpected compliance topic ${topic}`);",
+      "Some barriers need a person to find them.",
+    ];
+    write("app/routes/claims.tsx", [...banned, ...allowed].join("\n"));
+    const errors = checkClaims(["app/routes/claims.tsx"], root);
+    assert.deepEqual(errors.map((e) => Number(e.split(":")[1])), banned.map((_, i) => i + 1));
+  });
+
+  it("flags negated scare copy that the negation rule would let through", () => {
+    write("app/emails/outreach.txt", "Your store is not ADA compliant and is at risk of a lawsuit.\nYou could get sued this year.\nWe found 12 issues on your home page.");
+    const errors = checkClaims(["app/emails/outreach.txt"], root);
+    assert.equal(errors.length, 2);
+    assert.match(errors[0], /outreach\.txt:1: scare copy/);
+    assert.match(errors[1], /outreach\.txt:2: scare copy/);
+  });
+
   it("flags em dashes in changed text files", () => {
     write("docs/a.md", "Fine line.\nBad \u2014 line.");
     write("docs/licenses/x.md", "Licence \u2014 text");

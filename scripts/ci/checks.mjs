@@ -99,11 +99,31 @@ export function checkHandoff(branch, files, root = ROOT) {
 
 // ---------- claims and writing ----------
 
-const BANNED_CLAIMS = /\b(ada[- ]compliant|wcag[- ]compliant|fully compliant|compliant|certified|lawsuit[- ]proof|100% accessible|guarantee[sd]? (compliance|accessibility))\b/i;
-// Saying what something is not ("not certified", "non-compliant") is allowed.
-const NEGATED = /\b(non-?|not\s+(\w+\s+){0,4}|never\s+(\w+\s+){0,4}|no\s+)(ada[- ]|wcag[- ]|fully )?(compliant|certified|lawsuit[- ]proof)/gi;
-// Where a claim would reach a merchant: app UI and marketing drafts.
-const CLAIM_PATHS = [/^app\/routes\//, /^app\/components\//, /^docs\/growth\//, /^extensions\//];
+// The word list in docs/policy/claims-policy.md ("Words we never use").
+// Bare "compliance" is left out: it names Shopify's compliance webhooks.
+const CLAIM_TERMS = [
+  "(?:ada|wcag|eaa|fully)[- ]compliant", "compliant",
+  "(?:ada|wcag|eaa|accessibility|legal) compliance", "(?:achieve|ensure|guarantee[sd]?) compliance",
+  "conforms? to wcag", "meets? wcag", "wcag[- ]conformant", "conformant",
+  "certified", "certification", "accessibility certificate",
+  "(?:accessibility )?audits?",
+  "lawsuit[- ]proof", "sue[- ]proof", "lawsuit protection", "avoid(?:ing)? (?:a )?lawsuits?", "reduces? (?:your )?legal risk", "protects? you",
+  "100% accessible", "fully accessible", "completely accessible", "barrier[- ]free",
+  "guarantee[sd]?",
+  "(?:instant|automatic|one[- ]click) accessibility", "makes? your store accessible", "fixes everything",
+  "accessibility (?:badge|seal)", "trust mark",
+  "shopify[- ]certified", "(?:approved|endorsed) by shopify",
+].join("|");
+const BANNED_CLAIMS = new RegExp(`\\b(?:${CLAIM_TERMS})\\b`, "i");
+// Saying what something is not ("not certified", "we do not guarantee",
+// "non-compliant") is allowed ...
+const NEGATED = new RegExp(`\\b(?:non-?|not\\s+(?:\\w+\\s+){0,4}|never\\s+(?:\\w+\\s+){0,4}|cannot\\s+(?:\\w+\\s+){0,4}|can't\\s+(?:\\w+\\s+){0,4}|no\\s+|without\\s+)(?:${CLAIM_TERMS})\\b`, "gi");
+// ... except scare copy: telling a merchant their store falls short of a
+// law, or is at risk of a lawsuit.
+const SCARE = /\b(?:your|this|the) (?:store|site|website|shop) (?:is|isn't|is not) (?:not |non-?)?(?:ada|wcag|eaa)?[- ]?(?:non-?)?compliant\b|\bat risk of (?:a )?(?:lawsuit|being sued|legal action)|\b(?:could|will|might) (?:get|be) sued\b/i;
+// Where a claim would reach a merchant: app UI, emails and report
+// templates, marketing drafts and extensions.
+const CLAIM_PATHS = [/^app\/routes\//, /^app\/components\//, /^app\/templates\//, /^app\/emails\//, /^docs\/growth\//, /^extensions\//];
 const CLAIM_ALLOW = /claims-ok/; // a line may opt out, for example to quote what we never say
 
 export function checkClaims(files, root = ROOT) {
@@ -112,7 +132,9 @@ export function checkClaims(files, root = ROOT) {
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
     fs.readFileSync(full, "utf8").split("\n").forEach((line, i) => {
-      if (BANNED_CLAIMS.test(line.replace(NEGATED, "")) && !CLAIM_ALLOW.test(line)) errors.push(`${f}:${i + 1}: banned claim (D-06): ${line.trim().slice(0, 120)}`);
+      if (CLAIM_ALLOW.test(line)) return;
+      if (SCARE.test(line)) errors.push(`${f}:${i + 1}: scare copy (D-06, claims policy): ${line.trim().slice(0, 120)}`);
+      else if (BANNED_CLAIMS.test(line.replace(NEGATED, ""))) errors.push(`${f}:${i + 1}: banned claim (D-06): ${line.trim().slice(0, 120)}`);
     });
   }
   return errors;
