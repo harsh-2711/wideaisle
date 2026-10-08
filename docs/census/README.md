@@ -9,6 +9,8 @@ The census finds about 2,000 live Shopify stores, reads each store's public them
 - At least 2 seconds between requests to one store, more if robots.txt sets Crawl-delay.
 - A user agent that names the project and a contact address (Q-02). The crawler refuses to run without one.
 - Results stay private in `data/` (gitignored). Only summaries are committed.
+- Public addresses only, on ports 80 and 443. A host is resolved once, every address is checked, and the connection goes to a checked address, so a second DNS answer cannot point at a private one. IPv6 must be global unicast (2000::/3), without the documentation, Teredo and 6to4 ranges.
+- The scan browser sends every request through a local egress proxy (`app/lib/scanner/egress.ts`) that applies the same checks. Service workers and WebSockets are off, and WebRTC may not send UDP around the proxy. Hosts the proxy refused are listed in each scan record as `blockedHosts`.
 
 ## What it waits on
 

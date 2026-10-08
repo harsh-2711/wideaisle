@@ -15,10 +15,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { chromium, type Browser } from "playwright";
+import { chromium, type Browser, type BrowserContext } from "playwright";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
-import { isPublicAddress, sameSite, systemLookup } from "../../app/lib/scanner/netguard";
+import { DEFAULT_PORTS, startEgressProxy } from "../../app/lib/scanner/egress";
+import { sameSite } from "../../app/lib/scanner/netguard";
 import { PoliteClient } from "../../app/lib/scanner/polite";
 
 export interface StoreRecord extends StoreFacts {
@@ -35,6 +36,8 @@ export interface ScanRecord {
   scannedAt: string;
   pages: (PageScan & { kind: string })[];
   skipped: { kind: string; reason: string }[];
+  // Hosts the egress proxy refused while the store's pages loaded.
+  blockedHosts?: string[];
   error?: string;
 }
 
@@ -86,25 +89,29 @@ export async function discover(domains: string[], out: string, client: PoliteCli
 
 export async function scan(stores: StoreRecord[], out: string, client: PoliteClient, opts: { concurrency?: number; browser?: Browser } = {}) {
   const seen = done(out);
-  const browser = opts.browser ?? (await chromium.launch({ executablePath: process.env.PW_CHROMIUM_PATH || undefined }));
+  const browser =
+    opts.browser ??
+    (await chromium.launch({
+      executablePath: process.env.PW_CHROMIUM_PATH || undefined,
+      // WebRTC could send UDP around the proxy.
+      args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"],
+    }));
   try {
     await pool(stores.filter((s) => s.isShopify && s.origin && !seen.has(s.domain)), opts.concurrency ?? 2, async (store) => {
       const record: ScanRecord = { domain: store.domain, theme: store.theme, apps: store.apps, scannedAt: new Date().toISOString(), pages: [], skipped: [] };
-      const context = await browser.newContext({ userAgent: client.userAgent });
-      // The browser may only reach public addresses, whatever the page loads.
-      if (!client.allowPrivate) {
-        const verdicts = new Map<string, Promise<boolean>>();
-        await context.route("**/*", async (route) => {
-          const host = new URL(route.request().url()).hostname;
-          if (!verdicts.has(host)) {
-            verdicts.set(host, systemLookup(host).then((ips) => ips.length > 0 && ips.every(isPublicAddress), () => false));
-          }
-          if (await verdicts.get(host)) await route.continue();
-          else await route.abort("blockedbyclient");
-        });
-      }
-      const page = await context.newPage();
+      const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
+      // Every browser request goes through the egress proxy, which connects
+      // only to vetted public addresses. Service workers and WebSockets
+      // would get around page-level controls, so they are off.
+      let context: BrowserContext | undefined;
       try {
+        context = await browser.newContext({
+          userAgent: client.userAgent,
+          serviceWorkers: "block",
+          proxy: { server: proxy.server },
+        });
+        await context.routeWebSocket(/.*/, (ws) => ws.close());
+        const page = await context.newPage();
         const origin = store.origin!;
         const home = await client.get(origin + "/");
         const links = home ? sampleLinks(home.text, origin) : { collection: null, product: null };
@@ -135,8 +142,10 @@ export async function scan(stores: StoreRecord[], out: string, client: PoliteCli
       } catch (err) {
         record.error = (err as Error).message.slice(0, 200);
       } finally {
-        await context.close();
+        await context?.close();
+        await proxy.close();
       }
+      if (proxy.blocked.size) record.blockedHosts = [...proxy.blocked].slice(0, 50);
       append(out, record);
     });
   } finally {

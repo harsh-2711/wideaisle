@@ -1,7 +1,8 @@
 // A crawler that behaves: it reads robots.txt before anything else, keeps a
 // gap between requests to the same host, names itself and a contact in its
 // user agent, and never logs in.
-import { assertPublicHost, BlockedAddressError, systemLookup, type Lookup } from "./netguard";
+import { DEFAULT_PORTS, pinnedFetch, portOf, type FetchLike } from "./egress";
+import { BlockedAddressError, resolvePublic, systemLookup, type GuardOptions, type Lookup } from "./netguard";
 import { parseRobots, type Robots } from "./robots";
 
 export interface PoliteOptions {
@@ -9,7 +10,8 @@ export interface PoliteOptions {
   // Minimum gap between requests to one host. robots.txt Crawl-delay can raise it.
   minDelayMs?: number;
   timeoutMs?: number;
-  fetchImpl?: typeof fetch;
+  // Defaults to pinnedFetch, which connects only to vetted addresses.
+  fetchImpl?: FetchLike;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   lookup?: Lookup;
@@ -35,7 +37,7 @@ export class PoliteClient {
   readonly userAgent: string;
   private readonly minDelay: number;
   private readonly timeout: number;
-  private readonly fetchImpl: typeof fetch;
+  private readonly fetchImpl: FetchLike;
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly lookup: Lookup;
@@ -47,18 +49,26 @@ export class PoliteClient {
     this.userAgent = userAgentFor(opts.contact);
     this.minDelay = opts.minDelayMs ?? 2000;
     this.timeout = opts.timeoutMs ?? 20000;
-    this.fetchImpl = opts.fetchImpl ?? fetch;
     this.now = opts.now ?? Date.now;
     this.sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.lookup = opts.lookup ?? systemLookup;
     this.allowPrivate = opts.allowPrivate ?? false;
+    this.fetchImpl = opts.fetchImpl ?? pinnedFetch(this.guard);
   }
 
-  // Throws BlockedAddressError for anything but public http(s) hosts.
+  // What the egress proxy for the scan browser must enforce too.
+  get guard(): GuardOptions {
+    return { lookup: this.lookup, allowPrivate: this.allowPrivate };
+  }
+
+  // Throws BlockedAddressError for anything but public http(s) hosts on the
+  // standard ports.
   async checkUrl(url: string): Promise<void> {
     const u = new URL(url);
     if (u.protocol !== "http:" && u.protocol !== "https:") throw new BlockedAddressError(`${u.protocol} is not crawled`);
-    if (!this.allowPrivate) await assertPublicHost(u.hostname, this.lookup);
+    if (this.allowPrivate) return;
+    if (!DEFAULT_PORTS.includes(portOf(u))) throw new BlockedAddressError(`port ${portOf(u)} is not crawled`);
+    await resolvePublic(u.hostname, this.guard);
   }
 
   // Follows redirects one hop at a time, checking every hop's address.
