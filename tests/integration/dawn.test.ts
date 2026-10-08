@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -7,38 +6,18 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { applyFixes, fixTheme } from "../../app/lib/fixers/engine";
 import type { ThemeFiles } from "../../app/lib/fixers/types";
 import { loadTheme } from "../a11y/render";
-
-// Dawn 16.0.0, pinned. Fetched once into .cache/, or read from DAWN_DIR.
-const DAWN_SHA = "258f00f64365e2018ca4c62778a6bf55a5d3cd18";
-const CACHE = path.resolve(".cache", `dawn-${DAWN_SHA}`);
-
-async function dawnDir(): Promise<string | null> {
-  if (process.env.DAWN_DIR) return process.env.DAWN_DIR;
-  if (fs.existsSync(path.join(CACHE, "layout", "theme.liquid"))) return CACHE;
-  try {
-    fs.mkdirSync(CACHE, { recursive: true });
-    execFileSync("git", ["clone", "-q", "--filter=blob:none", "https://github.com/Shopify/dawn.git", CACHE], { stdio: "ignore", timeout: 120000 });
-    execFileSync("git", ["-C", CACHE, "checkout", "-q", DAWN_SHA], { stdio: "ignore" });
-    return CACHE;
-  } catch {
-    fs.rmSync(CACHE, { recursive: true, force: true });
-    return null;
-  }
-}
-
-function themeOnly(theme: ThemeFiles): ThemeFiles {
-  return new Map([...theme].filter(([f]) => /^(assets|config|layout|locales|sections|snippets|templates|blocks)\//.test(f)));
-}
+import { dawnDir, requireDawn } from "./dawn-source";
 
 let dir: string | null = null;
-beforeAll(async () => {
-  dir = await dawnDir();
+beforeAll(() => {
+  // Skips offline on a laptop; throws under CI so the job cannot pass empty.
+  dir = requireDawn(dawnDir());
 }, 180000);
 
 describe("fixers on stock Dawn 16", () => {
   it("leave Dawn's own markup alone and are idempotent", (ctx) => {
     if (!dir) return ctx.skip();
-    const theme = themeOnly(loadTheme(dir));
+    const theme = loadTheme(dir);
     const report = fixTheme(theme);
     const changes = report.files.flatMap((f) => f.patches.flatMap((p) => p.notes.map((n) => `${f.file}: ${n}`)));
     // Dawn names its icons, labels its fields, sets lang, and its default
@@ -55,13 +34,13 @@ describe("fixers on stock Dawn 16", () => {
 
   it("only flag for review what a person should look at", (ctx) => {
     if (!dir) return ctx.skip();
-    const report = fixTheme(themeOnly(loadTheme(dir)));
+    const report = fixTheme(loadTheme(dir));
     expect(report.review).toEqual([]);
   });
 
   it("pass Theme Check with no new offenses", async (ctx) => {
     if (!dir) return ctx.skip();
-    const theme = themeOnly(loadTheme(dir));
+    const theme = loadTheme(dir);
     const patched = applyFixes(theme, fixTheme(theme));
     const write = (files: ThemeFiles) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "wa-tc-"));

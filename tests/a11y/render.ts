@@ -6,16 +6,21 @@ import path from "node:path";
 import { Liquid } from "liquidjs";
 import type { ThemeFiles } from "../../app/lib/fixers/types";
 
+const THEME_FOLDERS = ["assets", "blocks", "config", "layout", "locales", "sections", "snippets", "templates"];
+
+// Reads the theme folders only. Dot entries (.git, .DS_Store) are skipped:
+// git can delete files under .git while the walk runs.
 export function loadTheme(dir: string): ThemeFiles {
   const files: ThemeFiles = new Map();
   const walk = (d: string) => {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.name.startsWith(".")) continue;
       const full = path.join(d, e.name);
       if (e.isDirectory()) walk(full);
-      else files.set(path.relative(dir, full).split(path.sep).join("/"), fs.readFileSync(full, "utf8"));
+      else if (e.isFile()) files.set(path.relative(dir, full).split(path.sep).join("/"), fs.readFileSync(full, "utf8"));
     }
   };
-  walk(dir);
+  for (const folder of THEME_FOLDERS) if (fs.existsSync(path.join(dir, folder))) walk(path.join(dir, folder));
   return files;
 }
 
