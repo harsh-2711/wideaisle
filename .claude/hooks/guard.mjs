@@ -49,19 +49,63 @@ const CODE_FLAGS = {
 // Inline code is not a file name, but it can still name one or print the
 // environment. A tripwire for honest mistakes, not a sandbox: code can always
 // build a string the guard cannot see.
-const CODE_ENV_FILE = /(^|[^\w.-])\.env(\.(?!example\b)[\w.-]+)?(?![\w-]|\.example\b)/;
+const CODE_ENV_FILE = /(^|[^\w.-])\.env(\.(?!example(?![\w.-]))[\w.-]+)?(?![\w-]|\.example(?![\w.-]))/;
 const CODE_ENV_DUMP = /\/proc\/\S*environ|\bprocess\.env\b(?!\s*(\?\.|\.|\[))|\bos\.environ\b(?!\s*(\[|\.get\b))/;
-const CODE_ENV_NAME = /process\.env(?:\?\.|\.)(\w+)|process\.env\[\s*['"`](\w+)|os\.environ\[\s*['"](\w+)|os\.environ\.get\(\s*['"](\w+)|os\.getenv\(\s*['"](\w+)/g;
+const CODE_ENV_NAME = /process\.env(?:\?\.|\.)(\w+)|process\.env(?:\?\.)?\[\s*['"`](\w+)|os\.environ\[\s*['"](\w+)|os\.environ\.get\(\s*['"](\w+)|os\.getenv\(\s*['"](\w+)/g;
 // Python short options that take no value, so they can sit before -c in one word.
-const PY_CODE_CLUSTER = /^-[bBdEiIOqsSuvRx]*c(.*)$/s;
+const PY_CODE_CLUSTER = /^-[bBdEiIOPqsSuvRx]*c(.*)$/s;
 
 function codeReadsSecrets(c) {
-  if (CODE_ENV_FILE.test(c) || CODE_ENV_DUMP.test(c)) return true;
+  // Spreading the environment into a child's env is common and prints nothing.
+  const rest = c.replace(/\.\.\.\s*process\.env\s*,/g, "");
+  if (CODE_ENV_FILE.test(c) || CODE_ENV_DUMP.test(rest)) return true;
   for (const m of c.matchAll(CODE_ENV_NAME)) {
     if (SECRET_NAME.test(m.slice(1).find(Boolean))) return true;
   }
   return false;
 }
+// How node and python read their words: options, then a script (or python's
+// -c or -m), then the script's own arguments. Returns the words that could
+// name a file and the inline code.
+function interpreterWords(cmd, rest) {
+  const files = [];
+  const code = [];
+  const codeFlags = new Set(CODE_FLAGS[cmd]);
+  const valueFlags = new Set(VALUE_FLAGS[cmd] ?? []);
+  for (let k = 0; k < rest.length; k++) {
+    const a = rest[k];
+    if (a === "--" || a === "-" || !a.startsWith("-")) {
+      files.push(...rest.slice(a === "--" ? k + 1 : k));
+      break;
+    }
+    const [name, ...v] = a.split("=");
+    const inline = v.length ? v.join("=") : undefined;
+    if (cmd !== "node") {
+      const m = PY_CODE_CLUSTER.exec(a);
+      if (m) {
+        code.push(m[1] || (rest[k + 1] ?? ""));
+        files.push(...rest.slice(m[1] ? k + 1 : k + 2));
+        break;
+      }
+      if (/^-m/.test(a)) {
+        files.push(...rest.slice(a.length > 2 ? k + 1 : k + 2));
+        break;
+      }
+      if (/^-[WX]$/.test(a)) k += 1;
+      continue;
+    }
+    if (codeFlags.has(name) || /^-(pe|ep)$/.test(a)) {
+      // node -p -e CODE: -p prints, the next flag carries the code.
+      if (inline !== undefined) code.push(inline);
+      else if (!codeFlags.has(rest[k + 1])) code.push(rest[++k] ?? "");
+      continue;
+    }
+    if (valueFlags.has(name)) files.push(inline ?? rest[++k]);
+    else if (inline !== undefined) files.push(inline);
+  }
+  return { files, code };
+}
+
 // jq options that take two values (a name and a value or file).
 const TWO_VALUE_FLAGS = new Set(["--arg", "--argjson", "--slurpfile", "--rawfile", "--args"]);
 VALUE_FLAGS.egrep = VALUE_FLAGS.grep;
@@ -596,6 +640,9 @@ export function isEnvFile(p) {
 }
 
 function checkSecrets(cmd, args, redirects, words) {
+  // python3.12 reads its words like python3, nodejs like node.
+  if (/^python[\d.]*$/.test(cmd)) cmd = "python3";
+  else if (cmd === "nodejs") cmd = "node";
   const rest = args.slice(1);
   const pos = positionals(rest, new Set(VALUE_FLAGS[cmd] ?? []));
   if (redirects.some((r) => /<|<>/.test(r.op) && !r.op.includes("<<") && isEnvFile(r.target))) {
@@ -605,35 +652,27 @@ function checkSecrets(cmd, args, redirects, words) {
     // Every word that could name a file, option values included, except the
     // pattern of grep-like commands.
     const valueFlags = new Set(VALUE_FLAGS[cmd] ?? []);
-    const patternOnly = new Set(CODE_FLAGS[cmd] ?? ["-e", "--regexp", "--expression"]);
-    for (const f of CODE_FLAGS[cmd] ?? []) valueFlags.add(f);
+    const patternOnly = new Set(["-e", "--regexp", "--expression"]);
     const patternFromFlag = rest.some((a) => ["-e", "-f", "--regexp", "--file", "--expression", "--from-file"].includes(a.split("=")[0]));
     let patternSkipped = !PATTERN_FIRST.has(cmd) || patternFromFlag;
     let files = [];
-    const code = [];
-    for (let k = 0; k < rest.length; k++) {
+    let code = [];
+    if (CODE_FLAGS[cmd]) ({ files, code } = interpreterWords(cmd, rest));
+    else for (let k = 0; k < rest.length; k++) {
       const a = rest[k];
       if (a === "--") {
         files.push(...rest.slice(k + 1));
         break;
       }
-      const cluster = cmd.startsWith("python") ? PY_CODE_CLUSTER.exec(a) : cmd === "node" && /^-(pe|ep)$/.test(a) ? [a, ""] : null;
-      if (cluster && !valueFlags.has(a)) {
-        if (cluster[1]) code.push(cluster[1]);
-        else code.push(rest[++k] ?? "");
-        continue;
-      }
       if (a.startsWith("-")) {
         const name = a.split("=")[0];
         if (a.includes("=")) {
           if (!patternOnly.has(name)) files.push(a.split("=").slice(1).join("="));
-          else if (CODE_FLAGS[cmd]) code.push(a.split("=").slice(1).join("="));
         } else if (TWO_VALUE_FLAGS.has(a)) {
           files.push(rest[k + 1], rest[k + 2]);
           k += 2;
         } else if (valueFlags.has(a)) {
           if (!patternOnly.has(a)) files.push(rest[k + 1]);
-          else if (CODE_FLAGS[cmd]) code.push(rest[k + 1] ?? "");
           k += 1;
         } else if (cmd === "openssl" && /^-(in|out|pass|kfile|passin)$/.test(a)) {
           files.push(rest[k + 1]);

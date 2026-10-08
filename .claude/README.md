@@ -33,7 +33,7 @@ The active task is the one whose `branch` matches the checked-out branch, or `WA
 - Destructive git: hard resets, forced cleans (a `-n` dry run is fine), force pushes (except `--force-with-lease` on a named `claude/*` or `backup/*` branch), skipping hooks with `--no-verify`, checking out or restoring files over local changes, dropping stashes, deleting main.
 - Recursive deletes (`rm -r`, `find -delete`) of the root, home, the project or an ancestor of it, `.git`, `.agents` or `.claude`. Targets are resolved as paths, so `./.` and `foo/..` count.
 - Piping into a shell (`curl ... | sh`). Save the script, read it, then run it.
-- Secrets: reading `.env` files, dumping the environment, printing a variable whose name holds TOKEN, SECRET, KEY or PASSWORD.
+- Secrets: reading `.env` files, dumping the environment, printing a variable whose name holds TOKEN, SECRET, KEY or PASSWORD. Inline node or python code (`-e`, `-p`, `-c`) gets the same checks as text.
 - Pushes to main, so every change goes through a pull request.
 - Production deploys (`shopify app deploy`, `shopify theme publish`, a live theme push, `npm run deploy`). Agents never deploy. Deploys run in CI, outside Claude Code, on a pull request the owner labels `deploy-approved`.
 
