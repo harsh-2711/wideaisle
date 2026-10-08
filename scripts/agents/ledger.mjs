@@ -351,6 +351,48 @@ export function createTask({ id, title = "", milestone = "", lane = "", branch =
   return upsertTask(id, { title, milestone, lane, branch, state, needs }, root);
 }
 
+// Sections every HANDOFF.md has, in order (see .agents/templates/HANDOFF.md).
+export const HANDOFF_SECTIONS = [
+  "Goal and exit criteria", "Status", "Done so far", "Current step", "Next three steps",
+  "Blockers and open questions", "Decisions used", "Files touched", "How to verify", "Lessons and gotchas",
+];
+
+// Template text that means a section was never filled in.
+const PLACEHOLDERS = [/\(fill in\)/, /\(commands that prove the exit criteria\)/];
+
+// Lists what keeps a HANDOFF.md from being enough for a fresh agent:
+// missing sections, template placeholders, and a status that does not
+// match the task's state.
+export function lintHandoff(raw, state = "") {
+  const problems = [];
+  // Line endings from any checkout; fenced blocks may quote the template.
+  const text = raw.replace(/\r\n?/g, "\n").replace(/^```[\s\S]*?^```[ \t]*$/gm, "");
+  const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
+  for (const name of HANDOFF_SECTIONS) {
+    if (!headings.includes(name)) problems.push(`missing section: ${name}`);
+  }
+  const section = (name) => {
+    const m = new RegExp(`^## ${name}[ \\t]*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text);
+    return m ? m[1].trim() : "";
+  };
+  // A row of the Done so far table whose last cell holds a commit id.
+  const started = section("Done so far")
+    .split("\n")
+    .filter((l) => l.trim().startsWith("|") && !/^\|\s*(Step\b|-)/.test(l.trim()))
+    .some((l) => /\b[0-9a-f]{7,40}\b/i.test(l.trim().replace(/\|\s*$/, "").split("|").pop()));
+  // A task nobody has started has no progress to lose, so placeholders are
+  // fine until it is Running, or Blocked on you after real work.
+  const notStartedYet = state === "Queued" || (state === "Blocked on you" && !started);
+  if (!notStartedYet && PLACEHOLDERS.some((re) => re.test(text))) problems.push("placeholder left in the template text");
+  const active = ["Running", "In review", "Stalled"].includes(state) || (state === "Blocked on you" && started);
+  if (active) {
+    const current = section("Current step");
+    if (!current || /^not started\.?$/i.test(current)) problems.push(`state is ${state} but the current step is empty or says Not started`);
+    if (!started && state !== "Blocked on you") problems.push(`state is ${state} but Done so far lists no commit`);
+  }
+  return problems;
+}
+
 export function digest(root, hours = 24, at = Date.now()) {
   const tasks = listTasks(root);
   const lines = [`Digest for the last ${hours} hours, ${new Date(at).toISOString().slice(0, 16)}Z`, ""];

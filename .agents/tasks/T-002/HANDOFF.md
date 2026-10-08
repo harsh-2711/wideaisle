@@ -41,3 +41,13 @@ D-06
 
 - .github/workflows/ci.yml, .github/CODEOWNERS, .github/pull_request_template.md, .github/ISSUE_TEMPLATE/
 - scripts/ci/checks.mjs, scripts/ci/checks.test.mjs
+
+## How to verify
+
+- CI on harsh-2711/wideaisle#8 is green: `gh pr checks 8`.
+- `node --test scripts/ci/checks.test.mjs` passes. It shows the Pending-decision and HANDOFF checks fail when they should.
+
+## Lessons and gotchas
+
+- The handoff, claims and writing checks compare against a base branch. Run them locally with `--base origin/main`, as CI does with the pull request's base.
+- These two sections were dropped in 090077a and restored by T-008.
