@@ -16,7 +16,7 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 |---|---|
 | Interview kit | 9a40513 |
 | Fixes from the PR #37 review: notes and lists live outside this public repo, consent script says what is kept and where, US-only cold email, full CAN-SPAM list, opt-in pilot ask, Shopify billing, transcription approach | df0a4a0 |
-| Second review round: raw interview data stays out of every git repo, deletion steps include a ledger history purge, quote consent, training setting off, pause before the demand-letter question | pending |
+| Second review round: raw interview data stays out of every git repo, deletion steps include a ledger history purge, quote consent, training setting off, pause before the demand-letter question | 0e24bc1 |
 
 ## Current step
 
