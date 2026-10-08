@@ -8,7 +8,7 @@ We never claim a store is compliant, certified, lawsuit-proof or 100% accessible
 
 ## Status
 
-M0 (Foundations). See [.agents/milestones.md](.agents/milestones.md) for exit criteria and [.agents/board.json](.agents/board.json) for active tasks.
+M0 (Foundations). See [.agents/milestones.md](.agents/milestones.md) for exit criteria, [.agents/tasks/](.agents/tasks/) for tasks (`npm run board -- list`) and [.agents/owner-queue.md](.agents/owner-queue.md) for what waits on you.
 
 ## Where things are
 
@@ -38,4 +38,4 @@ cd wideaisle
 claude   # Claude Code reads CLAUDE.md, which imports AGENTS.md
 ```
 
-Then ask: "Read .agents/board.json and continue the next task."
+Then ask: "Run npm run board -- list and continue the next task."

@@ -21,8 +21,12 @@ playwright-report/
 test-results/
 blob-report/
 
-# Run ledger raw logs (D-18: they live in the ledger repo)
+# Run ledger: raw logs (D-18: they live in the ledger repo), the generated
+# board view and write locks
 .agents/ledger/
+.agents/board.json
+.agents/**/*.lock/
+.agents/**/*.tmp
 
 # Local Claude Code settings
 .claude/settings.local.json
