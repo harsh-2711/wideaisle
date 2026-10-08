@@ -2,8 +2,8 @@
 // is idempotent, and only adds attributes or changes colour values, so a
 // patch never removes merchant content.
 import { adjustForContrast, contrast, parseHex, toHex } from "./color";
-import { attrValue, elementFor, findTags, hasAttr, hasNoText, iconNames, insertAll, isNamed, type Tag } from "./liquid-html";
-import { BUTTON_RULES, FIELD_RULES, LINK_RULES, inferName } from "./names";
+import { attrValue, elementFor, findTags, hasAttr, hasNoText, iconNames, insertAll, isNamed, type Element, type Tag } from "./liquid-html";
+import { BUTTON_RULES, FIELD_RULES, LINK_RULES, SHOP_LOGO, inferName } from "./names";
 import type { FixContext, Fixer, Patch } from "./types";
 
 const LIQUID_FILE = /^(layout|sections|snippets|templates|blocks)\/.+\.liquid$/;
@@ -82,7 +82,9 @@ export const missingLang: Fixer = {
 // ---------- empty links and empty buttons ----------
 
 function clueText(tag: Tag, inner: string): string {
-  return [tag.attrs, iconNames(inner).join(" ")].join(" ");
+  // The shop's logo inside a link is a clue that the link goes home.
+  const logo = /settings\.logo\b/.test(inner) ? "settings.logo" : "";
+  return [tag.attrs, iconNames(inner).join(" "), logo].join(" ");
 }
 
 function nameFixer(id: string, type: "empty-link" | "empty-button", tagName: "a" | "button", rules: typeof LINK_RULES): Fixer {
@@ -175,6 +177,15 @@ export const missingLabel: Fixer = {
 
 // ---------- missing alt text ----------
 
+// Image objects whose .alt is the admin alt text. Other objects (product,
+// collection, article) have no .alt, so alt="{{ product.alt }}" renders empty.
+const IMAGE_OBJECT = /(?:^|\.)(?:image|featured_image|featured_media|media|preview_image)$/;
+
+// The innermost <a> around position `at`, if any.
+function enclosingLink(links: Element[], at: number): Element | undefined {
+  return links.filter((a) => a.end <= at && at < a.closeStart).sort((x, y) => y.start - x.start)[0];
+}
+
 export const missingAlt: Fixer = {
   id: "missing-alt/img-alt",
   type: "missing-alt",
@@ -182,19 +193,28 @@ export const missingAlt: Fixer = {
     if (!LIQUID_FILE.test(path)) return null;
     const edits: { tag: Tag; attr: string }[] = [];
     const notes: string[] = [];
+    const links = findTags(content, ["a"]).map((t) => elementFor(content, t)).filter((e): e is Element => e !== null);
     for (const tag of findTags(content, ["img"])) {
       if (hasAttr(tag.attrs, "alt")) continue;
-      if (/role\s*=\s*["']presentation["']/.test(tag.attrs) || /aria-hidden\s*=\s*["']true["']/.test(tag.attrs)) continue;
-      const src = attrValue(tag.attrs, "src") ?? attrValue(tag.attrs, "srcset") ?? "";
-      const object = /\{\{-?\s*([a-z_][\w.[\]'"]*?)\s*\|\s*(image_url|img_url|product_img_url|collection_img_url)/i.exec(src)?.[1];
-      if (object && !/['"]/.test(object)) {
+      if (attrValue(tag.attrs, "role") === "presentation" || attrValue(tag.attrs, "aria-hidden") === "true") continue;
+      const at = line(content, tag.start);
+      const src = attrValue(tag.attrs, "src") || attrValue(tag.attrs, "srcset") || "";
+      const found = /\{\{-?\s*([a-z_][\w.[\]'"]*?)\s*\|\s*(image_url|img_url|product_img_url|collection_img_url)/i.exec(src)?.[1];
+      const object = found && !/['"[\]]/.test(found) ? found : undefined;
+      const link = enclosingLink(links, tag.start);
+      if (object === "settings.logo" || SHOP_LOGO.test(attrValue(tag.attrs, "class") ?? "")) {
+        const alt = object === "settings.logo" ? "{{ settings.logo.alt | default: shop.name | escape }}" : "{{ shop.name | escape }}";
+        edits.push({ tag, attr: `alt="${alt}"` });
+        notes.push(`Added the shop name as alt to the shop logo on line ${at}.`);
+      } else if (object && IMAGE_OBJECT.test(object)) {
         edits.push({ tag, attr: `alt="{{ ${object}.alt | escape }}"` });
-        notes.push(`Added alt from ${object}.alt to the image on line ${line(content, tag.start)}. Images with no alt text in the admin also need alt text (Spike C).`);
-      } else if (/logo/i.test(tag.attrs)) {
+        notes.push(`Added alt from ${object}.alt to the image on line ${at}.`);
+        notes.push(`Needs review: the image on line ${at} takes its alt from ${object}.alt. Where that is empty in the admin, the image renders as decorative (alt=""). Add alt text in the admin (Spike C).`);
+      } else if (link && SHOP_LOGO.test(link.attrs)) {
         edits.push({ tag, attr: 'alt="{{ shop.name | escape }}"' });
-        notes.push(`Added the shop name as alt to the logo on line ${line(content, tag.start)}.`);
+        notes.push(`Added the shop name as alt to the image in the home link on line ${at}.`);
       } else {
-        notes.push(`Needs review: <img> on line ${line(content, tag.start)} has no alt and its source does not say what it shows.`);
+        notes.push(`Needs review: <img> on line ${at} has no alt and its source does not say what it shows.`);
       }
     }
     if (!edits.length) return notes.length ? { file: path, before: content, after: content, type: this.type, fixer: this.id, notes } : null;

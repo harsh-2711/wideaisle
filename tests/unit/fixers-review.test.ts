@@ -1,7 +1,7 @@
 // Regressions from the PR #35 review. Each test failed before its fix.
 import { Liquid } from "liquidjs";
 import { describe, expect, it } from "vitest";
-import { attrSafe, emptyButton, emptyLink, missingLabel } from "../../app/lib/fixers/fixers";
+import { attrSafe, emptyButton, emptyLink, missingAlt, missingLabel } from "../../app/lib/fixers/fixers";
 import { attrValue, findTags, hasAttr, hasNoText } from "../../app/lib/fixers/liquid-html";
 
 const liquid = new Liquid();
@@ -92,5 +92,89 @@ describe("content that renders text (review 9)", () => {
     expect(emptyLink.fixFile("snippets/x.liquid", src, {})).toBeNull();
     const btn = `<button class="drawer__close-text" type="button">{% render 'button-label', text: 'Close and continue' %}</button>`;
     expect(emptyButton.fixFile("snippets/x.liquid", btn, {})).toBeNull();
+  });
+});
+
+const review = (notes: string[]) => notes.filter((n) => n.startsWith("Needs review"));
+
+describe("alt text from image objects (review 6)", () => {
+  it("uses .alt only on image, featured_image, featured_media, media or preview_image", () => {
+    for (const obj of ["product", "collection", "article", "section.settings.image_2", "product.images.first"]) {
+      const src = `<img src="{{ ${obj} | image_url: width: 300 }}">`;
+      const p = missingAlt.fixFile("sections/x.liquid", src, {})!;
+      expect(p.after, obj).toBe(src);
+      expect(review(p.notes), obj).toHaveLength(1);
+    }
+    for (const obj of ["section.settings.image", "product.featured_image", "product.featured_media", "media", "media.preview_image"]) {
+      const src = `<img src="{{ ${obj} | image_url: width: 300 }}">`;
+      const p = missingAlt.fixFile("sections/x.liquid", src, {})!;
+      expect(p.after, obj).toBe(`<img alt="{{ ${obj}.alt | escape }}" src="{{ ${obj} | image_url: width: 300 }}">`);
+      // Empty alt in the admin renders as decorative: a person must check.
+      expect(review(p.notes).join(" "), obj).toMatch(/decorative/);
+    }
+  });
+});
+
+describe("shop logos (review 7)", () => {
+  it("gives the shop name only to the shop's own logo", () => {
+    const own = `<img src="{{ settings.logo | image_url: width: 200 }}" class="header__heading-logo">
+<a href="{{ routes.root_url }}"><img src="{{ 'logo.png' | asset_url }}"></a>
+<a href="/"><img src="{{ 'brand.svg' | asset_url }}"></a>`;
+    const p = missingAlt.fixFile("sections/header.liquid", own, {})!;
+    expect(p.after).toContain(`<img alt="{{ settings.logo.alt | default: shop.name | escape }}" src="{{ settings.logo`);
+    expect(p.after.match(/alt="\{\{ shop\.name \| escape \}\}"/g)).toHaveLength(2);
+    expect(review(p.notes)).toEqual([]);
+  });
+
+  it("sends other brands' logos to review", () => {
+    for (const src of [
+      `<img class="press-logo" src="{{ 'vogue.png' | asset_url }}">`,
+      `<img src="{{ 'payment-logos.png' | asset_url }}">`,
+      `<img class="logo-list__image" src="{{ 'partner.png' | asset_url }}">`,
+      `<a href="{{ block.settings.link }}" class="logo-list__link"><img src="{{ 'x.png' | asset_url }}"></a>`,
+    ]) {
+      const p = missingAlt.fixFile("sections/x.liquid", src, {})!;
+      expect(p.after, src).toBe(src);
+      expect(review(p.notes), src).toHaveLength(1);
+    }
+    const link = `<a href="{{ block.settings.link }}" class="logo-list__link"><img src="{{ 'x.png' | asset_url }}" alt=""></a>`;
+    const l = emptyLink.fixFile("sections/logo-list.liquid", link, {})!;
+    expect(l.after).toBe(link);
+    expect(review(l.notes)).toHaveLength(1);
+  });
+
+  it("names the home link from shop-logo clues", () => {
+    const src = `<a href="{{ routes.root_url }}" class="header__heading-link"><img src="{{ settings.logo | image_url }}" alt=""></a>`;
+    const p = emptyLink.fixFile("sections/header.liquid", src, {})!;
+    expect(p.after).toContain(`<a aria-label="{{ shop.name | escape }}" href="{{ routes.root_url }}"`);
+  });
+});
+
+describe("close buttons (review 8)", () => {
+  it("does not read Alpine's x-on as a close icon", () => {
+    const src = `<button type="button" x-on:click="open = !open">{% render 'icon-chevron-down' %}</button>`;
+    const p = emptyButton.fixFile("snippets/x.liquid", src, {})!;
+    expect(p.after).toBe(src);
+    expect(review(p.notes)).toHaveLength(1);
+    const x = emptyButton.fixFile("snippets/x.liquid", `<button type="button">{% render 'icon-x' %}</button>`, {})!;
+    expect(x.after).toContain('aria-label="Close"');
+  });
+});
+
+describe("translation keys that need a variable (review 10)", () => {
+  it("skips keys whose value holds {{ }} and falls back to English", () => {
+    // Values from Dawn 16 locales/en.default.json.
+    const locale = {
+      products: { product: { quantity: { increase: "Increase quantity for {{ product }}", decrease: "Decrease quantity for {{ product }}" }, media: { open_media: "Open media {{ index }} in modal" } } },
+      sections: { video: { load_video: "Load video: {{ description }}" } },
+    };
+    const src = `<button name="plus" type="button">{% render 'icon-plus' %}</button>
+<button class="deferred-media__poster-button" type="button">{% render 'icon-play' %}</button>
+<button class="product__media-zoom" type="button">{% render 'icon-zoom' %}</button>`;
+    const p = emptyButton.fixFile("snippets/x.liquid", src, { locale })!;
+    expect(p.after).not.toContain("| t");
+    expect(p.after).toContain('aria-label="Increase quantity"');
+    expect(p.after).toContain('aria-label="Play"');
+    expect(p.after).toContain('aria-label="Zoom"');
   });
 });

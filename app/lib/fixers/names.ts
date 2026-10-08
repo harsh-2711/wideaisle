@@ -19,6 +19,9 @@ const SOCIAL: [string, string][] = [
   ["vimeo", "Vimeo"], ["linkedin", "LinkedIn"], ["threads", "Threads"],
 ];
 
+// Clues that a link or image is the shop's own logo or home link.
+export const SHOP_LOGO = /settings\.logo\b|\bheader__heading-(?:logo|link)\b|routes\.root_url\b|href=["']\/["']/i;
+
 // Order matters: specific clues first.
 export const LINK_RULES: NameRule[] = [
   ...SOCIAL.map(([k, name]) => ({ role: `social-${k}`, match: new RegExp(`\\b(icon-)?${k}\\b`, "i"), english: name, keys: [`general.social.links.${k}`] })),
@@ -28,11 +31,14 @@ export const LINK_RULES: NameRule[] = [
   { role: "account", match: /icon-(account|user|customer)\b|routes\.account(_login)?_url|href=["']\/account|\b(header__icon--account|account-icon)\b/i, english: "Account", keys: ["customer.account_fallback", "customer.account.title", "customer.log_in"] },
   { role: "search", match: /icon-search\b|routes\.search_url|href=["']\/search|\b(header__icon--search|search-icon)\b/i, english: "Search", keys: ["general.search.search", "templates.search.title"] },
   { role: "wishlist", match: /\b(icon-)?(wishlist|heart)\b/i, english: "Wishlist", keys: [] },
-  { role: "home", match: /\b(logo|header__heading-link)\b|routes\.root_url|href=["']\/["']/i, english: "Home", keys: [], liquid: "{{ shop.name | escape }}" },
+  // Only the shop's own logo or home link. Press logos, payment logos and
+  // logo lists name other brands, so they go to review.
+  { role: "home", match: SHOP_LOGO, english: "Home", keys: [], liquid: "{{ shop.name | escape }}" },
 ];
 
 export const BUTTON_RULES: NameRule[] = [
-  { role: "close", match: /\b(icon-)?(close|x|dismiss)\b|__close\b|close-button/i, english: "Close", keys: ["accessibility.close", "general.close"] },
+  // "icon-x", not a bare "x": Alpine's x-on:click and x-show are not close icons.
+  { role: "close", match: /\b(icon-)?(close|dismiss)\b|\bicon-x\b|__close\b|close-button/i, english: "Close", keys: ["accessibility.close", "general.close"] },
   { role: "menu", match: /\b(icon-)?(hamburger|menu|burger)\b|menu-drawer|nav-toggle/i, english: "Menu", keys: ["sections.header.menu", "general.menu"] },
   { role: "search", match: /\b(icon-)?search\b/i, english: "Search", keys: ["general.search.search"] },
   { role: "increase", match: /\b(icon-)?(plus|increase|increment)\b|name=["']plus["']/i, english: "Increase quantity", keys: ["products.product.quantity.increase"] },
@@ -85,7 +91,10 @@ export function inferName(clues: string, rules: NameRule[], locale?: Record<stri
     if (!rule.match.test(clues)) continue;
     if (rule.liquid) return { role: rule.role, value: rule.liquid, source: "shop name" };
     for (const key of rule.keys) {
-      if (lookup(locale, key)) return { role: rule.role, value: `{{ '${key}' | t }}`, source: `translation ${key}` };
+      // A value such as "Increase quantity for {{ product }}" needs a
+      // variable that a bare `| t` does not pass: skip it.
+      const text = lookup(locale, key);
+      if (text && !text.includes("{{")) return { role: rule.role, value: `{{ '${key}' | t }}`, source: `translation ${key}` };
     }
     return { role: rule.role, value: escapeAttr(rule.english), source: "English default (no translation key in theme)" };
   }

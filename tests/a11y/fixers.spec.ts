@@ -21,7 +21,9 @@ test("the mini theme fails all six types before the fixers run", async ({ page }
 test("after the fixers, the mini theme has none of the six types", async ({ page }) => {
   const theme = loadTheme(MINI);
   const report = fixTheme(theme);
-  expect(report.review).toEqual([]);
+  // Alt copied from the admin can be empty there: that is for a person to check.
+  expect(report.review).toHaveLength(1);
+  expect(report.review[0]).toMatch(/^sections\/main-product\.liquid: Needs review: .*product\.featured_image\.alt.*decorative/);
   const after = await sixTypes(page, await renderTheme(applyFixes(theme, report)));
   expect(after).toEqual([]);
 });

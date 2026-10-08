@@ -149,12 +149,12 @@ describe("attribute safety", () => {
 describe("missing-alt", () => {
   it("adds alt from the image object, or the shop name for logos", () => {
     const src = `<img src="{{ product.featured_image | image_url: width: 400 }}" width="400">
-<img class="header__logo" src="{{ 'logo.png' | asset_url }}">
+<img class="header__heading-logo" src="{{ 'logo.png' | asset_url }}">
 <img src="{{ block.settings.image | image_url }}" alt="{{ block.settings.image.alt }}">
 <img src="https://cdn.example/x.png">`;
     const p = missingAlt.fixFile("sections/featured.liquid", src, ctx)!;
     expect(p.after).toContain('<img alt="{{ product.featured_image.alt | escape }}" src=');
-    expect(p.after).toContain('<img alt="{{ shop.name | escape }}" class="header__logo"');
+    expect(p.after).toContain('<img alt="{{ shop.name | escape }}" class="header__heading-logo"');
     expect(p.after.match(/alt=/g)).toHaveLength(3); // three images end with alt, one needs review
     expect(p.notes.some((n) => n.startsWith("Needs review"))).toBe(true);
   });
