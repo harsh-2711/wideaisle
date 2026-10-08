@@ -36,6 +36,15 @@ const VALUE_FLAGS = {
   sort: ["-k", "-t", "-o", "-S", "-T"],
   jq: ["-f", "--from-file"],
   diff: ["-U", "-C", "--label"],
+  node: ["-r", "--require", "--import", "--input-type", "--env-file"],
+  python: ["-m", "-W", "-X"],
+  python3: ["-m", "-W", "-X"],
+};
+// Interpreter options whose value is inline code, not a file name.
+const CODE_FLAGS = {
+  node: ["-e", "--eval", "-p", "--print"],
+  python: ["-c"],
+  python3: ["-c"],
 };
 // jq options that take two values (a name and a value or file).
 const TWO_VALUE_FLAGS = new Set(["--arg", "--argjson", "--slurpfile", "--rawfile", "--args"]);
@@ -580,7 +589,8 @@ function checkSecrets(cmd, args, redirects, words) {
     // Every word that could name a file, option values included, except the
     // pattern of grep-like commands.
     const valueFlags = new Set(VALUE_FLAGS[cmd] ?? []);
-    const patternOnly = new Set(["-e", "--regexp", "--expression"]);
+    const patternOnly = new Set(CODE_FLAGS[cmd] ?? ["-e", "--regexp", "--expression"]);
+    for (const f of CODE_FLAGS[cmd] ?? []) valueFlags.add(f);
     const patternFromFlag = rest.some((a) => ["-e", "-f", "--regexp", "--file", "--expression", "--from-file"].includes(a.split("=")[0]));
     let patternSkipped = !PATTERN_FIRST.has(cmd) || patternFromFlag;
     let files = [];

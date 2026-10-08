@@ -14,6 +14,10 @@ const REPO = path.resolve(HERE, "..", "..");
 
 describe("guard", () => {
   const blocked = [
+    "node .env",
+    "node -e 'console.log(1)' .env",
+    "node --env-file=.env app.js",
+    "python3 -m json.tool .env",
     "git reset --hard HEAD~1",
     "git -c core.x=1 reset --hard",
     "git -C . reset --hard",
@@ -185,6 +189,11 @@ describe("guard", () => {
     'git commit -m "$(cat <<\'EOF\'\nfix: stop git reset --hard\nEOF\n)"',
     'bash -c "npm test" && git commit -m "fix: never git push --force"',
     "node --test 'scripts/agents/*.test.mjs'",
+    "node -e 'const R = /a[- ]b/gi; console.log(R.test(\"a b\"))'",
+    "node --eval='[1, 2].map((x) => x * 2)'",
+    "node -e 'console.log(\"a/[\".length)'",
+    'python3 -c "print(\'a/[\')"',
+    'python3 -c "import re; print(re.findall(r\'[a-z]+/\', \'a/b\'))"',
     "printenv PATH",
     "env FOO=1 npm test",
     "git clean -fdn",
