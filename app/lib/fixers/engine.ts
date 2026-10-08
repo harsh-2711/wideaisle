@@ -60,8 +60,21 @@ export function applyFixes(theme: ThemeFiles, report: FixReport): ThemeFiles {
   return out;
 }
 
-export function revertFixes(theme: ThemeFiles, report: FixReport): ThemeFiles {
+export interface RevertResult {
+  theme: ThemeFiles;
+  // Files changed since the fix (by the merchant or an app). They are left
+  // as they are: reverting them would throw that work away.
+  refused: string[];
+}
+
+// Puts back each fixed file, but only when it still holds exactly what the
+// fix wrote.
+export function revertFixes(theme: ThemeFiles, report: FixReport): RevertResult {
   const out = new Map(theme);
-  for (const f of report.files) out.set(f.file, f.before);
-  return out;
+  const refused: string[] = [];
+  for (const f of report.files) {
+    if (theme.get(f.file) === f.after) out.set(f.file, f.before);
+    else refused.push(f.file);
+  }
+  return { theme: out, refused };
 }

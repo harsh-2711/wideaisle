@@ -24,7 +24,9 @@ export interface FixContext {
 export interface Fixer {
   id: string;
   type: FailureType;
-  // Returns the patch for one file, or null when the file needs no change.
-  // Must be idempotent: running it on its own output returns null.
+  // Returns null when the fixer has nothing to say about the file. A patch
+  // with after === before carries only notes (for example "Needs review").
+  // Must be idempotent: on its own output it changes nothing (it returns
+  // null, or a patch with after === before and the same review notes).
   fixFile(path: string, content: string, ctx: FixContext): Patch | null;
 }

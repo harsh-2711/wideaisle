@@ -1,5 +1,6 @@
 // Regressions from the PR #35 review. Each test failed before its fix.
 import { Liquid } from "liquidjs";
+import { applyFixes, fixTheme, revertFixes } from "../../app/lib/fixers/engine";
 import { describe, expect, it } from "vitest";
 import { attrSafe, emptyButton, emptyLink, missingAlt, missingLabel } from "../../app/lib/fixers/fixers";
 import { attrValue, findTags, hasAttr, hasNoText } from "../../app/lib/fixers/liquid-html";
@@ -176,5 +177,23 @@ describe("translation keys that need a variable (review 10)", () => {
     expect(p.after).toContain('aria-label="Increase quantity"');
     expect(p.after).toContain('aria-label="Play"');
     expect(p.after).toContain('aria-label="Zoom"');
+  });
+});
+
+describe("revert (review 16)", () => {
+  it("refuses to revert a file the merchant edited after the fix", () => {
+    const theme = new Map([
+      ["layout/theme.liquid", "<html><body></body></html>"],
+      ["sections/header.liquid", `<a href="{{ routes.cart_url }}">{% render 'icon-cart' %}</a>`],
+    ]);
+    const report = fixTheme(theme);
+    expect(report.files).toHaveLength(2);
+    const fixed = applyFixes(theme, report);
+    const edited = new Map(fixed).set("sections/header.liquid", fixed.get("sections/header.liquid") + "\n<p>Merchant note</p>");
+    const result = revertFixes(edited, report);
+    expect(result.refused).toEqual(["sections/header.liquid"]);
+    expect(result.theme.get("sections/header.liquid")).toContain("Merchant note");
+    expect(result.theme.get("layout/theme.liquid")).toBe(theme.get("layout/theme.liquid"));
+    expect(revertFixes(fixed, report)).toEqual({ theme, refused: [] });
   });
 });

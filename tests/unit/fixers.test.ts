@@ -201,6 +201,6 @@ describe("engine", () => {
     const fixed = applyFixes(theme, report);
     expect(fixed.get("layout/theme.liquid")).toContain('lang="{{ request.locale.iso_code }}"');
     expect(fixTheme(fixed).files).toHaveLength(0);
-    expect(revertFixes(fixed, report)).toEqual(theme);
+    expect(revertFixes(fixed, report).theme).toEqual(theme);
   });
 });

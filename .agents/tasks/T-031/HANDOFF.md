@@ -4,11 +4,11 @@ Update after every step, before compaction, before stopping and before handing o
 
 ## Goal and exit criteria
 
-See TASK.md. Rule-based Liquid and CSS patches for the six failure types on Dawn, checked by axe before and after, with Theme Check passing.
+See TASK.md. Rule-based Liquid and CSS patches for the six failure types on Dawn, checked by axe before and after, with no new Theme Check offenses.
 
 ## Status
 
-Fixing review findings on PR #35 (16 items). Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-08.
+Review findings on PR #35 fixed (16 of 16); back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-08.
 
 ## Done so far
 
@@ -20,11 +20,12 @@ Fixing review findings on PR #35 (16 items). Three of four exit criteria pass. T
 | Review 1: theme walk skips .git; Dawn test fails under CI when Dawn is missing | a10d61d |
 | Review 2, 9, 12 to 15: attribute parser, Liquid balance check, doc blocks, snippet text | 6a7ecd4 |
 | Review 6 to 8, 10: alt only from image objects, shop-logo clues, icon-x, keys with variables | 16f3cac |
-| Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | this commit |
+| Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | e318ca8 |
+| Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | this commit |
 
 ## Current step
 
-Review findings on PR #35. Done: 1 to 10, 12 to 15. Next: 16 (engine), 11 (Dawn excerpt tests), spike doc and TASK wording.
+Pull request #35 re-review, then merge.
 
 ## Next three steps
 
@@ -46,12 +47,13 @@ D-08, D-11
 - tests/unit/fixers.test.ts, tests/a11y/render.ts, tests/a11y/fixers.spec.ts, tests/a11y/themes/mini/
 - tests/integration/dawn.test.ts, tests/integration/dawn-source.ts, tests/unit/theme-source.test.ts
 - tests/unit/fixers-review.test.ts, tests/unit/contrast.test.ts (regressions from the PR #35 review)
+- tests/unit/fixers-dawn.test.ts, tests/unit/fixtures/dawn-16/ (verbatim Dawn 16 files)
 - docs/spikes/spike-b-fixers.md, package.json (test:unit, test:integration)
 
 ## How to verify
 
 ```bash
-npx vitest run tests/unit/fixers.test.ts
+npx vitest run tests/unit   # fixers, contrast, review regressions, Dawn excerpts
 npx vitest run tests/integration/dawn.test.ts   # clones Dawn at a pinned commit
 PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/fixers.spec.ts
 ```
@@ -64,4 +66,5 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/fixers.spec.ts
 - Copy an attribute value only when its Liquid balances (liquidBalanced). Read values with parseAttrs, never a regex.
 - Every alt copied from an image object adds a review note: empty admin alt renders as decorative.
 - Dawn draws text at 75% opacity (body) and 70% (subtitles). The contrast fixer solves for 70% and falls back to 75% with a review note. Dawn 16 scheme-5 fails at 70% (4.43:1) and no colour fixes it: one expected review item.
+- revertFixes returns { theme, refused }: a file edited since the fix is not reverted.
 - loadTheme reads theme folders only. Walking .git failed in CI when git removed a lock file mid-walk.
