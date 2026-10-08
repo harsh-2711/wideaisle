@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-// Mirrors .agents/board.json to the GitHub Project (D-19).
+// Mirrors the task board to the GitHub Project (D-19).
 //
-// Needs: GITHUB_TOKEN with the "project" scope, WA_PROJECT_OWNER (user login)
-// and WA_PROJECT_NUMBER. The Project needs a single-select "Status" field with
+// Needs: WA_PROJECT_TOKEN (or GITHUB_TOKEN), a classic token with the
+// "project" scope; WA_PROJECT_OWNER (user login) and WA_PROJECT_NUMBER. The Project needs a single-select "Status" field with
 // the options Queued, Running, Blocked on you, In review, Done and Stalled.
 // Optional text fields "Step", "Agent" and "Heartbeat" are filled when present.
 //
 // Usage: node scripts/agents/sync-board.mjs [--dry-run]
-import { readBoard } from "./ledger.mjs";
+import fs from "node:fs";
+import { pathToFileURL } from "node:url";
+import { listTasks } from "./ledger.mjs";
 
 const API = "https://api.github.com/graphql";
 
@@ -35,40 +37,55 @@ export function planSync(tasks, project) {
   return ops;
 }
 
+function token() {
+  return process.env.WA_PROJECT_TOKEN || process.env.GITHUB_TOKEN;
+}
+
 async function gql(query, variables) {
   const res = await fetch(API, {
     method: "POST",
-    headers: { authorization: `bearer ${process.env.GITHUB_TOKEN}`, "content-type": "application/json" },
+    headers: { authorization: `bearer ${token()}`, "content-type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
+  if (!res.ok) throw new Error(`GitHub API ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = await res.json();
   if (json.errors) throw new Error(json.errors.map((e) => e.message).join("; "));
   return json.data;
 }
 
 async function loadProject(owner, number) {
-  const data = await gql(
-    `query($owner: String!, $number: Int!) {
-      user(login: $owner) { projectV2(number: $number) {
-        id
-        fields(first: 50) { nodes {
-          ... on ProjectV2FieldCommon { id name }
-          ... on ProjectV2SingleSelectField { options { id name } }
+  const items = [];
+  let after = null;
+  let p;
+  do {
+    const data = await gql(
+      `query($owner: String!, $number: Int!, $after: String) {
+        user(login: $owner) { projectV2(number: $number) {
+          id
+          fields(first: 50) { nodes {
+            ... on ProjectV2FieldCommon { id name }
+            ... on ProjectV2SingleSelectField { options { id name } }
+          } }
+          items(first: 100, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            nodes { id content {
+              ... on DraftIssue { title } ... on Issue { title } ... on PullRequest { title }
+            } }
+          }
         } }
-        items(first: 100) { nodes { id content {
-          ... on DraftIssue { title } ... on Issue { title } ... on PullRequest { title }
-        } } }
-      } }
-    }`,
-    { owner, number },
-  );
-  const p = data.user.projectV2;
+      }`,
+      { owner, number, after },
+    );
+    p = data.user?.projectV2;
+    if (!p) throw new Error(`no Project ${number} for user ${owner}`);
+    for (const n of p.items.nodes) items.push({ id: n.id, title: n.content?.title ?? "" });
+    after = p.items.pageInfo.hasNextPage ? p.items.pageInfo.endCursor : null;
+  } while (after);
   const fields = {};
   for (const f of p.fields.nodes) {
     if (!f?.name) continue;
     fields[f.name] = { id: f.id, options: Object.fromEntries((f.options ?? []).map((o) => [o.name, o.id])) };
   }
-  const items = p.items.nodes.map((n) => ({ id: n.id, title: n.content?.title ?? "" }));
   return { id: p.id, fields, items };
 }
 
@@ -109,13 +126,13 @@ async function apply(project, ops, owner) {
 
 async function main() {
   const dry = process.argv.includes("--dry-run");
-  const { GITHUB_TOKEN, WA_PROJECT_OWNER, WA_PROJECT_NUMBER } = process.env;
-  if (!GITHUB_TOKEN || !WA_PROJECT_OWNER || !WA_PROJECT_NUMBER) {
-    console.error("Set GITHUB_TOKEN, WA_PROJECT_OWNER and WA_PROJECT_NUMBER. See .agents/README.md.");
+  const { WA_PROJECT_OWNER, WA_PROJECT_NUMBER } = process.env;
+  if (!token() || !WA_PROJECT_OWNER || !WA_PROJECT_NUMBER) {
+    console.error("Set WA_PROJECT_TOKEN, WA_PROJECT_OWNER and WA_PROJECT_NUMBER. See .agents/README.md.");
     process.exit(2);
   }
   const project = await loadProject(WA_PROJECT_OWNER, Number(WA_PROJECT_NUMBER));
-  const ops = planSync(readBoard().tasks, project);
+  const ops = planSync(listTasks(), project);
   if (dry) {
     for (const o of ops) console.log(JSON.stringify(o));
     return;
@@ -124,7 +141,8 @@ async function main() {
   console.log(`synced ${ops.length} changes`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invoked = process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href;
+if (invoked) {
   main().catch((err) => {
     console.error(err.message);
     process.exit(1);

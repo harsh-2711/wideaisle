@@ -6,7 +6,7 @@ Read it before your first task. docs/plan/kickoff.md lists the
 decisions treated as final.
 
 ## Before any task
-1. Read .agents/board.json and your folder in .agents/tasks/<id>/.
+1. Run `npm run board -- list` and read your folder in .agents/tasks/<id>/.
 2. Read TASK.md, HANDOFF.md and the last 50 events of the task.
 3. Check decisions/INDEX.md. Do not start work that needs a Pending decision.
 

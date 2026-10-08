@@ -39,7 +39,7 @@ Approved and Changed decisions are final. For Changed ones, the owner's note is 
 | D-16 | Outreach | Exclude stores recently named in lawsuits from cold outreach |
 | D-17 | First expansion | Decide with launch data |
 | D-18 | Raw agent logs | B: ledger repo harsh-2711/wideaisle-ledger; a gitignored .agents/ledger/ until it exists; C once the PoC server exists |
-| D-19 | Status board | A: GitHub Projects, mirrored from .agents/board.json |
+| D-19 | Status board | A: GitHub Projects, mirrored from the task folders in .agents/tasks/ |
 
 D-18 and D-19 were Pending when the kickoff started. The owner approved both on 2026-10-07, and the live doc now shows them Approved.
 
@@ -47,6 +47,7 @@ D-18 and D-19 were Pending when the kickoff started. The owner approved both on 
 
 - Branches are `claude/<type>-<name>`, not `task/<id>-<short-name>`. The task id goes in the commit footer. The owner set this on 2026-10-07 and the live doc now says so.
 - Every feature branch reaches main through a pull request. Agents merge their own pull requests after green CI and a reviewer agent's check, using a merge commit.
+- Task state lives in `.agents/tasks/<id>/status.json`, one file per task, so parallel branches never conflict. `.agents/board.json` is a generated view (`npm run board -- build`), and heartbeats come from the event log.
 - main got one direct root commit so pull requests have a base. Every later change goes through a pull request.
 
 ## Unclear, with the working assumption
