@@ -1,0 +1,19 @@
+{
+  "data": {
+    "themeFilesUpsert": {
+      "job": { "id": "gid://shopify/Job/9a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d", "done": true },
+      "upsertedThemeFiles": [
+        { "filename": "sections/header.liquid", "checksumMd5": "8939bc7f90ff7a41e8757d243dc5e52f", "size": "82" },
+        { "filename": "assets/base.css", "checksumMd5": "9e9c277b60410dbbf0f3f30362517fb0", "size": "50" }
+      ],
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1980, "restoreRate": 100.0 }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "data": {
+    "theme": {
+      "id": "gid://shopify/OnlineStoreTheme/111111111",
+      "files": {
+        "nodes": [
+          {
+            "filename": "sections/header.liquid",
+            "checksumMd5": "8939bc7f90ff7a41e8757d243dc5e52f",
+            "size": "82",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyUrl",
+              "url": "https://cdn.shopify.com/s/files/theme-file-download/header.liquid?sig=abc"
+            }
+          }
+        ],
+        "userErrors": [],
+        "pageInfo": { "hasNextPage": false, "endCursor": null }
+      }
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 4,
+      "actualQueryCost": 4,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1996, "restoreRate": 100.0 }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "data": {
+    "fileUpdate": {
+      "files": [
+        { "id": "gid://shopify/MediaImage/3333333333", "alt": "" }
+      ],
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1990, "restoreRate": 100.0 }
+    }
+  }
+}

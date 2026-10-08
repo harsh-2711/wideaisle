@@ -1,0 +1,23 @@
+{
+  "data": {
+    "themeFilesUpsert": {
+      "job": null,
+      "upsertedThemeFiles": [],
+      "userErrors": [
+        {
+          "field": ["files", "0", "body", "value"],
+          "filename": "sections/header.liquid",
+          "code": "FILE_VALIDATION_ERROR",
+          "message": "Liquid syntax error (line 1): Tag '{%' was not properly terminated with regexp: /%}/"
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1970, "restoreRate": 100.0 }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "data": {
+    "themeDelete": {
+      "deletedThemeId": "gid://shopify/OnlineStoreTheme/222222222",
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1989, "restoreRate": 100.0 }
+    }
+  }
+}

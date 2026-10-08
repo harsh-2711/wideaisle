@@ -8,24 +8,25 @@ See TASK.md. Duplicate a theme and write files through the Admin API; the GitHub
 
 ## Status
 
-Running. Last updated 2026-10-08. Shared types and the zip route are done; Admin API next.
+Running. Last updated 2026-10-08. Zip and Admin API routes done; GitHub next.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
 | Research: Admin API 2026-10 schema, GitHub REST description, exemption sources | d3cfb22 |
-| Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | this commit |
+| Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | f8ced04 |
+| Admin API client and adapter, 23 recorded GraphQL fixtures, 20 tests | this commit |
 
 ## Current step
 
-Admin API adapter with recorded GraphQL fixtures.
+GitHub pull request adapter with recorded REST fixtures.
 
 ## Next three steps
 
-1. Admin API client (throttling, retries) and adapter (duplicate, upsert, job polling, revert).
-2. GitHub pull request adapter with recorded REST fixtures.
-3. docs/spikes/spike-a-delivery.md, then final checks.
+1. GitHub pull request adapter (branch, blobs, tree, commit, PR; revert by close or revert PR).
+2. docs/spikes/spike-a-delivery.md.
+3. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
 
 ## Blockers and open questions
 
@@ -44,12 +45,18 @@ D-09
 
 - .agents/tasks/T-030/HANDOFF.md, status.json
 - package.json, package-lock.json (fflate 0.8.2, pinned exactly)
-- app/lib/delivery/: types.ts, errors.ts, limits.ts, patch.ts, http.ts, theme-file.ts
-- tests/unit/delivery/: helpers.ts, patch.test.ts, theme-file.test.ts
+- app/lib/delivery/: types.ts, errors.ts, limits.ts, patch.ts, http.ts, theme-file.ts,
+  shopify-admin.ts, admin-api.ts
+- tests/unit/delivery/: helpers.ts, theme-data.ts, patch.test.ts, theme-file.test.ts,
+  admin-api.test.ts
+- tests/fixtures/shopify/ (hand-written responses, README lists them)
 
 ## How to verify
 
 - `npx vitest run tests/unit/delivery` (offline; no credentials)
+- GraphQL documents were checked against the 2026-10 schema with graphql-js `validate`:
+  `npm pack @shopify/dev-mcp@1.16.0`, unpack `dist/data/admin_2026-10.json.gz`, then
+  `buildClientSchema` on it and `validate` each string in `ADMIN_QUERIES`. All 10 passed.
 
 ## Lessons and gotchas
 

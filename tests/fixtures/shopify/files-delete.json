@@ -1,0 +1,15 @@
+{
+  "data": {
+    "themeFilesDelete": {
+      "deletedThemeFiles": [{ "filename": "snippets/wa-visually-hidden.liquid" }],
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1975, "restoreRate": 100.0 }
+    }
+  }
+}
