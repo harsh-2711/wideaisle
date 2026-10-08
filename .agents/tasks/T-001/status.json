@@ -1,0 +1,13 @@
+{
+  "title": "Scaffold the Shopify app on Drizzle, Postgres and pg-boss",
+  "milestone": "M0",
+  "lane": "repo",
+  "agent": "",
+  "state": "In review",
+  "step": "",
+  "branch": "claude/feat-app-scaffold",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-001"
+}

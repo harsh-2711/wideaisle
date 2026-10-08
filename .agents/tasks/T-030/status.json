@@ -1,0 +1,13 @@
+{
+  "title": "Spike A: theme write path and delivery adapters",
+  "milestone": "M3",
+  "lane": "delivery",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/feat-delivery-adapters",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-030"
+}

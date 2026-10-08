@@ -1,0 +1,13 @@
+{
+  "title": "Spike B: six fixers on Dawn",
+  "milestone": "M3",
+  "lane": "fixers",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/feat-dawn-fixers",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-031"
+}

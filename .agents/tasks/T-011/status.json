@@ -1,0 +1,13 @@
+{
+  "title": "Legal brief",
+  "milestone": "M1",
+  "lane": "research",
+  "agent": "",
+  "state": "Running",
+  "step": "",
+  "branch": "claude/docs-m1-research",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-011"
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Ledger repo hookup",
+  "milestone": "M0",
+  "lane": "ledger",
+  "agent": "",
+  "state": "Blocked on you",
+  "step": "",
+  "branch": "",
+  "issue": null,
+  "needs": [
+    "owner:Q-07"
+  ],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-007"
+}

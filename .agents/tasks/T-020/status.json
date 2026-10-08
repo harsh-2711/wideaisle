@@ -1,0 +1,13 @@
+{
+  "title": "Store census crawler",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/feat-census-crawler",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-020"
+}

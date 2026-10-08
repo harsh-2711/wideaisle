@@ -1,0 +1,13 @@
+{
+  "title": "CI, templates and CODEOWNERS",
+  "milestone": "M0",
+  "lane": "repo",
+  "agent": "",
+  "state": "In review",
+  "step": "",
+  "branch": "claude/ci-github-checks",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-002"
+}

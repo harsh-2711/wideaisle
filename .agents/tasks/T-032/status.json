@@ -1,0 +1,13 @@
+{
+  "title": "Spike C: alt text with Claude Haiku in batch",
+  "milestone": "M3",
+  "lane": "fixers",
+  "agent": "",
+  "state": "Queued",
+  "step": "",
+  "branch": "claude/feat-alt-text",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-032"
+}
