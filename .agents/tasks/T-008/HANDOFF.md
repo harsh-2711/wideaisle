@@ -6,28 +6,38 @@ Update after every step, before compaction, before stopping and before handing o
 
 See TASK.md. Prove a fresh agent can resume a task stopped mid-step from HANDOFF.md alone.
 
+The test task is real work: a `lint-handoff` check that says whether a HANDOFF.md is enough for a fresh agent to resume. It has three steps (below). The first agent stops in the middle of step 2 on purpose. A fresh agent finishes steps 2 and 3 using only this file, TASK.md, the last events and `git log`.
+
 ## Status
 
-Queued. Last updated 2026-10-08.
+Running. Stopped on purpose in the middle of step 2. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| 1. `lintHandoff(text, state)` and `HANDOFF_SECTIONS` in scripts/agents/ledger.mjs | 74955cf |
 
 ## Current step
 
-Not started.
+2. Tests for `lintHandoff` in scripts/agents/ledger.test.mjs, in a new `describe("handoff lint")` block. Started, not committed; expect to redo it. Cover:
+   - a complete handoff with a commit in Done so far and state Running: no problems;
+   - each missing section is reported by name;
+   - "(fill in)" is reported;
+   - state Running with "Not started." as the current step is reported;
+   - state In review with an empty Done so far table is reported;
+   - state Queued or Done skips the two state checks.
+   Build test text from `HANDOFF_SECTIONS` so the test does not depend on the template file.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. Finish step 2, run `node --test scripts/agents/ledger.test.mjs`, commit with `test(agents): ...` and `Refs: T-008`, push.
+2. Step 3: add `lint-handoff [<id>] [--all]` to scripts/agents/board.mjs. With an id, lint that task's HANDOFF.md against its state from status.json. With `--all`, lint every task that is not Done. Print `<id>: <problem>` lines and exit 1 if any. Add it to the usage text and to .agents/README.md under the board commands. Add a CLI test like the existing ones that use BOARD_CLI.
+3. Run `node scripts/agents/board.mjs lint-handoff --all`. Fix what it reports in tasks that are not Done. Known: T-001 and T-002 lost their "How to verify" and "Lessons and gotchas" sections in commit 090077a; restore them with short text even though they are Done. Then file the report (see How to verify) and set the state to In review.
 
 ## Blockers and open questions
 
-- None yet.
+- None. No owner input is needed.
 
 ## Decisions used
 
@@ -35,12 +45,17 @@ D-18
 
 ## Files touched
 
-- None yet.
+- scripts/agents/ledger.mjs (step 1)
+- scripts/agents/ledger.test.mjs (step 2)
+- scripts/agents/board.mjs, .agents/README.md (step 3)
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- `node --test scripts/agents/ledger.test.mjs` passes.
+- `node scripts/agents/board.mjs lint-handoff --all` exits 0 on this branch.
+- The resuming agent files .agents/tasks/T-008/children/resume-report.md from .agents/templates/child-report.md: what it read, what it had to guess, how much of step 2 was lost, and the commits it made.
 
 ## Lessons and gotchas
 
-- None yet.
+- Commit messages need the two trailer lines the other tasks use (Co-Authored-By and Claude-Session); copy them from `git log -1`.
+- Run commands from the worktree root; the hooks read WA_TASK or the branch name to find the task.
