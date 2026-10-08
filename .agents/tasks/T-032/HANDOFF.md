@@ -16,17 +16,18 @@ Running. Builder agent. Last updated 2026-10-08.
 |---|---|
 | 1. Branch, pinned `@anthropic-ai/sdk` 0.132.1 and `tsx` 4.23.15, `/data/` ignored | 8a04b59 |
 | 2. Batch client in `app/lib/alt-text/` and 48 unit tests with a mocked SDK client | d5b0906 |
-| 3. CLI `scripts/alt-text/run.ts`, npm scripts `alt-text` and `alt-text:sheet`, pre-run estimate, CLI tests | (this commit) |
+| 3. CLI `scripts/alt-text/run.ts`, npm scripts `alt-text` and `alt-text:sheet`, pre-run estimate, CLI tests | b56e461 |
+| 4. Rating sheet: seeded sample of 50 to CSV, `scripts/alt-text/sheet.ts`, rubric doc, tests | (this commit) |
 
 ## Current step
 
-4: rating sheet script and doc.
+5: spike doc.
 
 ## Next three steps
 
-1. Rating sheet: `app/lib/alt-text/sheet.ts`, `scripts/alt-text/sheet.ts`, `docs/spikes/alt-text-rating-sheet.md`.
-2. Spike doc `docs/spikes/spike-c-alt-text.md`.
-3. All checks (lint, tsc, test, handoff, writing, claims), then state "In review".
+1. Spike doc `docs/spikes/spike-c-alt-text.md`.
+2. All checks (lint, tsc, test, handoff, writing, claims), then state "In review".
+3. After Q-04: dry run, then a real run on 200 images; then the sheet for Q-26.
 
 ## Blockers and open questions
 
@@ -43,7 +44,9 @@ D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (
 - .gitignore (`/data/`)
 - app/lib/alt-text/: config, types, prompt, request, parse, cost, state, runner, index
 - tests/unit/alt-text/: mock-client.ts plus request, parse, cost, runner and cli tests
-- scripts/alt-text/run.ts
+- scripts/alt-text/run.ts, scripts/alt-text/sheet.ts
+- app/lib/alt-text/sheet.ts, tests/unit/alt-text/sheet.test.ts
+- docs/spikes/alt-text-rating-sheet.md
 
 ## How to verify
 
