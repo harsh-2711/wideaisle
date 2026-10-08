@@ -1,0 +1,23 @@
+<!doctype html>
+<html class="js">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ shop.name }}</title>
+    <style>
+      {%- for scheme in settings.color_schemes -%}
+        .color-{{ scheme[0] }} { color: {{ scheme[1].settings.text }}; background: {{ scheme[1].settings.background }}; }
+        .color-{{ scheme[0] }} .button { color: {{ scheme[1].settings.button_label }}; background: {{ scheme[1].settings.button }}; }
+      {%- endfor -%}
+      body { margin: 0; font: 16px/1.5 sans-serif; }
+      .button { display: inline-block; padding: 8px 16px; border: 0; }
+      .icon { width: 20px; height: 20px; }
+    </style>
+  </head>
+  <body class="color-scheme-1">
+    {% section 'header' %}
+    <main>
+      {% section 'main-product' %}
+      {% section 'newsletter' %}
+    </main>
+  </body>
+</html>

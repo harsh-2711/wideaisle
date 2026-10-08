@@ -22,9 +22,11 @@ const SOCIAL: [string, string][] = [
 // Order matters: specific clues first.
 export const LINK_RULES: NameRule[] = [
   ...SOCIAL.map(([k, name]) => ({ role: `social-${k}`, match: new RegExp(`\\b(icon-)?${k}\\b`, "i"), english: name, keys: [`general.social.links.${k}`] })),
-  { role: "cart", match: /\b(icon-)?(cart|bag|basket)\b|routes\.cart_url|\/cart\b/i, english: "Cart", keys: ["templates.cart.cart", "sections.header.cart", "general.cart.title"] },
-  { role: "account", match: /\b(icon-)?(account|user|customer|login)\b|routes\.account(_login)?_url|\/account\b/i, english: "Account", keys: ["customer.account_fallback", "customer.account.title", "customer.log_in"] },
-  { role: "search", match: /\b(icon-)?search\b|routes\.search_url|\/search\b/i, english: "Search", keys: ["general.search.search", "templates.search.title"] },
+  // Clues are icon names and destinations, not loose class words, so a
+  // product link inside the cart (class "cart-item__link") is not a cart link.
+  { role: "cart", match: /icon-(cart|bag|basket)\b|routes\.cart_url|href=["']\/cart["'/?]|\b(header__icon--cart|cart-icon|site-header__cart)\b/i, english: "Cart", keys: ["templates.cart.cart", "sections.header.cart", "general.cart.title"] },
+  { role: "account", match: /icon-(account|user|customer)\b|routes\.account(_login)?_url|href=["']\/account|\b(header__icon--account|account-icon)\b/i, english: "Account", keys: ["customer.account_fallback", "customer.account.title", "customer.log_in"] },
+  { role: "search", match: /icon-search\b|routes\.search_url|href=["']\/search|\b(header__icon--search|search-icon)\b/i, english: "Search", keys: ["general.search.search", "templates.search.title"] },
   { role: "wishlist", match: /\b(icon-)?(wishlist|heart)\b/i, english: "Wishlist", keys: [] },
   { role: "home", match: /\b(logo|header__heading-link)\b|routes\.root_url|href=["']\/["']/i, english: "Home", keys: [], liquid: "{{ shop.name | escape }}" },
 ];
@@ -41,6 +43,7 @@ export const BUTTON_RULES: NameRule[] = [
   { role: "pause", match: /\b(icon-)?pause\b/i, english: "Pause", keys: ["sections.slideshow.pause_slideshow", "general.slider.pause"] },
   { role: "share", match: /\b(icon-)?share\b/i, english: "Share", keys: ["general.share.share"] },
   { role: "zoom", match: /\b(icon-)?(zoom|expand|enlarge)\b/i, english: "Zoom", keys: ["products.product.media.open_media"] },
+  { role: "info", match: /icon-info\b|info-button/i, english: "More information", keys: [] },
   { role: "remove", match: /\b(icon-)?(remove|delete|trash)\b/i, english: "Remove", keys: ["sections.cart.remove", "templates.cart.remove"] },
 ];
 

@@ -28,9 +28,10 @@
     "test": "npm run test:unit && npm run test:agents",
     "test:a11y": "playwright test",
     "test:agents": "node --test 'scripts/agents/*.test.mjs' '.claude/hooks/*.test.mjs'",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run tests/unit app",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "vite": "vite"
+    "vite": "vite",
+    "test:integration": "vitest run tests/integration"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.13.0",
