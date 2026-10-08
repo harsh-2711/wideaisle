@@ -1,5 +1,6 @@
 <section class="product">
   <h1>{{ product.title }}</h1>
+  <p class="subtitle">{{ product.vendor }}</p>
   <img src="{{ product.featured_image | image_url: width: 400 }}" width="400" height="400">
   <p>{{ product.description }}</p>
   <form>

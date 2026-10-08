@@ -1,7 +1,8 @@
 // The six v1 fixers (D-08). Each one is a pure function of a file's text,
 // is idempotent, and only adds attributes or changes colour values, so a
 // patch never removes merchant content.
-import { adjustForContrast, contrast, parseHex, toHex } from "./color";
+import { blend, contrast, contrastAt, parseHex, solveColor, toHex, type RGB } from "./color";
+import { setString } from "./json-text";
 import { attrValue, elementFor, findTags, hasAttr, hasNoText, iconNames, insertAll, isNamed, type Element, type Tag } from "./liquid-html";
 import { BUTTON_RULES, FIELD_RULES, LINK_RULES, SHOP_LOGO, inferName } from "./names";
 import type { FixContext, Fixer, Patch } from "./types";
@@ -224,18 +225,44 @@ export const missingAlt: Fixer = {
 
 // ---------- low-contrast text (theme colour settings) ----------
 
-// Foreground and background setting pairs that must reach 4.5:1.
-// Dawn 10+ colour schemes, then the older Dawn and Online Store 2.0 keys.
-const SCHEME_PAIRS: [string, string][] = [
-  ["text", "background"],
-  ["button_label", "button"],
-  ["secondary_button_label", "background"],
+// Dawn draws text as rgba(var(--color-foreground), alpha), so a setting
+// that passes as solid colour can still fail on the page:
+//   1     headings
+//   0.75  body text, labels and menu items (layout/theme.liquid, base.css)
+//   0.7   subtitles, unit prices, predictive search headings, facet counts
+// 0.7 is the lowest opacity Dawn uses for text that must pass, so the fix
+// aims for it. When no shade reaches it, the fix still makes 0.75 text pass
+// and flags the 0.7 text for review. Lower opacities (0.55 placeholders,
+// 0.5 slider counters) cannot reach 4.5:1 on white with any colour; a
+// colour setting cannot fix them.
+interface Need {
+  fg: string;
+  bg: string;
+  alpha: number;
+  required: boolean;
+  what: string;
+}
+
+const textNeeds = (fg: string, bg: string): Need[] => [
+  { fg, bg, alpha: 1, required: true, what: "headings" },
+  { fg, bg, alpha: 0.75, required: true, what: "body text" },
+  { fg, bg, alpha: 0.7, required: false, what: "subtitles and unit prices" },
 ];
-const LEGACY_PAIRS: [string, string][] = [
-  ["colors_text", "colors_background_1"],
-  ["colors_text", "colors_background_2"],
-  ["colors_solid_button_labels", "colors_accent_1"],
-  ["colors_outline_button_labels", "colors_background_1"],
+const solid = (fg: string, bg: string, what: string): Need => ({ fg, bg, alpha: 1, required: true, what });
+
+// Dawn 10+ colour schemes, then the older Dawn and Online Store 2.0 keys.
+// One foreground key can sit on several backgrounds: one colour must pass
+// on all of them.
+const SCHEME_NEEDS: Need[] = [
+  ...textNeeds("text", "background"),
+  solid("button_label", "button", "button labels"),
+  solid("secondary_button_label", "background", "outline buttons and links"),
+];
+const LEGACY_NEEDS: Need[] = [
+  ...textNeeds("colors_text", "colors_background_1"),
+  ...textNeeds("colors_text", "colors_background_2"),
+  solid("colors_solid_button_labels", "colors_accent_1", "button labels"),
+  solid("colors_outline_button_labels", "colors_background_1", "outline buttons"),
 ];
 
 function stripComments(json: string): { head: string; body: string } {
@@ -243,42 +270,68 @@ function stripComments(json: string): { head: string; body: string } {
   return m ? { head: m[0], body: json.slice(m[0].length) } : { head: "", body: json };
 }
 
-// Replaces the value of "key": "#xxxxxx" within [from, to) of text.
-function replaceColor(text: string, from: number, to: number, key: string, oldHex: string, newHex: string): string {
-  const region = text.slice(from, to);
-  const re = new RegExp(`("${key}"\\s*:\\s*")${oldHex.replace("#", "#?")}(")`, "i");
-  const updated = region.replace(re, `$1${newHex}$2`);
-  return text.slice(0, from) + updated + text.slice(to);
+type Settings = Record<string, unknown>;
+
+interface Group {
+  label: string;
+  path: string[]; // where the settings object sits in settings_data.json
+  needs: Need[];
 }
 
-function objectRange(text: string, key: string, start = 0): [number, number] | null {
-  const k = text.indexOf(`"${key}"`, start);
-  if (k < 0) return null;
-  const open = text.indexOf("{", k);
-  let depth = 0;
-  for (let i = open; i < text.length; i++) {
-    if (text[i] === "{") depth++;
-    else if (text[i] === "}" && --depth === 0) return [open, i + 1];
-  }
-  return null;
+interface Plan {
+  group: Group;
+  fg: string;
+  from: string;
+  to: string | null; // null: nothing changes
+  unmet: Need[]; // still under 4.5:1 after the plan
 }
 
-function fixPairs(settings: Record<string, unknown>, pairs: [string, string][], label: string, notes: string[]): Record<string, string> {
-  const changes: Record<string, string> = {};
-  for (const [fgKey, bgKey] of pairs) {
-    const fgHex = (changes[fgKey] ?? settings[fgKey]) as string | undefined;
-    const bgHex = settings[bgKey] as string | undefined;
-    const fg = fgHex ? parseHex(fgHex) : null;
-    const bg = bgHex ? parseHex(bgHex) : null;
-    if (!fg || !bg) continue;
-    const before = contrast(fg, bg);
-    if (before >= 4.5) continue;
-    const fixed = adjustForContrast(fg, bg, 4.5);
-    const hex = toHex(fixed);
-    changes[fgKey] = hex;
-    notes.push(`${label}: ${fgKey} ${fgHex} on ${bgKey} ${bgHex} was ${before.toFixed(2)}:1; now ${hex} at ${contrast(fixed, bg).toFixed(2)}:1, same hue.`);
+const hexOf = (settings: Settings, key: string) => (typeof settings[key] === "string" ? parseHex(settings[key] as string) : null);
+
+function settingsAt(data: unknown, path: string[]): Settings | undefined {
+  let cur: unknown = data;
+  for (const k of path) cur = cur && typeof cur === "object" ? (cur as Settings)[k] : undefined;
+  return cur && typeof cur === "object" ? (cur as Settings) : undefined;
+}
+
+function planGroup(group: Group, settings: Settings): Plan[] {
+  const plans: Plan[] = [];
+  for (const fgKey of new Set(group.needs.map((n) => n.fg))) {
+    const fg = hexOf(settings, fgKey);
+    const needs = group.needs.filter((n) => n.fg === fgKey && hexOf(settings, n.bg));
+    if (!fg || !needs.length) continue;
+    const backdrop = (n: Need) => ({ bg: hexOf(settings, n.bg)!, alpha: n.alpha });
+    const fails = (c: RGB, n: Need) => contrastAt(c, backdrop(n).bg, n.alpha) < 4.5;
+    if (!needs.some((n) => fails(fg, n))) continue;
+    const from = String(settings[fgKey]);
+    const all = solveColor(fg, needs.map(backdrop));
+    const color = all ?? solveColor(fg, needs.filter((n) => n.required).map(backdrop));
+    if (!color) {
+      plans.push({ group, fg: fgKey, from, to: null, unmet: needs.filter((n) => fails(fg, n)) });
+      continue;
+    }
+    const to = toHex(color) === toHex(fg) ? null : toHex(color);
+    plans.push({ group, fg: fgKey, from, to, unmet: needs.filter((n) => fails(color, n)) });
   }
-  return changes;
+  return plans;
+}
+
+// Ratios measured on the given settings, grouped by background.
+function measure(settings: Settings, fgKey: string, needs: Need[]): string {
+  const fg = hexOf(settings, fgKey)!;
+  const byBg = new Map<string, Need[]>();
+  for (const n of needs) byBg.set(n.bg, [...(byBg.get(n.bg) ?? []), n]);
+  return [...byBg]
+    .map(([bgKey, list]) => {
+      const bg = hexOf(settings, bgKey)!;
+      const ratios = list.map((n) => `${contrast(blend(fg, bg, n.alpha), bg).toFixed(2)}:1 at ${Math.round(n.alpha * 100)}%`);
+      return `on ${bgKey} ${String(settings[bgKey])}: ${ratios.join(", ")}`;
+    })
+    .join("; ");
+}
+
+function describe(needs: Need[]): string {
+  return [...new Set(needs.map((n) => `${n.what} (${Math.round(n.alpha * 100)}% opacity)`))].join(", ");
 }
 
 export const lowContrast: Fixer = {
@@ -287,37 +340,53 @@ export const lowContrast: Fixer = {
   fixFile(path, content) {
     if (path !== "config/settings_data.json") return null;
     const { head, body } = stripComments(content);
-    let data: { current?: unknown; presets?: Record<string, Record<string, unknown>> };
+    let data: { current?: unknown; presets?: Record<string, Settings> };
     try {
       data = JSON.parse(body);
     } catch {
       return null;
     }
     // "current" is either the live settings object or the name of a preset.
-    const currentKey = typeof data.current === "string" ? null : "current";
-    const live = (currentKey ? data.current : data.presets?.[data.current as string]) as Record<string, unknown> | undefined;
+    const base = typeof data.current === "string" ? ["presets", data.current] : ["current"];
+    const live = settingsAt(data, base);
     if (!live) return null;
-    const scope = currentKey ? objectRange(body, "current") : objectRange(body, data.current as string, body.indexOf('"presets"'));
-    if (!scope) return null;
 
-    const notes: string[] = [];
-    let text = body;
-    const schemes = live.color_schemes as Record<string, { settings: Record<string, unknown> }> | undefined;
-    if (schemes) {
-      for (const [name, scheme] of Object.entries(schemes)) {
-        const changes = fixPairs(scheme.settings ?? {}, SCHEME_PAIRS, `Colour scheme ${name}`, notes);
-        for (const [key, hex] of Object.entries(changes)) {
-          const range = objectRange(text, name, scope[0]);
-          if (range) text = replaceColor(text, range[0], range[1], key, String(scheme.settings[key]), hex);
-        }
+    const groups: Group[] = [];
+    const schemes = live.color_schemes;
+    if (schemes && typeof schemes === "object") {
+      for (const name of Object.keys(schemes)) {
+        groups.push({ label: `Colour scheme ${name}`, path: [...base, "color_schemes", name, "settings"], needs: SCHEME_NEEDS });
       }
     }
-    const legacy = fixPairs(live, LEGACY_PAIRS, "Theme colours", notes);
-    for (const [key, hex] of Object.entries(legacy)) {
-      const range = currentKey ? objectRange(text, "current") : objectRange(text, data.current as string, text.indexOf('"presets"'));
-      if (range) text = replaceColor(text, range[0], range[1], key, String(live[key]), hex);
+    groups.push({ label: "Theme colours", path: base, needs: LEGACY_NEEDS });
+
+    const plans = groups.flatMap((g) => {
+      const settings = settingsAt(data, g.path);
+      return settings ? planGroup(g, settings) : [];
+    });
+    let text = body;
+    for (const p of plans) if (p.to) text = setString(text, [...p.group.path, p.fg], p.to);
+
+    // Notes state what the new file measures, not what the plan expected.
+    const after = JSON.parse(text);
+    const notes: string[] = [];
+    for (const p of plans) {
+      const settings = settingsAt(after, p.group.path)!;
+      const needs = p.group.needs.filter((n) => n.fg === p.fg && hexOf(settings, n.bg));
+      const now = measure(settings, p.fg, needs);
+      if (p.to) notes.push(`${p.group.label}: changed ${p.fg} from ${p.from} to ${p.to}, same hue. Measured after the change ${now}.`);
+      if (!p.unmet.length) continue;
+      const bgs = [...new Set(p.unmet.map((n) => `${n.bg} ${String(settings[n.bg])}`))].join(" and ");
+      const unmet = measure(settings, p.fg, p.unmet);
+      if (p.unmet.some((n) => n.required)) {
+        notes.push(`Needs review: ${p.group.label}: no single shade of ${p.fg} ${p.from} reaches 4.5:1 for ${describe(p.unmet)} on ${bgs}. Nothing changed. Measured ${now}.`);
+      } else {
+        notes.push(`Needs review: ${p.group.label}: ${describe(p.unmet)} measure under 4.5:1 (${unmet}). No single shade of ${p.fg} passes this and the other text; the background or the theme's CSS must change.`);
+      }
     }
-    return patch(path, content, head + text, this, notes);
+    const result = head + text;
+    if (result === content && !notes.length) return null;
+    return { file: path, before: content, after: result, type: this.type, fixer: this.id, notes };
   },
 };
 

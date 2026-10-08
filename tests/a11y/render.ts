@@ -51,6 +51,13 @@ export async function renderTheme(theme: ThemeFiles): Promise<string> {
     for (const k of String(key).split(".")) cur = (cur as Record<string, unknown> | undefined)?.[k];
     return typeof cur === "string" ? cur : key;
   });
+  // Shopify's color_modify, alpha only: '#9A9A9A' | color_modify: 'alpha', 0.75.
+  engine.registerFilter("color_modify", (hex: string, field: string, value: number) => {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex));
+    if (!m || field !== "alpha") return hex;
+    const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
+    return `rgba(${r}, ${g}, ${b}, ${value})`;
+  });
   engine.registerFilter("image_url", () => PIXEL);
   engine.registerFilter("img_url", () => PIXEL);
   engine.registerFilter("asset_url", () => PIXEL);
@@ -70,6 +77,7 @@ export async function renderTheme(theme: ThemeFiles): Promise<string> {
     routes: { cart_url: "/cart", search_url: "/search", root_url: "/" },
     product: {
       title: "Linen shirt",
+      vendor: "Wide Aisle Goods",
       description: "Breathable linen, cut for summer.",
       featured_image: { alt: "Linen shirt, front view" },
     },

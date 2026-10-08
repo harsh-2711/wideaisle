@@ -21,8 +21,8 @@ describe("fixers on stock Dawn 16", () => {
     const report = fixTheme(theme);
     const changes = report.files.flatMap((f) => f.patches.flatMap((p) => p.notes.map((n) => `${f.file}: ${n}`)));
     // Dawn names its icons, labels its fields, sets lang, and its default
-    // colour schemes pass. Two real gaps remain in Dawn 16, and nothing else
-    // may change: anything more is a false positive.
+    // colour schemes pass for body text. Two real gaps remain in Dawn 16,
+    // and nothing else may change: anything more is a false positive.
     expect(changes).toEqual([
       // An icon-only info button, shown when quantity rules apply.
       "sections/main-cart-items.liquid: Named the info button on line 240 (English default (no translation key in theme)).",
@@ -35,7 +35,12 @@ describe("fixers on stock Dawn 16", () => {
   it("only flag for review what a person should look at", (ctx) => {
     if (!dir) return ctx.skip();
     const report = fixTheme(loadTheme(dir));
-    expect(report.review).toEqual([]);
+    // Scheme 5 (white on #334FB4) passes for body text at 75% opacity
+    // (4.83:1) but not for subtitles and unit prices at 70% (4.43:1). Even
+    // white text cannot pass there, so no colour change fixes it.
+    expect(report.review).toEqual([
+      "config/settings_data.json: Needs review: Colour scheme scheme-5: subtitles and unit prices (70% opacity) measure under 4.5:1 (on background #334FB4: 4.43:1 at 70%). No single shade of text passes this and the other text; the background or the theme's CSS must change.",
+    ]);
   });
 
   it("pass Theme Check with no new offenses", async (ctx) => {

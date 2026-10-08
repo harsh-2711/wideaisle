@@ -64,38 +64,55 @@ function fromHsl(h: number, s: number, l: number): RGB {
   return { r: hue(h + 1 / 3) * 255, g: hue(h) * 255, b: hue(h - 1 / 3) * 255 };
 }
 
-// The smallest lightness change to `fg` that reaches `target` contrast
-// against `bg`, trying darker and lighter and keeping whichever moves less.
-// Returns the colour unchanged when it already passes.
-export function adjustForContrast(fg: RGB, bg: RGB, target = 4.5): RGB {
-  if (contrast(fg, bg) >= target) return fg;
+// What the eye sees when `fg` is drawn at `alpha` opacity over `bg`, as
+// browsers and axe flatten it (per channel, in sRGB).
+export function blend(fg: RGB, bg: RGB, alpha: number): RGB {
+  const mix = (f: number, b: number) => f * alpha + b * (1 - alpha);
+  return { r: mix(fg.r, bg.r), g: mix(fg.g, bg.g), b: mix(fg.b, bg.b) };
+}
+
+// Contrast of `fg` drawn at `alpha` over `bg`. Takes the lower of the exact
+// and the rounded blend, so a browser that rounds cannot tip it under.
+export function contrastAt(fg: RGB, bg: RGB, alpha = 1): number {
+  const exact = blend(fg, bg, alpha);
+  const rounded = { r: Math.round(exact.r), g: Math.round(exact.g), b: Math.round(exact.b) };
+  return Math.min(contrast(exact, bg), contrast(rounded, bg));
+}
+
+// One background the colour is drawn on, and the opacity it is drawn at.
+export interface Backdrop {
+  bg: RGB;
+  alpha: number;
+}
+
+const STEPS = 1000;
+
+// The colour with fg's hue and saturation, closest to fg in lightness, that
+// reaches `target` on every backdrop. Every candidate is rounded to hex and
+// measured, so the result is what the theme will hold. Returns fg when it
+// already passes, and null when no lightness of this hue passes them all.
+export function solveColor(fg: RGB, backdrops: Backdrop[], target = 4.5): RGB | null {
+  const passes = (c: RGB) => backdrops.every((d) => contrastAt(c, d.bg, d.alpha) >= target);
+  if (passes(fg)) return fg;
   const [h, s, l] = toHsl(fg);
-  const search = (toward: 0 | 1): { color: RGB; delta: number } | null => {
-    const end = fromHsl(h, s, toward);
-    if (contrast(end, bg) < target) return null;
-    let lo = l;
-    let hi: number = toward;
-    for (let k = 0; k < 40; k++) {
-      const mid = (lo + hi) / 2;
-      if (contrast(fromHsl(h, s, mid), bg) >= target) hi = mid;
-      else lo = mid;
-    }
-    // Round to hex, then nudge until the rounded colour still passes.
-    let lightness = hi;
-    let color = parseHex(toHex(fromHsl(h, s, lightness)))!;
-    for (let k = 0; k < 20 && contrast(color, bg) < target; k++) {
-      lightness += toward === 0 ? -0.002 : 0.002;
-      color = parseHex(toHex(fromHsl(h, s, Math.min(1, Math.max(0, lightness)))))!;
-    }
-    return { color, delta: Math.abs(lightness - l) };
-  };
-  const options = [search(0), search(1)].filter((o): o is { color: RGB; delta: number } => o !== null);
-  if (!options.length) {
-    // Neither direction reaches the target with this hue: use black or white.
-    const black = { r: 0, g: 0, b: 0 };
-    const white = { r: 255, g: 255, b: 255 };
-    return contrast(black, bg) >= contrast(white, bg) ? black : white;
+  let best: { color: RGB; delta: number } | null = null;
+  // Lightness 0 and 1 are black and white, so the scan covers both ends.
+  for (let k = 0; k <= STEPS; k++) {
+    const delta = Math.abs(k / STEPS - l);
+    if (best && delta >= best.delta) continue;
+    const color = parseHex(toHex(fromHsl(h, s, k / STEPS)))!;
+    if (passes(color)) best = { color, delta };
   }
-  options.sort((a, b) => a.delta - b.delta);
-  return options[0].color;
+  return best?.color ?? null;
+}
+
+// The smallest lightness change to `fg` that reaches `target` contrast
+// against `bg` as solid colour, keeping hue and saturation. Returns the
+// colour unchanged when it already passes.
+export function adjustForContrast(fg: RGB, bg: RGB, target = 4.5): RGB {
+  const solved = solveColor(fg, [{ bg, alpha: 1 }], target);
+  if (solved) return solved;
+  const black = { r: 0, g: 0, b: 0 };
+  const white = { r: 255, g: 255, b: 255 };
+  return contrast(black, bg) >= contrast(white, bg) ? black : white;
 }
