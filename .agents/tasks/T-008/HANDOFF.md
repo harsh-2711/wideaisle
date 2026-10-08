@@ -10,30 +10,24 @@ The test task is real work: a `lint-handoff` check that says whether a HANDOFF.m
 
 ## Status
 
-Running. Stopped on purpose in the middle of step 2. Last updated 2026-10-08.
+Running. A fresh agent resumed it from this file and finished step 2; step 3 is next. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
 | 1. `lintHandoff(text, state)` and `HANDOFF_SECTIONS` in scripts/agents/ledger.mjs | 74955cf |
+| 2. Tests for `lintHandoff` in scripts/agents/ledger.test.mjs (redone; the first draft was never committed) | 70ab67e |
 
 ## Current step
 
-2. Tests for `lintHandoff` in scripts/agents/ledger.test.mjs, in a new `describe("handoff lint")` block. Started, not committed; expect to redo it. Cover:
-   - a complete handoff with a commit in Done so far and state Running: no problems;
-   - each missing section is reported by name;
-   - "(fill in)" is reported;
-   - state Running with "Not started." as the current step is reported;
-   - state In review with an empty Done so far table is reported;
-   - state Queued or Done skips the two state checks.
-   Build test text from `HANDOFF_SECTIONS` so the test does not depend on the template file.
+3. Add `lint-handoff [<id>] [--all]` to scripts/agents/board.mjs, with a CLI test and docs. Not started yet.
 
 ## Next three steps
 
-1. Finish step 2, run `node --test scripts/agents/ledger.test.mjs`, commit with `test(agents): ...` and `Refs: T-008`, push.
-2. Step 3: add `lint-handoff [<id>] [--all]` to scripts/agents/board.mjs. With an id, lint that task's HANDOFF.md against its state from status.json. With `--all`, lint every task that is not Done. Print `<id>: <problem>` lines and exit 1 if any. Add it to the usage text and to .agents/README.md under the board commands. Add a CLI test like the existing ones that use BOARD_CLI.
-3. Run `node scripts/agents/board.mjs lint-handoff --all`. Fix what it reports in tasks that are not Done. Known: T-001 and T-002 lost their "How to verify" and "Lessons and gotchas" sections in commit 090077a; restore them with short text even though they are Done. Then file the report (see How to verify) and set the state to In review.
+1. Step 3: add `lint-handoff [<id>] [--all]` to scripts/agents/board.mjs. With an id, lint that task's HANDOFF.md against its state from status.json. With `--all`, lint every task that is not Done. Print `<id>: <problem>` lines and exit 1 if any. Add it to the usage text and to .agents/README.md under the board commands. Add a CLI test like the existing ones that use BOARD_CLI.
+2. Run `node scripts/agents/board.mjs lint-handoff --all`. Fix what it reports in tasks that are not Done. Known: T-001 and T-002 lost their "How to verify" and "Lessons and gotchas" sections in commit 090077a; restore them with short text even though they are Done.
+3. File the report (see How to verify) and set the state to In review.
 
 ## Blockers and open questions
 
