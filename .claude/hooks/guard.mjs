@@ -15,9 +15,9 @@ const RULES = [
   { re: /\bgit\s+stash\s+(drop|clear)\b/, why: "Dropping a stash loses work." },
   { re: /\bgit\s+branch\s+(-D|-d|--delete)\s+(main|master)\b/, why: "main is shared." },
   { re: /\brm\s+-\w*r\w*\s+(-\w+\s+)*(\/|~|\$HOME|\.|\.\/|\*|\.git)(\s|$)/, why: "Recursive delete of the root, home, repo or .git is blocked." },
-  { re: /\b(cat|less|more|head|tail|bat|grep|rg|sed|awk|cp|scp|base64|xxd)\b[^|;&]*(^|[\s/'"])\.env(?!\.example)(\.\w+)?\b/, why: "Reading .env files is blocked. Use .env.example for variable names." },
-  { re: /(^|[;&|]\s*)(env|printenv|set|export\s+-p)\s*($|[;&|])/, why: "Dumping the environment can print secrets. Check one variable with: test -n \"$NAME\" && echo set" },
-  { re: /\b(echo|printf|printenv)\b[^|;&]*\$\{?\w*(TOKEN|SECRET|KEY|PASSWORD|PASS)\w*/i, why: "Printing a secret is blocked. Check it is set with: test -n \"$NAME\" && echo set" },
+  { raw: true, re: /\b(cat|less|more|head|tail|bat|grep|rg|sed|awk|cp|scp|base64|xxd)\b[^|;&]*(^|[\s/'"])\.env(?!\.example)(\.\w+)?\b/, why: "Reading .env files is blocked. Use .env.example for variable names." },
+  { raw: true, re: /(^|[;&|]\s*)(env|printenv|set|export\s+-p)\s*($|[;&|])/, why: "Dumping the environment can print secrets. Check one variable with: test -n \"$NAME\" && echo set" },
+  { raw: true, re: /\b(echo|printf|printenv)\b[^|;&]*\$\{?\w*(TOKEN|SECRET|KEY|PASSWORD|PASS)\w*/i, why: "Printing a secret is blocked. Check it is set with: test -n \"$NAME\" && echo set" },
 ];
 
 const DEPLOYS = [
@@ -43,9 +43,26 @@ function forcePush(cmd) {
   return null;
 }
 
+// Text that is data, not a command: heredoc bodies and quoted strings (commit
+// messages, echo text, file contents). Quotes are kept when the command runs
+// a string as code (bash -c, sh -c, eval), so the guard still sees inside it.
+export function withoutHeredocs(cmd) {
+  return String(cmd ?? "").replace(/<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2\s*(?=\n|$)/g, "<<HEREDOC");
+}
+
+export function commandText(cmd) {
+  let text = withoutHeredocs(cmd);
+  if (!/\b(bash|sh|zsh)\s+-\w*c\b|\beval\b/.test(text)) {
+    text = text.replace(/'[^']*'/g, "''").replace(/"(?:\\.|[^"\\])*"/g, '""');
+  }
+  return text;
+}
+
 export function checkCommand(cmd, env = process.env) {
-  const text = String(cmd ?? "");
-  for (const r of RULES) if (r.re.test(text)) return { allow: false, reason: r.why };
+  const text = commandText(cmd);
+  // Secret rules look inside double quotes too, where variables expand.
+  const raw = withoutHeredocs(cmd);
+  for (const r of RULES) if (r.re.test(r.raw ? raw : text)) return { allow: false, reason: r.why };
   const fp = forcePush(text);
   if (fp) return { allow: false, reason: fp };
   if (DEPLOYS.some((re) => re.test(text)) && env.WA_DEPLOY_APPROVED !== "1") {

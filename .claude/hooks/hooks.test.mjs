@@ -42,6 +42,11 @@ describe("guard", () => {
     "shopify theme push --live",
     "npm run deploy",
     "cd app && git reset --hard",
+    "bash -c 'git reset --hard'",
+    "eval \"git clean -fd\"",
+    "echo \"$ANTHROPIC_API_KEY\"",
+    "cat \".env\"",
+    "cat <<EOF > notes.md\nhello\nEOF\ngit reset --hard",
   ];
   const allowed = [
     "git status",
@@ -58,6 +63,9 @@ describe("guard", () => {
     "npm test",
     "echo $PATH",
     "test -n \"$ANTHROPIC_API_KEY\" && echo set",
+    "cat > README.md <<'EOF'\nNever run git reset --hard or cat .env.\nEOF",
+    "git commit -m \"docs: explain why git reset --hard is blocked\"",
+    "git commit -m 'docs: mention git push --force'",
   ];
 
   for (const cmd of blocked) it(`blocks: ${cmd}`, () => assert.equal(checkCommand(cmd, {}).allow, false));
