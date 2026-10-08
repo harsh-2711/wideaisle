@@ -46,6 +46,8 @@ const CODE_FLAGS = {
   python: ["-c"],
   python3: ["-c"],
 };
+// Inline code is not a file name, but it can still name one.
+const CODE_ENV_REF = /(^|[^\w.-])\.env(\.(?!example\b)[\w.-]+)?(?![\w-]|\.example\b)|\/proc\/[^/\s'"]+\/environ/;
 // jq options that take two values (a name and a value or file).
 const TWO_VALUE_FLAGS = new Set(["--arg", "--argjson", "--slurpfile", "--rawfile", "--args"]);
 VALUE_FLAGS.egrep = VALUE_FLAGS.grep;
@@ -594,6 +596,7 @@ function checkSecrets(cmd, args, redirects, words) {
     const patternFromFlag = rest.some((a) => ["-e", "-f", "--regexp", "--file", "--expression", "--from-file"].includes(a.split("=")[0]));
     let patternSkipped = !PATTERN_FIRST.has(cmd) || patternFromFlag;
     let files = [];
+    const code = [];
     for (let k = 0; k < rest.length; k++) {
       const a = rest[k];
       if (a === "--") {
@@ -604,11 +607,13 @@ function checkSecrets(cmd, args, redirects, words) {
         const name = a.split("=")[0];
         if (a.includes("=")) {
           if (!patternOnly.has(name)) files.push(a.split("=").slice(1).join("="));
+          else if (CODE_FLAGS[cmd]) code.push(a.split("=").slice(1).join("="));
         } else if (TWO_VALUE_FLAGS.has(a)) {
           files.push(rest[k + 1], rest[k + 2]);
           k += 2;
         } else if (valueFlags.has(a)) {
           if (!patternOnly.has(a)) files.push(rest[k + 1]);
+          else if (CODE_FLAGS[cmd]) code.push(rest[k + 1] ?? "");
           k += 1;
         } else if (cmd === "openssl" && /^-(in|out|pass|kfile|passin)$/.test(a)) {
           files.push(rest[k + 1]);
@@ -625,6 +630,7 @@ function checkSecrets(cmd, args, redirects, words) {
     files = files.filter((x) => x !== undefined);
     if (["cp", "scp", "rsync", "mv"].includes(cmd)) files = files.slice(0, -1);
     if (files.some(isEnvFile)) return block("Reading .env files is blocked. Use .env.example for variable names.");
+    if (code.some((c) => CODE_ENV_REF.test(c))) return block("Inline code that names a .env file or a process environment is blocked.");
     if (files.some((p) => /\/proc\/[^/]+\/environ$/.test(p))) return block("Reading a process environment is blocked.");
   }
   if (cmd === "env" || cmd === "printenv") {
