@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Architect. Use for architecture decision records, interface contracts (JSON schemas for Issue, Fix, Patch, Evidence) and technical spikes. Runs on the strongest model.
+description: "Architect. Use for architecture decision records, interface contracts (JSON schemas for Issue, Fix, Patch, Evidence) and technical spikes. Runs on the strongest model."
 model: opus
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: data
-description: Data agent. Use for the store census, theme statistics and before-and-after metrics. Runs Playwright and axe-core scans politely and stores results.
+description: "Data agent. Use for the store census, theme statistics and before-and-after metrics. Runs Playwright and axe-core scans politely and stores results."
 ---
 
 # Data

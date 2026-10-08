@@ -1,6 +1,6 @@
 ---
 name: builder
-description: Builder. Use for one well-specified task in one lane's folder: write the code and its tests until the exit criteria pass.
+description: "Builder. Use for one well-specified task in one lane's folder: write the code and its tests until the exit criteria pass."
 ---
 
 # Builder

@@ -12,12 +12,19 @@ import {
   appendEvent, currentTask, lastEvents, NO_TASK, now, paths, repoRoot, staleTasks, upsertTask,
 } from "../../scripts/agents/ledger.mjs";
 
-const SECRET = /((?:token|secret|password|passwd|api[_-]?key|authorization)["']?\s*[:=]\s*["']?)[^\s"']+/gi;
+const SECRET = /((?:token|secret|password|passwd|pass|api[_-]?key|authorization|auth)["']?\s*[:=]\s*["']?)[^\s"']+/gi;
+const FLAG_SECRET = /(--?(?:password|passwd|pass|token|secret|api-key|apikey|auth)[ =])\S+/gi;
 const BEARER = /\b(Bearer|Basic|token)\s+[\w.~+/=-]{6,}/gi;
-const LONG_TOKEN = /\b(sk-[\w-]{10,}|ghp_\w{20,}|github_pat_\w{20,}|shpat_\w{20,}|shpss_\w{20,}|xox[abp]-[\w-]{10,})/g;
+const URL_USERINFO = /(\b[a-z][\w+.-]*:\/\/)[^\s/@]+@/gi;
+const LONG_TOKEN = /\b(sk-[\w-]{10,}|sk_(live|test)_\w{10,}|gh[opsur]_\w{20,}|github_pat_\w{20,}|shp\w{2,3}_\w{16,}|xox[abprs]-[\w-]{10,}|AKIA[0-9A-Z]{16}|eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,})/g;
 
 export function redact(text) {
-  return String(text ?? "").replace(BEARER, "$1 [redacted]").replace(SECRET, "$1[redacted]").replace(LONG_TOKEN, "[redacted]");
+  return String(text ?? "")
+    .replace(URL_USERINFO, "$1[redacted]@")
+    .replace(BEARER, "$1 [redacted]")
+    .replace(FLAG_SECRET, "$1[redacted]")
+    .replace(SECRET, "$1[redacted]")
+    .replace(LONG_TOKEN, "[redacted]");
 }
 
 function short(text, n = 200) {
@@ -141,23 +148,36 @@ export function stopFacts(task, root) {
   return { dirty, workAfterHandoff };
 }
 
-// Decides whether the agent may end its turn.
-export function stopDecision(task, facts, stopHookActive) {
+export const MAX_STOP_BLOCKS = 3;
+
+// Decides whether the agent may end its turn. Claude Code sets
+// stop_hook_active after a block, so that flag alone would let the second
+// stop through with HANDOFF.md still stale. Instead the hook counts its own
+// consecutive blocks and gives up only after MAX_STOP_BLOCKS, so it can
+// never trap an agent in a loop.
+export function stopDecision(task, facts, priorBlocks = 0) {
   if (!task || task.id === NO_TASK || task.state === "Done") return { block: false };
-  if (stopHookActive) return { block: false };
+  const needs = [];
   if (facts.dirty.length) {
-    return {
-      block: true,
-      reason: `Commit a checkpoint before stopping (${facts.dirty.length} uncommitted files, for example ${facts.dirty[0]}). Use chore(checkpoint): what is done, what is next. Refs: ${task.id}.`,
-    };
+    needs.push(`commit a checkpoint (${facts.dirty.length} uncommitted files, for example ${facts.dirty[0]}) with chore(checkpoint): what is done, what is next, Refs: ${task.id}`);
   }
-  if (facts.workAfterHandoff > 0) {
-    return {
-      block: true,
-      reason: `Update .agents/tasks/${task.id}/HANDOFF.md (status, done so far with SHAs, current step, next three steps, blockers) and commit it before stopping.`,
-    };
+  if (facts.dirty.length || facts.workAfterHandoff > 0) {
+    needs.push(`update .agents/tasks/${task.id}/HANDOFF.md (status, done so far with SHAs, current step, next three steps, blockers) and commit it`);
   }
-  return { block: false };
+  if (!needs.length) return { block: false };
+  if (priorBlocks >= MAX_STOP_BLOCKS) return { block: false, gaveUp: true, reason: needs.join("; then ") };
+  return { block: true, reason: `Before stopping: ${needs.join("; then ")}.` };
+}
+
+// Consecutive blocks in this session since the last allowed stop.
+function priorStopBlocks(taskId, session, root) {
+  let n = 0;
+  for (const e of lastEvents(taskId, 200, root).reverse()) {
+    if (e.event !== "stop" || (session && e.session !== session)) continue;
+    if (!e.summary.startsWith("stop blocked")) break;
+    n++;
+  }
+  return n;
 }
 
 function archiveTranscript(src, taskId, session, root) {
@@ -248,15 +268,18 @@ export function handle(event, input, root = repoRoot()) {
     case "Notification": {
       log({ event: "notify", summary: short(input.message ?? input.notification_type ?? "") });
       const waiting = /permission|waiting for your input|idle/i.test(`${input.notification_type ?? ""} ${input.message ?? ""}`);
-      if (waiting && task.id !== NO_TASK) upsertTask(task.id, { state: "Blocked on you" }, root, { create: false });
+      // Only a running task becomes Blocked on you; In review and Done stay put.
+      if (waiting && task.id !== NO_TASK && task.state === "Running") {
+        upsertTask(task.id, { state: "Blocked on you", step: `waiting: ${short(input.message ?? "", 80)}` }, root, { create: false });
+      }
       break;
     }
     case "Stop": {
       let decision = { block: false };
       if (task.id !== NO_TASK && process.env.WA_HOOKS_STRICT !== "0") {
-        decision = stopDecision(task, stopFacts(task, root), Boolean(input.stop_hook_active));
+        decision = stopDecision(task, stopFacts(task, root), priorStopBlocks(task.id, session, root));
       }
-      log({ event: "stop", summary: decision.block ? `stop blocked: ${decision.reason}` : "turn ended" });
+      log({ event: "stop", summary: decision.block ? `stop blocked: ${decision.reason}` : decision.gaveUp ? `stop allowed after ${MAX_STOP_BLOCKS} blocks: ${decision.reason}` : "turn ended" });
       if (decision.block) out.stdout = JSON.stringify({ decision: "block", reason: decision.reason });
       break;
     }
@@ -284,7 +307,9 @@ async function main() {
     input = JSON.parse((await readStdin()) || "{}");
   } catch {}
   try {
-    const root = input.cwd ? repoRootFrom(input.cwd) : repoRoot();
+    // The project dir Claude Code passes, not the shell's cwd, which may be
+    // another repo.
+    const root = process.env.CLAUDE_PROJECT_DIR || (input.cwd ? repoRootFrom(input.cwd) : repoRoot());
     const out = handle(event ?? input.hook_event_name, input, root);
     if (out.stdout) process.stdout.write(out.stdout);
   } catch (err) {

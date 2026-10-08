@@ -288,7 +288,7 @@ function isEnvFile(p) {
 }
 
 function checkSecrets(cmd, args, words) {
-  const positional = args.filter((a) => !a.startsWith("-"));
+  const positional = args.slice(1).filter((a) => !a.startsWith("-"));
   if (READERS.has(cmd)) {
     let files = positional;
     if (PATTERN_FIRST.has(cmd)) files = positional.slice(1);

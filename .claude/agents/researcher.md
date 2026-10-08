@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Research agent. Use for primers, legal briefs, competitor teardowns and review mining. Produces briefs with sources actually opened, dated, under docs/research/.
+description: "Research agent. Use for primers, legal briefs, competitor teardowns and review mining. Produces briefs with sources actually opened, dated, under docs/research/."
 ---
 
 # Researcher

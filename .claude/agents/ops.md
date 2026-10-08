@@ -1,6 +1,6 @@
 ---
 name: ops
-description: Ops agent. Use for deploys, backups, cost watch, uptime checks and checking third-party plugins before install.
+description: "Ops agent. Use for deploys, backups, cost watch, uptime checks and checking third-party plugins before install."
 ---
 
 # Ops

@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Chief of staff. Use to turn a milestone into tasks with tests as acceptance criteria, draft decision memos, write the weekly brief and the daily digest, relaunch stalled tasks, and keep .agents/owner-queue.md current. The only agent that writes to the owner.
+description: "Chief of staff. Use to turn a milestone into tasks with tests as acceptance criteria, draft decision memos, write the weekly brief and the daily digest, relaunch stalled tasks, and keep .agents/owner-queue.md current. The only agent that writes to the owner."
 ---
 
 # Planner

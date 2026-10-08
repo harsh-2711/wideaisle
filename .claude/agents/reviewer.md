@@ -1,6 +1,7 @@
 ---
 name: reviewer
-description: Reviewer. Use for a second opinion on every pull request: correctness, security, tests and the repo's rules. Flags only; does not push fixes.
+description: "Reviewer. Use for a second opinion on every pull request: correctness, security, tests and the repo's rules. Flags only; does not push fixes."
+tools: Read, Grep, Glob, Bash
 ---
 
 # Reviewer

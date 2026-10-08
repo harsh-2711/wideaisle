@@ -21,7 +21,7 @@ Everything here loads when Claude Code opens the repo. The owner accepts the plu
 | PreToolUse (Bash) | guard.mjs blocks the commands listed below |
 | PostToolUse, PostToolUseFailure | One event per tool call, secrets redacted; this is the heartbeat |
 | SubagentStart, SubagentStop | Logs each child and files its final message in the task's children/ folder |
-| Stop | Blocks ending the turn while there is uncommitted work, or work committed after the last HANDOFF.md commit |
+| Stop | Blocks ending the turn while there is uncommitted work, or work committed after the last HANDOFF.md commit. Gives up after three blocks in a row, so it never loops |
 | Notification | Logs it and moves the task to Blocked on you when Claude waits for input |
 | SessionEnd | Archives the final transcript and records the end state |
 
@@ -32,9 +32,10 @@ The active task is the one whose `branch` matches the checked-out branch, or `WA
 - Destructive git: hard resets, forced cleans, force pushes (except `--force-with-lease` on a named `claude/*` or `backup/*` branch), skipping hooks with `--no-verify`, checking out or restoring files over local changes, dropping stashes, deleting main.
 - Recursive deletes of the root, home, the repo or `.git`.
 - Secrets: reading `.env` files, dumping the environment, printing a variable whose name holds TOKEN, SECRET, KEY or PASSWORD.
-- Production deploys (`shopify app deploy`, `shopify theme publish`, a live theme push, `npm run deploy`) unless `WA_DEPLOY_APPROVED=1`, which only CI sets for a pull request labelled `deploy-approved`.
+- Pushes to main, so every change goes through a pull request.
+- Production deploys (`shopify app deploy`, `shopify theme publish`, a live theme push, `npm run deploy`). Agents never deploy. Deploys run in CI, outside Claude Code, on a pull request the owner labels `deploy-approved`.
 
-Heredoc bodies and quoted text (commit messages, file contents) are not treated as commands. Text run through `bash -c` or `eval` still is.
+The guard parses each command into words. Quoted text and heredoc bodies (commit messages, file contents) are data. Text that a shell runs (`bash -c`, `eval`, a heredoc fed to `bash`, `$(...)`) is checked as a command.
 
 ## Plugins
 

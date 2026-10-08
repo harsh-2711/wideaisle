@@ -1,6 +1,6 @@
 ---
 name: lane-lead
-description: Leads one build lane (scanner, fixers, delivery, app UI, evidence pack, test harness). Use to split a lane's task into child jobs, run builders and reviewers, file their reports and report to the planner.
+description: "Leads one build lane (scanner, fixers, delivery, app UI, evidence pack, test harness). Use to split a lane's task into child jobs, run builders and reviewers, file their reports and report to the planner."
 ---
 
 # Lane lead

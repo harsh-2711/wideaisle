@@ -15,64 +15,128 @@ const REPO = path.resolve(HERE, "..", "..");
 describe("guard", () => {
   const blocked = [
     "git reset --hard HEAD~1",
+    "git -c core.x=1 reset --hard",
+    "git -C . reset --hard",
     "git clean -fd",
     "git clean -xfd",
-    "git push --force origin main",
+    "git clean --force",
+    "git push --force origin claude/x",
     "git push -f",
-    "git push origin +main",
+    "git push -uf origin claude/x",
+    "git -C . push -f",
+    "git push origin +claude/x",
+    "git push origin main",
+    "git push -u origin claude/x:main",
+    "git push origin HEAD:refs/heads/main",
+    "git push --force-with-lease origin claude/x:main",
     "git push --force-with-lease origin main",
+    "git push --force-with-lease",
+    "git push origin --delete claude/x",
     "git commit --no-verify -m x",
+    "git commit -nm x",
     "git checkout -- src/app.ts",
     "git checkout main -- src/app.ts",
     "git checkout .",
     "git checkout -f main",
     "git restore src/app.ts",
+    "git restore --worktree --staged a",
+    "git switch --discard-changes main",
     "git stash drop",
     "git branch -D main",
     "rm -rf /",
+    "rm -rf /*",
     "rm -rf ~",
+    "rm -rf ~/",
     "rm -rf .git",
+    "rm -rf .git/",
+    "rm -Rf .git",
+    "rm -rf node_modules .git",
+    "rm -rf ./*",
+    "rm -r -f .",
+    'rm -rf "$HOME"',
     "cat .env",
+    "cat ./config/.env.local",
+    'cat ".env"',
     "grep TOKEN .env.local",
+    "cp .env /tmp/x",
     "env",
+    "env > f.txt",
+    "/usr/bin/env",
+    "FOO=1 env",
     "printenv",
+    "printenv GITHUB_TOKEN",
+    "cat /proc/self/environ",
+    "ls\nenv",
+    "export -p",
     "echo $ANTHROPIC_API_KEY",
+    'echo "$ANTHROPIC_API_KEY"',
+    "echo ${SHOPIFY_API_SECRET}",
     "shopify app deploy",
+    "npx shopify app deploy",
     "shopify theme publish --theme 123",
     "shopify theme push --live",
     "npm run deploy",
     "cd app && git reset --hard",
     "bash -c 'git reset --hard'",
-    "eval \"git clean -fd\"",
-    "echo \"$ANTHROPIC_API_KEY\"",
-    "cat \".env\"",
-    "cat <<EOF > notes.md\nhello\nEOF\ngit reset --hard",
+    'bash -c "git push --force"',
+    'eval "git clean -fd"',
+    "sh -c 'cat .env'",
+    "bash <<'EOF'\ngit reset --hard\nEOF",
+    "cat <<EOF > notes.md; git reset --hard\nhello\nEOF",
+    "echo $(git reset --hard)",
+    "sudo git reset --hard",
   ];
   const allowed = [
     "git status",
     "git push -u origin claude/feat-x",
     "git push --force-with-lease origin claude/feat-x",
+    "git push -n origin claude/x",
     "git restore --staged src/app.ts",
     "git checkout -b claude/feat-y",
     "git checkout claude/feat-y",
+    "git checkout -b claude/x origin/main",
     "git commit -m 'feat: x'",
+    "git branch -d main-copy",
+    "git -C /home/user/wideaisle log --oneline",
     "cat .env.example",
+    "cp .env.example .env",
+    "grep -q .env .gitignore",
     "rm -rf node_modules",
-    "rm -rf build/",
+    "rm -rf build/ dist/",
+    "rm -f .agents/ledger/x",
     "shopify theme push --unpublished",
+    "npm run deploy-docs",
     "npm test",
     "echo $PATH",
-    "test -n \"$ANTHROPIC_API_KEY\" && echo set",
+    "echo $KEYBOARD",
+    'test -n "$ANTHROPIC_API_KEY" && echo set',
     "cat > README.md <<'EOF'\nNever run git reset --hard or cat .env.\nEOF",
-    "git commit -m \"docs: explain why git reset --hard is blocked\"",
+    'git commit -m "docs: explain why git reset --hard is blocked"',
     "git commit -m 'docs: mention git push --force'",
+    'git commit -m "$(cat <<\'EOF\'\nfix: stop git reset --hard\nEOF\n)"',
+    'bash -c "npm test" && git commit -m "fix: never git push --force"',
+    "node --test 'scripts/agents/*.test.mjs'",
+    "printenv PATH",
+    "env FOO=1 npm test",
   ];
 
   for (const cmd of blocked) it(`blocks: ${cmd}`, () => assert.equal(checkCommand(cmd, {}).allow, false));
   for (const cmd of allowed) it(`allows: ${cmd}`, () => assert.equal(checkCommand(cmd, {}).allow, true));
 
-  it("allows a deploy with approval", () => {
+  it("allows a deploy only when CI sets the approval", () => {
     assert.equal(checkCommand("shopify app deploy", { WA_DEPLOY_APPROVED: "1" }).allow, true);
+  });
+
+  it("runs through a symlinked path", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-link-"));
+    const link = path.join(dir, "guard.mjs");
+    fs.symlinkSync(path.join(HERE, "guard.mjs"), link);
+    const res = spawnSync("node", [link], {
+      input: JSON.stringify({ tool_name: "Bash", tool_input: { command: "git reset --hard" } }),
+      encoding: "utf8",
+    });
+    assert.match(res.stdout, /deny/);
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 
   it("speaks the hook protocol", () => {
@@ -101,6 +165,17 @@ describe("toolEvent and redact", () => {
   });
 
   it("redacts secrets", () => {
+    for (const leak of [
+      "login --password hunter2",
+      "login --password=hunter2",
+      "git push https://user:ghs_abcdefghijklmnopqrstuvwxyz0123@github.com/x",
+      "curl https://admin:hunter2@example.com",
+      "STRIPE=sk_live_abcdefghijklmnop node x",
+      "SHOPIFY=shpca_abcdefghijklmnopqrstuv node x",
+      "jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnop",
+    ]) {
+      assert.doesNotMatch(redact(leak), /hunter2|ghs_abc|sk_live_abc|shpca_abc|eyJzdWIi/, leak);
+    }
     assert.doesNotMatch(redact("curl -H 'Authorization: Bearer abc123' x"), /abc123/);
     assert.doesNotMatch(redact("API_KEY=sk-ant-0123456789abcdef npm test"), /0123456789/);
     assert.doesNotMatch(redact("push https://ghp_abcdefghijklmnopqrstuvwxyz@github.com"), /ghp_abc/);
@@ -110,23 +185,26 @@ describe("toolEvent and redact", () => {
 describe("stopDecision", () => {
   const task = { id: "T-001", state: "Running" };
   it("allows stopping with no task or a done task", () => {
-    assert.equal(stopDecision(null, { dirty: ["a"] }, false).block, false);
-    assert.equal(stopDecision({ id: "T-000" }, { dirty: ["a"] }, false).block, false);
-    assert.equal(stopDecision({ ...task, state: "Done" }, { dirty: ["a"] }, false).block, false);
+    assert.equal(stopDecision(null, { dirty: ["a"] }).block, false);
+    assert.equal(stopDecision({ id: "T-000" }, { dirty: ["a"] }).block, false);
+    assert.equal(stopDecision({ ...task, state: "Done" }, { dirty: ["a"] }).block, false);
   });
-  it("blocks on uncommitted work", () => {
-    const d = stopDecision(task, { dirty: ["src/a.ts"], workAfterHandoff: 0 }, false);
+  it("names both steps when work is uncommitted", () => {
+    const d = stopDecision(task, { dirty: ["src/a.ts"], workAfterHandoff: 0 });
     assert.equal(d.block, true);
-    assert.match(d.reason, /checkpoint/);
+    assert.match(d.reason, /checkpoint.*HANDOFF/);
   });
   it("blocks when work was committed after the last HANDOFF.md commit", () => {
-    const d = stopDecision(task, { dirty: [], workAfterHandoff: 2 }, false);
+    const d = stopDecision(task, { dirty: [], workAfterHandoff: 2 });
     assert.equal(d.block, true);
     assert.match(d.reason, /HANDOFF/);
   });
-  it("allows a clean, handed-off branch and never loops", () => {
-    assert.equal(stopDecision(task, { dirty: [], workAfterHandoff: 0 }, false).block, false);
-    assert.equal(stopDecision(task, { dirty: ["x"], workAfterHandoff: 3 }, true).block, false);
+  it("allows a clean, handed-off branch and gives up after three blocks", () => {
+    assert.equal(stopDecision(task, { dirty: [], workAfterHandoff: 0 }).block, false);
+    assert.equal(stopDecision(task, { dirty: ["x"], workAfterHandoff: 3 }, 2).block, true);
+    const d = stopDecision(task, { dirty: ["x"], workAfterHandoff: 3 }, 3);
+    assert.equal(d.block, false);
+    assert.equal(d.gaveUp, true);
   });
 });
 
@@ -193,14 +271,14 @@ describe("handle, in a scratch repo", () => {
     assert.equal(L.getTask("T-001", root).state, "Running");
   });
 
-  it("Stop blocks on uncommitted work, then on a stale handoff, then allows", () => {
+  it("Stop blocks on uncommitted work, then on a stale handoff even with stop_hook_active, then allows", () => {
     fs.writeFileSync(path.join(root, "work.txt"), "x");
-    let out = handle("Stop", {}, root);
+    let out = handle("Stop", { session_id: "s1" }, root);
     assert.match(JSON.parse(out.stdout).reason, /checkpoint/);
 
     git("add", "work.txt");
     git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "work");
-    out = handle("Stop", {}, root);
+    out = handle("Stop", { session_id: "s1", stop_hook_active: true }, root);
     assert.match(JSON.parse(out.stdout).reason, /HANDOFF/);
 
     fs.appendFileSync(path.join(root, ".agents", "tasks", "T-001", "HANDOFF.md"), "\nStep 1 done.\n");
@@ -208,6 +286,19 @@ describe("handle, in a scratch repo", () => {
     git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "handoff");
     out = handle("Stop", {}, root);
     assert.equal(out.stdout, undefined);
+  });
+
+  it("Stop gives up after three blocks in a row", () => {
+    fs.writeFileSync(path.join(root, "work.txt"), "x");
+    for (let i = 0; i < 3; i++) assert.ok(handle("Stop", { session_id: "s2", stop_hook_active: i > 0 }, root).stdout);
+    assert.equal(handle("Stop", { session_id: "s2", stop_hook_active: true }, root).stdout, undefined);
+    assert.match(L.lastEvents("T-001", 1, root)[0].summary, /allowed after 3 blocks/);
+  });
+
+  it("Notification leaves In review and Done alone", () => {
+    L.upsertTask("T-001", { state: "In review" }, root);
+    handle("Notification", { notification_type: "idle_prompt", message: "Claude is waiting for your input" }, root);
+    assert.equal(L.getTask("T-001", root).state, "In review");
   });
 
   it("logs to T-000 when no task is mapped", () => {

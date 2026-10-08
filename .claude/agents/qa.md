@@ -1,6 +1,6 @@
 ---
 name: qa
-description: QA agent. Use for golden-store tests, visual diffs and accessibility re-scans with Playwright and axe-core.
+description: "QA agent. Use for golden-store tests, visual diffs and accessibility re-scans with Playwright and axe-core."
 ---
 
 # QA

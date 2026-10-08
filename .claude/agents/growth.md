@@ -1,6 +1,6 @@
 ---
 name: growth
-description: Growth agent. Use for listing copy, landing page, theme guides, outreach drafts and the agency kit. Drafts only; the owner approves and sends.
+description: "Growth agent. Use for listing copy, landing page, theme guides, outreach drafts and the agency kit. Drafts only; the owner approves and sends."
 ---
 
 # Growth
