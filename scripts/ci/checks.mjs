@@ -104,33 +104,33 @@ export function checkHandoff(branch, files, root = ROOT) {
 // Shopify's compliance webhooks and topics.
 const CLAIM_TERMS = [
   "(?:ada|wcag|eaa|fully)[- ]compliant", "compliant",
-  "compliance(?! (?:webhooks?|topics?|lane)\\b)",
-  "conform(?:s|ing|ance|ant)?", "meets? (?:the )?wcag",
+  "(?<!(?:privacy|gdpr) |webhooks[/.])compliance(?![ _-]?(?:webhooks?|topics?|lane|requests?)\\b)",
+  "conform(?:ance|ant)", "conform(?:s|ing)? (?:to|with) (?:the )?wcag", "(?:meets?|meeting|met) (?:the )?wcag",
   "certif(?:y|ies|ied|ication|icates?)",
   "audit(?:s|ed|ing|ors?)?(?! log)",
-  "lawsuit[- ]proof", "sue[- ]proof", "lawsuit protection", "protection from (?:\\w+ ){0,2}lawsuits?",
-  "(?:avoid|stop|prevent)(?:s|ed|ing)? (?:\\w+ ){0,2}lawsuits?", "reduces? (?:your )?legal risk",
+  "lawsuit[- ]proof", "sue[- ]proof", "lawsuit protection", "protection (?:from|against) (?:\\w+ ){0,2}lawsuits?",
+  "(?:avoid|stop|prevent)(?:s|ed|ing)? (?:\\w+ ){0,2}lawsuits?", "(?:reduc(?:e|es|ed|ing)|lower(?:s|ed|ing)?) (?:your )?legal risk",
   "protects? you", "you(?:'re| are) protected",
   "100% accessible", "fully accessible", "completely accessible", "barrier[- ]free",
-  "your (?:store|site|shop) is (?:now )?accessible", "makes? your (?:store|site|shop) accessible",
-  "guarantee[sd]?",
+  "your (?:store|site|shop) is (?:now )?accessible", "mak(?:e|es|ing) your (?:store|site|website|shop) accessible",
+  "guarantee(?:s|d|ing)?",
   "(?:instant|automatic|one[- ]click) accessibility", "fix(?:es)? everything",
   "accessibility (?:badge|seal)", "trust ?mark",
-  "shopify[- ](?:certified|approved|endorsed)", "(?:approved|endorsed) by shopify",
+  "shopify[- ](?:certified|approved|endorsed)", "(?:approved|endorsed) by (?:the )?shopify",
 ].join("|");
 const BANNED_CLAIMS = new RegExp(`\\b(?:${CLAIM_TERMS})\\b`, "i");
 // Saying what something is not ("not certified", "we don't guarantee",
 // "non-compliant") is allowed. Only a few filler words may sit between the
 // negation and the term, so "not only ADA compliant" or "never settle for
 // less than 100% accessible" still count as claims.
-const FILL = "(?:(?:a|an|any|be|been|yet|ever|claim|claims|say|promise|offer|make|makes|your|our|this|store|site|shop|is|are|it|we|to|the|same|as)\\s+){0,4}";
+const FILL = "(?:(?:a|an|any|be|been|yet|ever|claim|claims|say|promise|offer|make|makes|your|our|this|store|site|shop|is|are|it|we|to|the|same|as|wcag|accessibility)\\s+){0,4}";
 const NEGATION = "(?:not|never|cannot|(?:do|does|did|is|are|was|were|wo|ca|could|would|should|has|have)n['\u2019]t)";
 const NEGATED = new RegExp(`\\b(?:non-?|${NEGATION}\\s+(?!only\\b|just\\b|merely\\b|simply\\b)${FILL}|no\\s+|without\\s+)(?:${CLAIM_TERMS})\\b`, "gi");
 // The limits text the policy requires in every report, used as written.
 const REQUIRED_TEXT = /not a statement that your store conforms to WCAG or meets any law/gi;
 // Scare copy: telling a merchant they fall short of a law or face a
 // lawsuit, negated or not. The gap is bounded to keep matching fast.
-const SCARE = /\b(?:you|your)\b[^.!?]{0,80}?\b(?:sued|lawsuits?|demand letters?|legal action|(?:not|isn't|aren't|non-?)\s*(?:\w+[- ]){0,2}compliant)\b|\byou could be next\b/i;
+const SCARE = /\b(?:you|yours?)\b[^.!?]{0,80}?\b(?:sued|lawsuits?|demand letters?|legal action|(?:not|isn't|aren't|non-?)\s*(?:\w+[- ]){0,3}compliant)\b|\byou could be next\b/i;
 // Where a claim would reach a merchant: app UI, emails and report
 // templates, marketing drafts and extensions.
 const CLAIM_PATHS = [/^app\/routes\//, /^app\/components\//, /^app\/templates\//, /^app\/emails\//, /^docs\/growth\//, /^extensions\//];
@@ -141,7 +141,7 @@ export function checkClaims(files, root = ROOT) {
   for (const f of files.filter((x) => CLAIM_PATHS.some((re) => re.test(x)))) {
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
-    fs.readFileSync(full, "utf8").split("\n").forEach((line, i) => {
+    fs.readFileSync(full, "utf8").replace(/not\s+a\s+statement\s+that\s+your\s+store\s+conforms\s+to\s+WCAG\s+or\s+meets\s+any\s+law/gi, (m) => m.replace(/[^\n]/g, " ")).split("\n").forEach((line, i) => {
       if (CLAIM_ALLOW.test(line)) return;
       const text = line.replace(REQUIRED_TEXT, "");
       if (SCARE.test(text)) errors.push(`${f}:${i + 1}: scare copy (D-06, claims policy): ${line.trim().slice(0, 120)}`);

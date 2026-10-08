@@ -116,6 +116,12 @@ describe("claims and writing", () => {
       "Makes your site accessible",
       "We fix everything",
       "Congratulations, your store is accessible!",
+      "Meeting WCAG 2.2 AA is easy.",
+      "Protection against lawsuits",
+      "Lower your legal risk",
+      "Guaranteeing results",
+      "Making your store accessible with AI",
+      "Approved by the Shopify App Store",
     ];
     const allowed = [
       "We do not guarantee any legal outcome.",
@@ -132,6 +138,11 @@ describe("claims and writing", () => {
       "They are not a statement that your store conforms to WCAG or meets any law.",
       "See the audit log for each change.",
       "// Unexpected compliance topic, M6 compliance lane",
+      "They are not a WCAG conformance claim.",
+      "We do not offer a WCAG certificate.",
+      "Alt text should conform to your brand voice.",
+      "GDPR compliance requests are answered within 30 days.",
+      'import { action } from "./webhooks.compliance";',
     ];
     write("app/routes/claims.tsx", [...banned, ...allowed].join("\n"));
     const errors = checkClaims(["app/routes/claims.tsx"], root);
@@ -147,12 +158,19 @@ describe("claims and writing", () => {
       "You could be next.",
       "Act now, before you get a demand letter.",
       "Overlays get you sued.",
+      "Stores like yours are at risk of ADA lawsuits.",
+      "You can't afford not to be ADA compliant.",
     ];
     const fine = ["We found 12 issues on your home page.", "The shop is not compliant with our webhook format", "Documentation you can share with your lawyer."];
     write("app/emails/outreach.txt", [...scare, ...fine].join("\n"));
     const errors = checkClaims(["app/emails/outreach.txt"], root);
     assert.deepEqual(errors.map((e) => Number(e.split(":")[1])), scare.map((_, i) => i + 1));
     assert.ok(errors.every((e) => /scare copy/.test(e)));
+  });
+
+  it("lets the required limits text through even when it wraps across lines", () => {
+    write("app/templates/report.tsx", "<p>Our results cover the pages listed, on the dates shown. They are not a statement that your store\nconforms to WCAG or meets any law.</p>");
+    assert.deepEqual(checkClaims(["app/templates/report.tsx"], root), []);
   });
 
   it("flags em dashes in changed text files", () => {
