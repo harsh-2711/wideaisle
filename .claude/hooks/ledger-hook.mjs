@@ -13,10 +13,11 @@ import {
 } from "../../scripts/agents/ledger.mjs";
 
 const SECRET = /((?:token|secret|password|passwd|api[_-]?key|authorization)["']?\s*[:=]\s*["']?)[^\s"']+/gi;
+const BEARER = /\b(Bearer|Basic|token)\s+[\w.~+/=-]{6,}/gi;
 const LONG_TOKEN = /\b(sk-[\w-]{10,}|ghp_\w{20,}|github_pat_\w{20,}|shpat_\w{20,}|shpss_\w{20,}|xox[abp]-[\w-]{10,})/g;
 
 export function redact(text) {
-  return String(text ?? "").replace(SECRET, "$1[redacted]").replace(LONG_TOKEN, "[redacted]");
+  return String(text ?? "").replace(BEARER, "$1 [redacted]").replace(SECRET, "$1[redacted]").replace(LONG_TOKEN, "[redacted]");
 }
 
 function short(text, n = 200) {
@@ -113,7 +114,7 @@ function git(args, root) {
 export function stopFacts(task, root) {
   const handoff = `.agents/tasks/${task.id}/HANDOFF.md`;
   const status = `.agents/tasks/${task.id}/status.json`;
-  const dirty = git(["status", "--porcelain"], root)
+  const dirty = git(["status", "--porcelain", "--untracked-files=all"], root)
     .split("\n")
     .filter(Boolean)
     .map((l) => l.slice(3))
@@ -126,18 +127,18 @@ export function stopFacts(task, root) {
     } catch {}
   }
   const range = base ? `${base}..HEAD` : "HEAD";
-  const time = (...pathspec) => {
+  const log = (r, ...pathspec) => {
     try {
-      return Number(git(["log", "-1", "--format=%ct", range, "--", ...pathspec], root)) || 0;
+      return git(["log", "--format=%H", r, "--", ...pathspec], root).split("\n").filter(Boolean);
     } catch {
-      return 0;
+      return [];
     }
   };
-  return {
-    dirty,
-    lastWork: time(".", `:(exclude)${handoff}`, `:(exclude)${status}`),
-    lastHandoff: time(handoff),
-  };
+  const work = [".", `:(exclude)${handoff}`, `:(exclude)${status}`];
+  // Commit order, not timestamps: two commits in the same second would tie.
+  const lastHandoff = log(range, handoff)[0];
+  const workAfterHandoff = lastHandoff ? log(`${lastHandoff}..HEAD`, ...work).length : log(range, ...work).length;
+  return { dirty, workAfterHandoff };
 }
 
 // Decides whether the agent may end its turn.
@@ -150,7 +151,7 @@ export function stopDecision(task, facts, stopHookActive) {
       reason: `Commit a checkpoint before stopping (${facts.dirty.length} uncommitted files, for example ${facts.dirty[0]}). Use chore(checkpoint): what is done, what is next. Refs: ${task.id}.`,
     };
   }
-  if (facts.lastWork && facts.lastHandoff < facts.lastWork) {
+  if (facts.workAfterHandoff > 0) {
     return {
       block: true,
       reason: `Update .agents/tasks/${task.id}/HANDOFF.md (status, done so far with SHAs, current step, next three steps, blockers) and commit it before stopping.`,
