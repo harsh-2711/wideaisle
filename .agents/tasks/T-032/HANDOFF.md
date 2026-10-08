@@ -14,17 +14,18 @@ Running. Builder agent. Last updated 2026-10-08.
 
 | Step | Commit |
 |---|---|
-| 1. Branch, pinned `@anthropic-ai/sdk` 0.132.1 and `tsx` 4.23.15, `/data/` ignored | (this commit) |
+| 1. Branch, pinned `@anthropic-ai/sdk` 0.132.1 and `tsx` 4.23.15, `/data/` ignored | 8a04b59 |
+| 2. Batch client in `app/lib/alt-text/` and 48 unit tests with a mocked SDK client | (this commit) |
 
 ## Current step
 
-2: the batch client in `app/lib/alt-text/` with unit tests.
+3: `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
 
 ## Next three steps
 
-1. Client, prompt, parser, cost and resume state in `app/lib/alt-text/`, tests in `tests/unit/alt-text/`.
-2. `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
-3. Rating sheet script and doc, then the spike doc `docs/spikes/spike-c-alt-text.md`.
+1. `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
+2. Rating sheet: `scripts/alt-text/sheet.ts` and `docs/spikes/alt-text-rating-sheet.md`.
+3. Spike doc `docs/spikes/spike-c-alt-text.md`, then all checks and state "In review".
 
 ## Blockers and open questions
 
@@ -39,12 +40,20 @@ D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (
 
 - package.json, package-lock.json (two pinned dependencies)
 - .gitignore (`/data/`)
+- app/lib/alt-text/: config, types, prompt, request, parse, cost, state, runner, index
+- tests/unit/alt-text/: mock-client.ts plus request, parse, cost and runner tests
 
 ## How to verify
 
 - `npm ci --ignore-scripts && npm ls @anthropic-ai/sdk tsx`
+- `npx vitest run tests/unit/alt-text` (no network, no API key)
 
 ## Lessons and gotchas
 
 - shopify.dev does not resolve from this cloud environment (Q-01). Shopify sources are "via search, not opened".
 - `npm ci --ignore-scripts` skips husky, so run commitlint by hand before each commit.
+- Design: images go by URL with `width=512` on Shopify CDN URLs; structured outputs
+  (`output_config.format`) plus a local validator; effort `low`; no temperature (Haiku 5.5 rejects it).
+- Resume: `data/alt-text/<run>/state.jsonl` is append-only. An "intent" line is written before
+  `batches.create`. If the process stops before "submitted", a resume refuses to send again unless
+  `allowResubmit` is set, so a lost batch is never paid for twice by accident.
