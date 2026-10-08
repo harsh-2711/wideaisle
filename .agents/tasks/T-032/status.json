@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "fixers",
   "agent": "builder",
-  "state": "Running",
-  "step": "review fixes: create retries, run caps, Q-33, nits",
+  "state": "In review",
+  "step": "review fixes done; real run waits on Q-04 and Q-33, ratings on Q-26",
   "branch": "claude/feat-alt-text",
   "issue": 28,
   "needs": [],
-  "updated": "2026-10-08T11:52:46Z",
+  "updated": "2026-10-08T17:38:16Z",
   "id": "T-032"
 }

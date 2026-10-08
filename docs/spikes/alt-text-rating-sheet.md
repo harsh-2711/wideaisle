@@ -26,7 +26,7 @@ This writes `data/alt-text/<run>/rating-sheet.csv`: 50 drafts picked at random w
 | would publish yes/no | Would you publish this draft unchanged on your own store? | Yes |
 | notes | What is wrong or missing. Short is fine. | When useful |
 
-Cells that start with `=`, `+`, `-` or `@` get a leading apostrophe. That stops store text from running as a formula. Ignore the apostrophe when you read.
+Cells that start with `=`, `+`, `-` or `@`, also after leading spaces or in their full-width forms, get a leading apostrophe. So do cells that start with a tab. That stops store text from running as a formula. Ignore the apostrophe when you read.
 
 ## How to rate each row
 
