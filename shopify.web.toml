@@ -3,4 +3,4 @@ roles = ["frontend", "backend"]
 webhooks_path = "/webhooks/app/uninstalled"
 
 [commands]
-dev = "npm exec drizzle-kit migrate && npm exec react-router dev"
+dev = "node scripts/migrate.mjs && npm exec react-router dev"

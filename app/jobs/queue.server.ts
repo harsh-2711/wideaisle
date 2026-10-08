@@ -14,6 +14,7 @@ let boss: PgBoss | undefined;
 
 export async function getQueue(): Promise<PgBoss> {
   if (boss) return boss;
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set.");
   const instance = new PgBoss({ connectionString: process.env.DATABASE_URL });
   instance.on("error", (err) => console.error("pg-boss error", err));
   await instance.start();
