@@ -24,17 +24,17 @@ In review. A fresh agent resumed it from this file and finished steps 2 and 3. N
 
 ## Current step
 
-None. Waiting for review and for the lead's call on the open question below.
+Pull request review, then merge.
 
 ## Next three steps
 
-1. The lead decides how to handle the `lint-handoff --all` findings (see Blockers; the report has options and a pick).
-2. Open a pull request for this branch. A reviewer agent checks it.
-3. Merge once CI is green, then set the state to Done.
+1. Review and merge the pull request once CI is green.
+2. Set the state to Done.
+3. After the M1 and M2 research pull requests merge, `lint-handoff --all` should exit 0 on main; fix anything it still reports.
 
 ## Blockers and open questions
 
-- `node scripts/agents/board.mjs lint-handoff --all` exits 1: 30 lines on 20 tasks outside this lane. The HANDOFF template's fill-in placeholder fails every task made from it, and T-010 to T-014 are Running on main with template handoffs (their real ones are likely on claude/docs-m1-research). Not edited here. Options and a pick are in children/resume-report.md. This needs the lead, not the owner.
+- None. The lead picked option B from the report: placeholders are allowed while a task is Queued or Blocked on you. T-010 to T-014 still fail on this branch because their real handoffs are on claude/docs-m1-research; they pass once that pull request merges.
 
 ## Decisions used
 
@@ -52,7 +52,7 @@ D-18
 
 - `node --test scripts/agents/ledger.test.mjs` passes.
 - `node scripts/agents/board.mjs lint-handoff T-008` (and T-001, T-002) prints `1 handoff ok`.
-- `node scripts/agents/board.mjs lint-handoff --all` exits 0 on this branch. It does not yet; see Blockers.
+- `node scripts/agents/board.mjs lint-handoff --all` reports only T-010 to T-014 on this branch (their handoffs arrive with the M1 research pull request).
 - .agents/tasks/T-008/children/resume-report.md says what the resuming agent read, what it guessed, how much of step 2 was lost, and its commits.
 
 ## Lessons and gotchas

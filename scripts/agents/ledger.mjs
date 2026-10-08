@@ -366,7 +366,9 @@ export function lintHandoff(text, state = "") {
   for (const name of HANDOFF_SECTIONS) {
     if (!headings.includes(name)) problems.push(`missing section: ${name}`);
   }
-  if (/\(fill in\)/.test(text)) problems.push("placeholder left: (fill in)");
+  // A task nobody has started has no progress to lose, so placeholders are
+  // fine until it leaves Queued or Blocked on you.
+  if (!["Queued", "Blocked on you"].includes(state) && /\(fill in\)/.test(text)) problems.push("placeholder left: (fill in)");
   const section = (name) => {
     const m = new RegExp(`^## ${name}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text);
     return m ? m[1].trim() : "";

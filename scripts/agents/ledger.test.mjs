@@ -267,6 +267,9 @@ describe("handoff lint", () => {
   it("reports a (fill in) placeholder", () => {
     const text = handoff({ body: { "Next three steps": "1. Read TASK.md.\n2. (fill in)\n3. (fill in)" } });
     assert.deepEqual(L.lintHandoff(text, "Running"), ["placeholder left: (fill in)"]);
+    // Not started yet: nothing to lose.
+    assert.deepEqual(L.lintHandoff(text, "Queued"), []);
+    assert.deepEqual(L.lintHandoff(text, "Blocked on you"), []);
   });
 
   it("reports Running with Not started as the current step", () => {
