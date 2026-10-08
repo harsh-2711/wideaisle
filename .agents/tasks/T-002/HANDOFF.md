@@ -8,23 +8,26 @@ See TASK.md. CI for types, lint, tests, an accessibility check on fixtures, and 
 
 ## Status
 
-In review: harsh-2711/wideaisle#8 (stacked on #7).
+Done. Merged to main in harsh-2711/wideaisle#8 (merge commit 2fb0abf).
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
 | CI workflow, rule checks, templates | 3bd52f7 |
+| Integration job fails when the database is missing | e118ed0 |
+| Review fixes: env-passed refs, scoped rule checks, CODEOWNERS | 357f9dd |
+| Merged | 2fb0abf |
 
 ## Current step
 
-Wait for green CI on PR 8, merge after PR 7.
+None. The task is done.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. Nothing left on this task.
+2. Branch protection that requires these checks is T-003 (owner, Q-08).
+3. Add new rule checks to scripts/ci/checks.mjs with a test in checks.test.mjs.
 
 ## Blockers and open questions
 
@@ -36,12 +39,5 @@ D-06
 
 ## Files touched
 
-- None yet.
-
-## How to verify
-
-- (commands that prove the exit criteria)
-
-## Lessons and gotchas
-
-- None yet.
+- .github/workflows/ci.yml, .github/CODEOWNERS, .github/pull_request_template.md, .github/ISSUE_TEMPLATE/
+- scripts/ci/checks.mjs, scripts/ci/checks.test.mjs

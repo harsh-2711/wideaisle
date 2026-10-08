@@ -3,11 +3,11 @@
   "milestone": "M0",
   "lane": "repo",
   "agent": "",
-  "state": "In review",
-  "step": "",
+  "state": "Done",
+  "step": "Merged in PR #7",
   "branch": "claude/feat-app-scaffold",
   "issue": 9,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:36:22Z",
   "id": "T-001"
 }

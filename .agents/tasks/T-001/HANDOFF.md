@@ -8,7 +8,7 @@ See TASK.md. One TypeScript repo on Shopify's React Router template with Postgre
 
 ## Status
 
-In review: harsh-2711/wideaisle#7.
+Done. Merged to main in harsh-2711/wideaisle#7 (merge commit 7257800).
 
 ## Done so far
 
@@ -17,16 +17,20 @@ In review: harsh-2711/wideaisle#7.
 | Template copied, Prisma swapped for Drizzle | 4cdf5d8 |
 | Schema, tests, configs | 053d087 |
 | Postgres integration test | 18eba2a |
+| Webhooks verified by HMAC; migrations without drizzle-kit | ab301e2 |
+| Webhooks bound to topics, replays rejected | f143212 |
+| Webhook remembered only after its handler succeeds | bc7d34a |
+| Merged | 7257800 |
 
 ## Current step
 
-Address the reviewer's findings on PR 7, then merge.
+None. The task is done.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. Nothing left on this task.
+2. Follow-ups live in their own tasks (T-030 delivery, T-033 scan).
+3. The app needs Q-03 and Q-04 before it can run against a dev store.
 
 ## Blockers and open questions
 
@@ -38,12 +42,4 @@ D-05
 
 ## Files touched
 
-- None yet.
-
-## How to verify
-
-- (commands that prove the exit criteria)
-
-## Lessons and gotchas
-
-- None yet.
+- app/, drizzle/, scripts/migrate.mjs, tests/, Dockerfile, docker-compose.yml, shopify.app.toml, package.json
