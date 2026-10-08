@@ -17,17 +17,19 @@ Running. Last updated 2026-10-08. All three adapters done; spike doc next.
 | Research: Admin API 2026-10 schema, GitHub REST description, exemption sources | d3cfb22 |
 | Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | f8ced04 |
 | Admin API client and adapter, 24 recorded GraphQL fixtures, 20 tests | 07b4d9e |
-| GitHub pull request adapter, 24 recorded REST fixtures, 14 tests | this commit |
+| GitHub pull request adapter, 24 recorded REST fixtures, 14 tests | f57148b |
+| docs/spikes/spike-a-delivery.md | this commit |
 
 ## Current step
 
-docs/spikes/spike-a-delivery.md.
+Final checks, then In review.
 
 ## Next three steps
 
-1. Write docs/spikes/spike-a-delivery.md (built, merchant needs, exemption sources, Q-03, Q-27).
-2. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
-3. Set the board to In review and report to the parent.
+1. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
+2. Set the board to In review and report to the parent.
+3. After Q-03: run preview, apply and revert on the dev store from a custom-distribution app
+   (steps in the spike doc, section "Q-27"), and replace the fixtures with captures.
 
 ## Blockers and open questions
 
