@@ -3,11 +3,11 @@
   "milestone": "M0",
   "lane": "ledger",
   "agent": "planner",
-  "state": "Running",
-  "step": "3 of 3: lint-handoff board command",
+  "state": "In review",
+  "step": "done; lead to decide on lint-handoff --all findings",
   "branch": "claude/test-handoff-resume",
   "issue": 14,
   "needs": [],
-  "updated": "2026-10-08T06:56:30Z",
+  "updated": "2026-10-08T07:01:24Z",
   "id": "T-008"
 }

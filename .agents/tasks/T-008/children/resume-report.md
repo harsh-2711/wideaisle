@@ -65,3 +65,5 @@ Resume T-008, stopped on purpose mid-step 2, using only HANDOFF.md, TASK.md, the
    Pick: B. A task nobody has started has no progress to lose, and the check stays strict where resuming matters. T-010 to T-014 then pass once the research lane's handoffs reach main.
 2. No pull request is open, as instructed. State is In review; it needs a pull request to be reviewed and merged.
 3. TASK.md's exit criteria boxes are unticked. TASK.md is the planner's file, so I left it.
+4. The placeholder check matches the literal text anywhere, even when a handoff only quotes it. T-008's own final handoff tripped it; I reworded it. Low priority.
+5. I updated HANDOFF.md after step 2 but not after 4cda5c6 or 739038f; the final update covers both.
