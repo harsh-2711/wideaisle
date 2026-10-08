@@ -18,6 +18,7 @@ import { parseArgs } from "node:util";
 import { chromium, type Browser } from "playwright";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
+import { isPublicAddress, sameSite, systemLookup } from "../../app/lib/scanner/netguard";
 import { PoliteClient } from "../../app/lib/scanner/polite";
 
 export interface StoreRecord extends StoreFacts {
@@ -74,7 +75,9 @@ export async function discover(domains: string[], out: string, client: PoliteCli
       const res = await client.get(origin + "/");
       if (!res) return append(out, { ...base, error: "robots.txt disallows /" });
       if (res.status >= 400) return append(out, { ...base, error: `HTTP ${res.status}` });
-      append(out, { ...base, origin: new URL(res.url).origin, ...detectStore(res.text) });
+      const final = new URL(res.url);
+      if (!sameSite(domain, final.host)) return append(out, { ...base, error: `redirected to another site (${final.host})` });
+      append(out, { ...base, origin: final.origin, ...detectStore(res.text) });
     } catch (err) {
       append(out, { ...base, error: (err as Error).message.slice(0, 200) });
     }
@@ -88,6 +91,18 @@ export async function scan(stores: StoreRecord[], out: string, client: PoliteCli
     await pool(stores.filter((s) => s.isShopify && s.origin && !seen.has(s.domain)), opts.concurrency ?? 2, async (store) => {
       const record: ScanRecord = { domain: store.domain, theme: store.theme, apps: store.apps, scannedAt: new Date().toISOString(), pages: [], skipped: [] };
       const context = await browser.newContext({ userAgent: client.userAgent });
+      // The browser may only reach public addresses, whatever the page loads.
+      if (!client.allowPrivate) {
+        const verdicts = new Map<string, Promise<boolean>>();
+        await context.route("**/*", async (route) => {
+          const host = new URL(route.request().url()).hostname;
+          if (!verdicts.has(host)) {
+            verdicts.set(host, systemLookup(host).then((ips) => ips.length > 0 && ips.every(isPublicAddress), () => false));
+          }
+          if (await verdicts.get(host)) await route.continue();
+          else await route.abort("blockedbyclient");
+        });
+      }
       const page = await context.newPage();
       try {
         const origin = store.origin!;
