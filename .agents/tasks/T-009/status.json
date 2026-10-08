@@ -1,0 +1,17 @@
+{
+  "title": "Weekly brief, cost watch and dev stores",
+  "milestone": "M0",
+  "lane": "ops",
+  "agent": "",
+  "state": "Blocked on you",
+  "step": "",
+  "branch": "",
+  "issue": 15,
+  "needs": [
+    "owner:Q-03",
+    "owner:Q-04",
+    "owner:Q-10"
+  ],
+  "updated": "2026-10-08T06:04:01Z",
+  "id": "T-009"
+}

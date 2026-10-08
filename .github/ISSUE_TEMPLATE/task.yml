@@ -1,0 +1,41 @@
+name: Task
+description: One task, sized to finish in one agent session
+title: "T-xxx: "
+labels: [task]
+body:
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone
+      placeholder: M0
+    validations:
+      required: true
+  - type: input
+    id: lane
+    attributes:
+      label: Lane
+      placeholder: scanner, fixers, delivery, app, evidence, data, research, ops
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+    validations:
+      required: true
+  - type: textarea
+    id: exit
+    attributes:
+      label: Exit criteria
+      description: Tests or checks someone can run.
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: input
+    id: decisions
+    attributes:
+      label: Decisions used
+      placeholder: D-05, D-08
+  - type: input
+    id: needs
+    attributes:
+      label: Waits on the owner
+      placeholder: Q-03, or none
