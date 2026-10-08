@@ -29,6 +29,10 @@ const HELP = `Usage: node scripts/agents/board.mjs <command>
 States: ${STATES.join(", ")}`;
 
 // Returns "<id>: <problem>" lines for one task's HANDOFF.md.
+function usage(message) {
+  return Object.assign(new Error(message), { usage: true });
+}
+
 function lintTask(t) {
   const file = path.join(paths().tasks, t.id, "HANDOFF.md");
   if (!fs.existsSync(file)) return [`${t.id}: no HANDOFF.md`];
@@ -105,20 +109,24 @@ function main(argv) {
     }
     case "lint-handoff": {
       const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { all: { type: "boolean" } } });
-      if (positionals.length > 1 || (values.all && positionals.length)) throw new Error("lint-handoff takes one task id, or --all");
+      if (positionals.length > 1 || (values.all && positionals.length)) throw usage("lint-handoff takes one task id, or --all");
       let tasks;
+      const unreadable = [];
       if (values.all) {
         tasks = listTasks().filter((t) => t.state !== "Done");
-      } else if (positionals.length) {
-        const t = getTask(positionals[0]);
-        if (!t) throw new Error(`${positionals[0]} does not exist`);
-        tasks = [t];
+        // listTasks skips a task it cannot read; here that is a problem.
+        const listed = new Set(listTasks().map((t) => t.id));
+        const dir = paths().tasks;
+        const ids = fs.existsSync(dir) ? fs.readdirSync(dir).filter((d) => /^T-\d{3,}$/.test(d)) : [];
+        for (const id of ids) if (!listed.has(id)) unreadable.push(`${id}: status.json cannot be read`);
       } else {
-        const t = currentTask();
-        if (!t) throw new Error("no current task: pass a task id or --all, or set WA_TASK");
+        const id = positionals[0] ?? currentTask()?.id;
+        if (!id) throw usage("no current task: pass a task id or --all, or set WA_TASK");
+        const t = getTask(id);
+        if (!t) throw new Error(`${id} does not exist`);
         tasks = [t];
       }
-      const problems = tasks.flatMap(lintTask);
+      const problems = [...unreadable, ...tasks.flatMap(lintTask)];
       for (const p of problems) console.log(p);
       if (problems.length) process.exitCode = 1;
       else console.log(`${tasks.length} handoff${tasks.length === 1 ? "" : "s"} ok`);
@@ -138,5 +146,6 @@ try {
   main(process.argv.slice(2));
 } catch (err) {
   console.error(err.message);
-  process.exit(1);
+  // 2 for a usage error, 1 for anything else.
+  process.exit(err.usage ? 2 : 1);
 }

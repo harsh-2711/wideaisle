@@ -4,7 +4,7 @@ Filed by the resuming agent, as T-008's HANDOFF.md asks. Children report only to
 
 | Field | Value |
 |---|---|
-| Child | Builder, a fresh session that resumed T-008 from the ledger alone |
+| Child | Builder, a fresh subagent that resumed T-008 from the ledger alone (freshness is self-reported; both agents share one session id) |
 | Parent | The planner session that started it |
 | Started | 2026-10-08T06:55Z (about; first commit 06:56:21Z) |
 | Finished | 2026-10-08T07:03Z |
@@ -67,3 +67,13 @@ Resume T-008, stopped on purpose mid-step 2, using only HANDOFF.md, TASK.md, the
 3. TASK.md's exit criteria boxes are unticked. TASK.md is the planner's file, so I left it.
 4. The placeholder check matches the literal text anywhere, even when a handoff only quotes it. T-008's own final handoff tripped it; I reworded it. Low priority.
 5. I updated HANDOFF.md after step 2 but not after 4cda5c6 or 739038f; the final update covers both.
+
+## Parent's note (after review)
+
+Added by the parent after the report was filed. The report above is the child's own and is left as written.
+
+- Option B was taken in 773d737: placeholders are allowed while a task is Queued, or Blocked on you before any commit. The exit criteria boxes in TASK.md were ticked then.
+- `lint-handoff --all` on this branch now reports only T-010 to T-014, whose filled-in handoffs are on claude/docs-m1-research (pull request harsh-2711/wideaisle#36). The reviewer checked that they lint clean there, and that T-022 to T-024 lint clean on claude/docs-m2-market.
+- Review fixes: CRLF and trailing spaces are handled, fenced code blocks are ignored, commit ids are found anywhere in the last cell, an empty current step is reported, a task Blocked on you after real work is checked like a running one, unreadable tasks are reported, and usage errors exit 2.
+- The resuming agent was a fresh subagent with no context from the parent beyond the prompt to resume. Git cannot show that, since every commit carries the same session line.
+

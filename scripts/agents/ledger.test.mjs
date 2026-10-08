@@ -266,15 +266,42 @@ describe("handoff lint", () => {
 
   it("reports a (fill in) placeholder", () => {
     const text = handoff({ body: { "Next three steps": "1. Read TASK.md.\n2. (fill in)\n3. (fill in)" } });
-    assert.deepEqual(L.lintHandoff(text, "Running"), ["placeholder left: (fill in)"]);
+    assert.deepEqual(L.lintHandoff(text, "Running"), ["placeholder left in the template text"]);
     // Not started yet: nothing to lose.
     assert.deepEqual(L.lintHandoff(text, "Queued"), []);
-    assert.deepEqual(L.lintHandoff(text, "Blocked on you"), []);
+    assert.deepEqual(L.lintHandoff(handoff({ body: { ...notStarted, "Current step": "Waiting on Q-03.", "Next three steps": "(fill in)" } }), "Blocked on you"), []);
+    // The verify placeholder counts too.
+    assert.deepEqual(L.lintHandoff(handoff({ body: { "How to verify": "- (commands that prove the exit criteria)" } }), "Running"), [
+      "placeholder left in the template text",
+    ]);
+  });
+
+  it("checks a task Blocked on you after real work like a running one", () => {
+    const text = handoff({ body: { "Current step": "", "Next three steps": "(fill in)" } });
+    assert.deepEqual(L.lintHandoff(text, "Blocked on you"), [
+      "placeholder left in the template text",
+      "state is Blocked on you but the current step is empty or says Not started",
+    ]);
+  });
+
+  it("reads CRLF files, trailing spaces and commit ids in links or lists", () => {
+    const crlf = handoff().replace(/\n/g, "\r\n").replace("## Done so far", "## Done so far  ");
+    assert.deepEqual(L.lintHandoff(crlf, "Running"), []);
+    for (const cell of ["abc1234, def5678", "`abc1234`", "[abc1234](https://x/commit/abc1234)", "ABC1234"]) {
+      const text = handoff({ body: { "Done so far": `| Step | Commit |\n|---|---|\n| 1. x | ${cell} |` } });
+      assert.deepEqual(L.lintHandoff(text, "Running"), [], cell);
+    }
+  });
+
+  it("reports an empty current step and ignores headings in code blocks", () => {
+    assert.deepEqual(L.lintHandoff(handoff({ body: { "Current step": "" } }), "Running"), ["state is Running but the current step is empty or says Not started"]);
+    const quoted = handoff({ omit: ["Status"] }) + "\n```md\n## Status\n\nRunning.\n```\n";
+    assert.deepEqual(L.lintHandoff(quoted, "Running"), ["missing section: Status"]);
   });
 
   it("reports Running with Not started as the current step", () => {
     const text = handoff({ body: { "Current step": "Not started." } });
-    assert.deepEqual(L.lintHandoff(text, "Running"), ["state is Running but the current step says Not started"]);
+    assert.deepEqual(L.lintHandoff(text, "Running"), ["state is Running but the current step is empty or says Not started"]);
   });
 
   it("reports In review with an empty Done so far table", () => {
@@ -284,7 +311,7 @@ describe("handoff lint", () => {
 
   it("checks Stalled like Running", () => {
     assert.deepEqual(L.lintHandoff(handoff({ body: notStarted }), "Stalled"), [
-      "state is Stalled but the current step says Not started",
+      "state is Stalled but the current step is empty or says Not started",
       "state is Stalled but Done so far lists no commit",
     ]);
   });
@@ -305,16 +332,16 @@ describe("handoff lint", () => {
     write("T-002", "Running", handoff({ body: { "Current step": "Not started." } }));
     write("T-003", "Done", handoff({ omit: ["How to verify"] }));
     write("T-004", "Queued", null);
-    const fails = async (args, extra = {}) => {
+    const fails = async (args, extra = {}, code = 1) => {
       const err = await run("node", [BOARD_CLI, "lint-handoff", ...args], { env: { ...env, ...extra } }).then(() => null, (e) => e);
-      assert.ok(err, `expected lint-handoff ${args.join(" ")} to exit 1`);
-      assert.equal(err.code, 1);
+      assert.ok(err, `expected lint-handoff ${args.join(" ")} to exit ${code}`);
+      assert.equal(err.code, code);
       return err;
     };
 
     const all = await fails(["--all"]);
     assert.deepEqual(all.stdout.trim().split("\n"), [
-      "T-002: state is Running but the current step says Not started",
+      "T-002: state is Running but the current step is empty or says Not started",
       "T-004: no HANDOFF.md",
     ]);
     const { stdout } = await run("node", [BOARD_CLI, "lint-handoff", "T-001"], { env });
@@ -322,10 +349,15 @@ describe("handoff lint", () => {
     // An explicit id is checked even when the task is Done.
     assert.equal((await fails(["T-003"])).stdout.trim(), "T-003: missing section: How to verify");
     // No id: the current task, from WA_TASK or the branch.
-    assert.equal((await fails([], { WA_TASK: "T-002" })).stdout.trim(), "T-002: state is Running but the current step says Not started");
-    assert.match((await fails([])).stderr, /no current task/);
-    assert.match((await fails(["--all", "T-001"])).stderr, /one task id, or --all/);
+    assert.equal((await fails([], { WA_TASK: "T-002" })).stdout.trim(), "T-002: state is Running but the current step is empty or says Not started");
+    assert.match((await fails([], {}, 2)).stderr, /no current task/);
+    assert.match((await fails(["--all", "T-001"], {}, 2)).stderr, /one task id, or --all/);
     assert.match((await fails(["T-099"])).stderr, /T-099 does not exist/);
+    assert.match((await fails([], { WA_TASK: "T-777" })).stderr, /T-777 does not exist/);
+    // A task whose status.json cannot be read is a problem, not a silent skip.
+    fs.mkdirSync(path.join(root, ".agents", "tasks", "T-005"));
+    fs.writeFileSync(path.join(root, ".agents", "tasks", "T-005", "status.json"), "{ not json");
+    assert.match((await fails(["--all"])).stdout, /T-005: status\.json cannot be read/);
   });
 });
 

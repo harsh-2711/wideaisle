@@ -47,7 +47,7 @@ npm run board -- lint-handoff --all
 
 `set` also logs a step event, so the heartbeat moves with it. Repeat a flag to pass more than one value: `--exit "a" --exit "b"`.
 
-`lint-handoff` checks that a HANDOFF.md is enough for a fresh agent to resume: every section is there, no "(fill in)" is left, and a Running, In review or Stalled task names its current step and at least one commit. With no id it checks the current task. `--all` checks every task that is not Done. It prints `<id>: <problem>` lines and exits 1 if there are any.
+`lint-handoff` checks that a HANDOFF.md is enough for a fresh agent to resume: every section is there, no template placeholder is left once work has started, and a Running, In review or Stalled task names its current step and at least one commit. A task Blocked on you after real work is checked the same way. With no id it checks the current task. `--all` checks every task that is not Done, and reports a task whose status.json cannot be read. It prints `<id>: <problem>` lines and exits 1 if there are any, or 2 on a usage error.
 
 ## Status board (D-19)
 

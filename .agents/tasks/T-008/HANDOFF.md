@@ -10,7 +10,7 @@ The test task is real work: a `lint-handoff` check that says whether a HANDOFF.m
 
 ## Status
 
-In review. A fresh agent resumed it from this file and finished steps 2 and 3. No pull request is open yet. Last updated 2026-10-08.
+In review in pull request harsh-2711/wideaisle#38. A fresh agent resumed it from this file and finished steps 2 and 3; review fixes are in. Last updated 2026-10-08.
 
 ## Done so far
 
