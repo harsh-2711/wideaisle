@@ -27,7 +27,7 @@
     "start": "react-router-serve ./build/server/index.js",
     "test": "npm run test:unit && npm run test:agents",
     "test:a11y": "playwright test",
-    "test:agents": "node --test 'scripts/agents/*.test.mjs' '.claude/hooks/*.test.mjs'",
+    "test:agents": "node --test 'scripts/agents/*.test.mjs' 'scripts/ci/*.test.mjs' '.claude/hooks/*.test.mjs'",
     "test:unit": "vitest run tests/unit app",
     "typecheck": "react-router typegen && tsc --noEmit",
     "vite": "vite",
