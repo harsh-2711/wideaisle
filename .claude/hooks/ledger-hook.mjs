@@ -12,8 +12,9 @@ import {
   appendEvent, currentTask, lastEvents, NO_TASK, now, paths, repoRoot, staleTasks, upsertTask,
 } from "../../scripts/agents/ledger.mjs";
 
-const SECRET = /((?:token|secret|password|passwd|pass|api[_-]?key|authorization|auth)["']?\s*[:=]\s*["']?)[^\s"']+/gi;
+const SECRET = /((?:token|secret|password|passwd|pass|api[_-]?key|authorization|auth|credential)\w*["']?\s*[:=]\s*["']?)[^\s"']+/gi;
 const FLAG_SECRET = /(--?(?:password|passwd|pass|token|secret|api-key|apikey|auth)[ =])\S+/gi;
+const USER_PASS = /((?:^|\s)(?:-u|--user)[ =])[^\s:]+:\S+/g;
 const BEARER = /\b(Bearer|Basic|token)\s+[\w.~+/=-]{6,}/gi;
 const URL_USERINFO = /(\b[a-z][\w+.-]*:\/\/)[^\s/@]+@/gi;
 const LONG_TOKEN = /\b(sk-[\w-]{10,}|sk_(live|test)_\w{10,}|gh[opsur]_\w{20,}|github_pat_\w{20,}|shp\w{2,3}_\w{16,}|xox[abprs]-[\w-]{10,}|AKIA[0-9A-Z]{16}|eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,})/g;
@@ -23,6 +24,7 @@ export function redact(text) {
     .replace(URL_USERINFO, "$1[redacted]@")
     .replace(BEARER, "$1 [redacted]")
     .replace(FLAG_SECRET, "$1[redacted]")
+    .replace(USER_PASS, "$1[redacted]")
     .replace(SECRET, "$1[redacted]")
     .replace(LONG_TOKEN, "[redacted]");
 }

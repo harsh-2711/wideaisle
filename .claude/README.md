@@ -29,11 +29,15 @@ The active task is the one whose `branch` matches the checked-out branch, or `WA
 
 ## What the guard blocks
 
-- Destructive git: hard resets, forced cleans, force pushes (except `--force-with-lease` on a named `claude/*` or `backup/*` branch), skipping hooks with `--no-verify`, checking out or restoring files over local changes, dropping stashes, deleting main.
-- Recursive deletes of the root, home, the repo or `.git`.
+- Skipping hooks: `--no-verify`, `HUSKY=0`, and git config overrides for aliases, hooks and editors.
+- Destructive git: hard resets, forced cleans (a `-n` dry run is fine), force pushes (except `--force-with-lease` on a named `claude/*` or `backup/*` branch), skipping hooks with `--no-verify`, checking out or restoring files over local changes, dropping stashes, deleting main.
+- Recursive deletes (`rm -r`, `find -delete`) of the root, home, the project or an ancestor of it, `.git`, `.agents` or `.claude`. Targets are resolved as paths, so `./.` and `foo/..` count.
+- Piping into a shell (`curl ... | sh`). Save the script, read it, then run it.
 - Secrets: reading `.env` files, dumping the environment, printing a variable whose name holds TOKEN, SECRET, KEY or PASSWORD.
 - Pushes to main, so every change goes through a pull request.
 - Production deploys (`shopify app deploy`, `shopify theme publish`, a live theme push, `npm run deploy`). Agents never deploy. Deploys run in CI, outside Claude Code, on a pull request the owner labels `deploy-approved`.
+
+The guard stops an agent's mistakes. It is one layer with the deny rules, CI, branch protection and reviews, not a sandbox against a determined attacker. When it cannot parse a command, or hits an error, it blocks the command and says why.
 
 The guard parses each command into words. Quoted text and heredoc bodies (commit messages, file contents) are data. Text that a shell runs (`bash -c`, `eval`, a heredoc fed to `bash`, `$(...)`) is checked as a command.
 
