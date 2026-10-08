@@ -2,12 +2,12 @@
   "title": "D-13 research: AI accessibility checks per release",
   "milestone": "M1",
   "lane": "research",
-  "agent": "",
-  "state": "Running",
-  "step": "",
+  "agent": "researcher",
+  "state": "In review",
+  "step": "PR review",
   "branch": "claude/docs-m1-research",
   "issue": 20,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:49:51Z",
   "id": "T-014"
 }

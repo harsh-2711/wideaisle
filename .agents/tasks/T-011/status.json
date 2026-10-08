@@ -2,12 +2,12 @@
   "title": "Legal brief",
   "milestone": "M1",
   "lane": "research",
-  "agent": "",
-  "state": "Running",
-  "step": "",
+  "agent": "researcher",
+  "state": "In review",
+  "step": "PR review",
   "branch": "claude/docs-m1-research",
   "issue": 17,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:49:50Z",
   "id": "T-011"
 }
