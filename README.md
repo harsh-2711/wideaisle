@@ -30,6 +30,32 @@ M0 (Foundations). See [.agents/milestones.md](.agents/milestones.md) for exit cr
 4. Every branch reaches main through a pull request. It merges with a merge commit once CI is green and a reviewer agent has checked it.
 5. Commits follow Conventional Commits, `type(scope): summary`, with `Refs: T-xxx` in the footer.
 
+## Run it locally
+
+You need Node 22.12 or later, Docker (for Postgres) and, to run the app inside Shopify, the [Shopify CLI](https://shopify.dev/docs/api/shopify-cli) with a Partner account and a development store.
+
+```bash
+npm install                 # also installs the commit-message hook
+cp .env.example .env
+npm run db:up               # Postgres 16 in Docker
+npm run db:migrate          # create the tables
+npm test                    # unit tests and agent tooling tests
+npx playwright install chromium && npm run test:a11y   # axe-core on fixtures
+npm run lint && npm run typecheck
+npm run dev                 # Shopify CLI: tunnels the app into your dev store
+```
+
+The app is Shopify's React Router template with Prisma swapped for Drizzle on Postgres, plus pg-boss for jobs and Playwright with axe-core for scans (D-05).
+
+| Path | What it holds |
+|---|---|
+| `app/` | The embedded app: routes, Shopify auth, database client |
+| `app/db/schema.ts` | Drizzle schema; migrations live in `drizzle/` |
+| `app/jobs/` | pg-boss queues for scans, fixes and re-scans |
+| `app/lib/` | One folder per lane (scanner, fixers, delivery, evidence) as they land |
+| `tests/unit/` | Vitest |
+| `tests/a11y/` | Playwright and axe-core on HTML fixtures |
+
 ## Continue on your own machine
 
 ```bash

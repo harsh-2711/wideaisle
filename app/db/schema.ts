@@ -6,8 +6,9 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-// Shopify sessions. Columns match what the Drizzle session storage adapter
-// reads and writes, including refresh tokens for expiring offline tokens.
+// Shopify sessions. Columns and nullability match the Drizzle session
+// storage adapter's own Postgres schema exactly, or its types reject the
+// table. Includes refresh tokens for expiring offline tokens.
 export const sessionTable = pgTable("session", {
   id: text("id").primaryKey(),
   shop: text("shop").notNull(),
@@ -15,15 +16,15 @@ export const sessionTable = pgTable("session", {
   isOnline: boolean("isOnline").default(false).notNull(),
   scope: text("scope"),
   expires: timestamp("expires", { mode: "date" }),
-  accessToken: text("accessToken"),
+  accessToken: text("accessToken").notNull(),
   userId: bigint("userId", { mode: "number" }),
   firstName: text("firstName"),
   lastName: text("lastName"),
   email: text("email"),
-  accountOwner: boolean("accountOwner").default(false).notNull(),
+  accountOwner: boolean("accountOwner"),
   locale: text("locale"),
-  collaborator: boolean("collaborator").default(false),
-  emailVerified: boolean("emailVerified").default(false),
+  collaborator: boolean("collaborator"),
+  emailVerified: boolean("emailVerified"),
   refreshToken: text("refreshToken"),
   refreshTokenExpires: timestamp("refreshTokenExpires", { mode: "date" }),
 });
