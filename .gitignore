@@ -41,3 +41,14 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# App build and Shopify CLI (from the Shopify app template)
+/app/build
+/public/build/
+/public/_dev
+/app/public/build
+/extensions/*/dist
+.shopify.lock
+
+# Agent worktrees created by Claude Code
+.claude/worktrees/
