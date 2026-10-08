@@ -21,9 +21,11 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Wide Aisle</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Make room for every shopper. Wide Aisle fixes common accessibility
+          failures in your Shopify theme code and keeps a dated record of each
+          fix.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -39,16 +41,18 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Fixes in your theme</strong>. Changes go into your theme
+            code, not a widget on top of it, and you preview every change
+            first.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>A record of every fix</strong>. Dated scans and a
+            remediation log show what was found, what changed and when.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Honest about limits</strong>. Automated checks cannot find
+            every barrier, so each report says what we checked and what we did
+            not.
           </li>
         </ul>
       </div>

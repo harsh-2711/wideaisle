@@ -10,6 +10,9 @@ declare global {
 
 // One pool per process. In development, reuse it across hot reloads.
 function createPool() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set. Copy .env.example to .env, or export it.");
+  }
   return new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     max: Number(process.env.DATABASE_POOL_MAX ?? 10),

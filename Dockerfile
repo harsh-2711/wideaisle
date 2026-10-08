@@ -4,16 +4,16 @@ EXPOSE 3000
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-
 COPY package.json package-lock.json* ./
 
-# drizzle-kit runs migrations at start, so dev dependencies stay installed
-# until the build is done, then are pruned.
-RUN npm ci --ignore-scripts && npm cache clean --force
+# Dev dependencies are needed for the build, then pruned. Migrations at start
+# use drizzle-orm's migrator (scripts/migrate.mjs), not drizzle-kit.
+RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN npm run build
+RUN npm run build && npm prune --omit=dev && npm cache clean --force
+
+ENV NODE_ENV=production
 
 CMD ["npm", "run", "docker-start"]
