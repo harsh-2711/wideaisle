@@ -32,6 +32,11 @@ CENSUS_CONTACT=you@example.com npm run census -- scan --input data/census/stores
 
 Both steps resume: stores already in the output file are skipped, so a stopped run can be restarted.
 
+```bash
+# 4. Write the gap report (T-021). Only this summary is committed.
+npm run census -- report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md
+```
+
 Time, from the 2-second gap and 4 to 6 requests a store: about 10 to 15 seconds a store per worker. With 4 workers, 2,000 stores take about 2 hours. This is an estimate; Spike D (T-033) measures it.
 
 ## Output
@@ -39,3 +44,5 @@ Time, from the 2-second gap and 4 to 6 requests a store: about 10 to 15 seconds 
 `stores.jsonl`, one line per domain: whether it is Shopify, theme name, schema name, version, Theme Store id, and the apps whose scripts load.
 
 `scans.jsonl`, one line per store: per page, axe violations by rule with node counts, counts for the six v1 types, a guess at each node's source (theme, app or unknown), and three sample nodes per rule.
+
+`gap-report.md`: theme share among Shopify stores, how often each of the six types appears, the most common failure patterns, the apps behind the most failures, and whether each pattern needs a theme patch, a content edit or an app change.

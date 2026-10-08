@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "Queued",
-  "step": "",
+  "state": "In review",
+  "step": "Waits for T-020 merge",
   "branch": "claude/feat-census-analysis",
   "issue": 22,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T06:55:16Z",
   "id": "T-021"
 }
