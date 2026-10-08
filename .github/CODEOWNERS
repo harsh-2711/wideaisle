@@ -1,0 +1,5 @@
+# The owner reviews everything; one-way-door paths need the owner's merge.
+* @harsh-2711
+/app/db/ @harsh-2711
+/drizzle/ @harsh-2711
+/decisions/ @harsh-2711
