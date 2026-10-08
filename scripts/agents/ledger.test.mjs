@@ -52,6 +52,7 @@ describe("task status", () => {
 
   it("keeps every update when 20 processes write at once", async () => {
     const env = { ...process.env, WA_ROOT: root };
+    for (let i = 1; i <= 20; i++) L.upsertTask(`T-${String(i).padStart(3, "0")}`, { title: `t${i}` }, root);
     await Promise.all(
       Array.from({ length: 20 }, (_, i) =>
         run("node", [BOARD_CLI, "set", `T-${String(i + 1).padStart(3, "0")}`, "state=Running", `step=s${i}`], { env }),
@@ -75,9 +76,71 @@ describe("task status", () => {
     L.appendEvent({ task: "T-002", event: "tool", summary: "x" }, root);
     assert.deepEqual(L.staleTasks(root, 20).map((t) => t.id), []);
     assert.deepEqual(L.staleTasks(root, 20, later).map((t) => t.id), ["T-001", "T-002"]);
-    L.markStale(root, 20, later);
+    L.markStale(root, 20, later, { all: true });
     assert.equal(L.getTask("T-001", root).state, "Stalled");
     assert.equal(L.getTask("T-003", root).state, "Queued");
+  });
+
+  it("marks only the current branch's task unless all is set", () => {
+    execFileSync("git", ["init", "-q", "-b", "claude/feat-a"], { cwd: root });
+    L.upsertTask("T-001", { state: "Running", branch: "claude/feat-a" }, root);
+    L.upsertTask("T-002", { state: "Running", branch: "claude/feat-b" }, root);
+    const later = Date.now() + 30 * 60000;
+    assert.deepEqual(L.markStale(root, 20, later).map((t) => t.id), ["T-001"]);
+    assert.equal(L.getTask("T-002", root).state, "Running");
+  });
+
+  it("does not mark a task that changed state after the stale check", () => {
+    L.upsertTask("T-001", { state: "Done" }, root);
+    const later = Date.now() + 30 * 60000;
+    const res = L.updateTask("T-001", (cur) => (cur.state === "Running" ? { state: "Stalled" } : null), root, { create: false });
+    assert.equal(res.state, "Done");
+    assert.deepEqual(L.markStale(root, 20, later, { all: true }), []);
+  });
+
+  it("uses the recorded update time, not file mtimes", () => {
+    L.upsertTask("T-001", { state: "Running" }, root);
+    const file = path.join(root, ".agents", "tasks", "T-001", "status.json");
+    const old = new Date(Date.now() - 3 * 86400000);
+    const status = JSON.parse(fs.readFileSync(file, "utf8"));
+    status.updated = old.toISOString();
+    fs.writeFileSync(file, JSON.stringify(status));
+    // A fresh clone gives the file a new mtime; the task must still be stale.
+    assert.deepEqual(L.staleTasks(root).map((t) => t.id), ["T-001"]);
+  });
+
+  it("reclaims an orphaned lock instead of failing", () => {
+    L.upsertTask("T-001", { title: "a" }, root);
+    const lock = path.join(root, ".agents", "tasks", "T-001", "status.json.lock");
+    fs.mkdirSync(lock);
+    const old = new Date(Date.now() - 60000);
+    fs.utimesSync(lock, old, old);
+    const t0 = Date.now();
+    L.upsertTask("T-001", { title: "b" }, root);
+    assert.ok(Date.now() - t0 < 2000);
+    assert.equal(L.getTask("T-001", root).title, "b");
+    assert.ok(!fs.existsSync(lock));
+  });
+
+  it("skips a corrupt status file and names it", () => {
+    L.upsertTask("T-001", { title: "ok" }, root);
+    L.upsertTask("T-002", { title: "bad" }, root);
+    fs.writeFileSync(path.join(root, ".agents", "tasks", "T-002", "status.json"), "<<<<<<< HEAD\n{");
+    const errors = [];
+    const write = process.stderr.write;
+    process.stderr.write = (m) => errors.push(String(m));
+    try {
+      assert.deepEqual(L.listTasks(root).map((t) => t.id), ["T-001"]);
+    } finally {
+      process.stderr.write = write;
+    }
+    assert.match(errors.join(""), /T-002.*status\.json/);
+  });
+
+  it("rejects unknown fields, bad issue numbers and set on a missing task", () => {
+    assert.throws(() => L.upsertTask("T-001", { foo: "bar" }, root), /unknown field/);
+    assert.throws(() => L.upsertTask("T-001", { issue: "abc" }, root), /issue must be a number/);
+    assert.throws(() => L.upsertTask("T-099", { step: "x" }, root, { create: false }), /does not exist/);
   });
 
   it("builds the board view", () => {
@@ -112,6 +175,19 @@ describe("task folders", () => {
   it("rejects duplicates", () => {
     L.createTask({ id: "T-003", title: "x" }, root);
     assert.throws(() => L.createTask({ id: "T-003", title: "x" }, root), /already exists/);
+  });
+
+  it("ignores an invalid WA_TASK instead of guessing", () => {
+    execFileSync("git", ["init", "-q", "-b", "claude/feat-x"], { cwd: root });
+    L.upsertTask("T-005", { title: "y", branch: "claude/feat-x" }, root);
+    process.env.WA_TASK = "t-5";
+    const write = process.stderr.write;
+    process.stderr.write = () => true;
+    try {
+      assert.equal(L.currentTask(root), null);
+    } finally {
+      process.stderr.write = write;
+    }
   });
 
   it("resolves the current task from WA_TASK, then from the branch", () => {

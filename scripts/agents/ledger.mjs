@@ -22,7 +22,9 @@ export const TASK_ID = /^T-\d{3,}$/;
 export const NO_TASK = "T-000";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIELDS = { title: "", milestone: "", lane: "", agent: "", state: "Queued", step: "", branch: "", issue: null, needs: [] };
+export const FIELDS = { title: "", milestone: "", lane: "", agent: "", state: "Queued", step: "", branch: "", issue: null, needs: [], updated: null };
+const LOCK_STALE_MS = 3000;
+const LOCK_WAIT_MS = 8000;
 
 let cachedRoot = null;
 
@@ -69,11 +71,38 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-// A mkdir lock: atomic on every filesystem we care about. A lock older than
-// 10 seconds is treated as left over from a crashed process.
+function ageMs(p) {
+  try {
+    return Date.now() - fs.statSync(p).mtimeMs;
+  } catch {
+    return -1;
+  }
+}
+
+// Removes a lock left by a crashed process. Only one waiter may reclaim at a
+// time, and it re-checks the age inside, so it never removes a lock that a
+// live process took a moment ago.
+function reclaim(lock) {
+  const guard = lock + ".reclaim";
+  if (ageMs(guard) > 30000) fs.rmSync(guard, { recursive: true, force: true });
+  try {
+    fs.mkdirSync(guard);
+  } catch {
+    return;
+  }
+  try {
+    if (ageMs(lock) > LOCK_STALE_MS) fs.rmSync(lock, { recursive: true, force: true });
+  } finally {
+    fs.rmSync(guard, { recursive: true, force: true });
+  }
+}
+
+// A mkdir lock: atomic on every filesystem we care about. Holders keep it
+// for milliseconds, so a lock older than LOCK_STALE_MS is left over from a
+// crashed process.
 export function withLock(file, fn) {
   const lock = file + ".lock";
-  const deadline = Date.now() + 5000;
+  const deadline = Date.now() + LOCK_WAIT_MS;
   fs.mkdirSync(path.dirname(file), { recursive: true });
   for (;;) {
     try {
@@ -81,11 +110,9 @@ export function withLock(file, fn) {
       break;
     } catch (err) {
       if (err.code !== "EEXIST") throw err;
-      try {
-        if (Date.now() - fs.statSync(lock).mtimeMs > 10000) fs.rmSync(lock, { recursive: true, force: true });
-      } catch {}
-      if (Date.now() > deadline) throw new Error(`could not lock ${file}`);
-      sleep(15);
+      if (ageMs(lock) > LOCK_STALE_MS) reclaim(lock);
+      if (Date.now() > deadline) throw new Error(`could not lock ${file}. If no agent is running, remove ${lock}`);
+      sleep(10 + Math.floor(Math.random() * 20));
     }
   }
   try {
@@ -106,41 +133,81 @@ function statusFile(id, root) {
   return path.join(paths(root).tasks, assertTaskId(id), "status.json");
 }
 
+function readStatus(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (err) {
+    throw new Error(`cannot read ${file}: ${err.message}`);
+  }
+}
+
 export function getTask(id, root) {
   const file = statusFile(id, root);
   if (!fs.existsSync(file)) return null;
-  return { id, ...FIELDS, ...JSON.parse(fs.readFileSync(file, "utf8")), heartbeat: lastHeartbeat(id, root) };
+  const status = { id, ...FIELDS, ...readStatus(file) };
+  return { ...status, heartbeat: lastHeartbeat(id, root, status) };
 }
 
+// Skips a status file that cannot be read (for example one with merge
+// conflict markers) and says which one, so one bad file never hides the rest.
 export function listTasks(root) {
   const dir = paths(root).tasks;
   if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((d) => TASK_ID.test(d) && fs.existsSync(path.join(dir, d, "status.json")))
-    .sort(compareIds)
-    .map((id) => getTask(id, root));
+  const tasks = [];
+  for (const id of fs.readdirSync(dir).filter((d) => TASK_ID.test(d)).sort(compareIds)) {
+    try {
+      const t = getTask(id, root);
+      if (t) tasks.push(t);
+    } catch (err) {
+      process.stderr.write(`ledger: skipped ${id}: ${err.message}\n`);
+    }
+  }
+  return tasks;
 }
 
 export function compareIds(a, b) {
   return Number(a.slice(2)) - Number(b.slice(2));
 }
 
-export function upsertTask(id, patch, root) {
-  assertTaskId(id);
+function checkPatch(patch) {
+  for (const key of Object.keys(patch)) {
+    if (!(key in FIELDS)) throw new Error(`unknown field "${key}". Fields: ${Object.keys(FIELDS).join(", ")}`);
+  }
   if (patch.state && !STATES.includes(patch.state)) {
     throw new Error(`unknown state "${patch.state}". Use one of: ${STATES.join(", ")}`);
   }
+  if (patch.issue != null && !Number.isInteger(patch.issue)) throw new Error(`issue must be a number, got "${patch.issue}"`);
+  if (patch.needs && !Array.isArray(patch.needs)) throw new Error("needs must be a list");
+}
+
+// Applies change(current) under the task's lock. change returns a patch, or
+// null to leave the task alone. Returns the task, or null if it was left alone
+// and does not exist.
+export function updateTask(id, change, root, { create = true } = {}) {
   const file = statusFile(id, root);
   return withLock(file, () => {
-    const current = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { id, ...FIELDS };
-    const next = { ...FIELDS, ...current, ...patch, id };
-    delete next.heartbeat;
-    if (JSON.stringify(next) !== JSON.stringify(current)) {
-      writeAtomic(file, JSON.stringify(next, null, 2) + "\n");
-    }
-    return { ...next, heartbeat: lastHeartbeat(id, root) };
+    const exists = fs.existsSync(file);
+    if (!exists && !create) throw new Error(`${id} does not exist. Create it with: npm run board -- new ${id}`);
+    const current = exists ? readStatus(file) : { id, ...FIELDS };
+    const base = { ...FIELDS, ...current, id };
+    delete base.heartbeat;
+    const patch = change(base);
+    if (!patch) return exists ? { ...base, heartbeat: lastHeartbeat(id, root, base) } : null;
+    checkPatch(patch);
+    const { updated: _ignored, ...rest } = base;
+    const next = { ...base, ...patch, id };
+    const { updated: _ignored2, ...restNext } = next;
+    if (exists && JSON.stringify(restNext) === JSON.stringify(rest)) return { ...base, heartbeat: lastHeartbeat(id, root, base) };
+    next.updated = now();
+    writeAtomic(file, JSON.stringify(next, null, 2) + "\n");
+    return { ...next, heartbeat: lastHeartbeat(id, root, next) };
   });
+}
+
+export function upsertTask(id, patch, root, opts) {
+  assertTaskId(id);
+  checkPatch(patch);
+  return updateTask(id, () => patch, root, opts);
 }
 
 export function currentBranch(cwd = repoRoot()) {
@@ -157,8 +224,13 @@ export function currentBranch(cwd = repoRoot()) {
 
 // The active task is WA_TASK if set, else the task whose branch is checked out.
 export function currentTask(root = repoRoot()) {
-  if (process.env.WA_TASK && TASK_ID.test(process.env.WA_TASK)) {
-    return getTask(process.env.WA_TASK, root) ?? { id: process.env.WA_TASK, ...FIELDS, heartbeat: null };
+  const fromEnv = process.env.WA_TASK;
+  if (fromEnv) {
+    if (!TASK_ID.test(fromEnv)) {
+      process.stderr.write(`ledger: WA_TASK="${fromEnv}" is not a task id like T-001; ignoring it and logging to ${NO_TASK}\n`);
+      return null;
+    }
+    return getTask(fromEnv, root) ?? { id: fromEnv, ...FIELDS, heartbeat: null };
   }
   const branch = currentBranch(root);
   if (!branch) return null;
@@ -190,14 +262,14 @@ export function appendEvent(evt, root) {
   return line;
 }
 
-// The heartbeat is the latest write to the task's event log or status file.
-export function lastHeartbeat(taskId, root) {
-  let latest = 0;
-  for (const file of [eventFile(taskId, root), statusFile(taskId, root)]) {
-    try {
-      latest = Math.max(latest, fs.statSync(file).mtimeMs);
-    } catch {}
-  }
+// The heartbeat is the later of the last event written on this machine and
+// the task's recorded "updated" time. File mtimes are not used: a clone or
+// checkout resets them.
+export function lastHeartbeat(taskId, root, status) {
+  let latest = status?.updated ? Date.parse(status.updated) : 0;
+  try {
+    latest = Math.max(latest, fs.statSync(eventFile(taskId, root)).mtimeMs);
+  } catch {}
   return latest ? new Date(latest).toISOString().replace(/\.\d{3}Z$/, "Z") : null;
 }
 
@@ -223,10 +295,24 @@ export function staleTasks(root, minutes = STALE_MINUTES, at = Date.now()) {
   return listTasks(root).filter((t) => t.state === "Running" && minutesSince(t.heartbeat, at) > minutes);
 }
 
-export function markStale(root, minutes = STALE_MINUTES, at = Date.now()) {
-  const stale = staleTasks(root, minutes, at);
-  for (const t of stale) upsertTask(t.id, { state: "Stalled" }, root);
-  return stale;
+// Marks stale tasks as Stalled, re-checking each one under its lock. By
+// default only the task on the current branch is touched, so a check run on
+// one branch never edits another branch's status file. all: true is for the
+// planner or the server job.
+export function markStale(root, minutes = STALE_MINUTES, at = Date.now(), { all = false } = {}) {
+  const branch = all ? null : currentBranch(root ?? repoRoot());
+  const marked = [];
+  for (const t of staleTasks(root, minutes, at)) {
+    if (!all && (!branch || t.branch !== branch)) continue;
+    const res = updateTask(
+      t.id,
+      (cur) => (cur.state === "Running" && minutesSince(lastHeartbeat(t.id, root, cur), at) > minutes ? { state: "Stalled" } : null),
+      root,
+      { create: false },
+    );
+    if (res?.state === "Stalled") marked.push(res);
+  }
+  return marked;
 }
 
 // Writes the gitignored .agents/board.json view: one line per task.

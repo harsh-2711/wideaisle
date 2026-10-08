@@ -13,10 +13,12 @@ const HELP = `Usage: node scripts/agents/board.mjs <command>
   new <id> --title T --milestone M0 --lane repo [--branch B] [--goal G]
       [--exit "check"]... [--needs owner:Q-01]... [--decisions D-05]...
                                     Create .agents/tasks/<id>/ (repeat a flag for more values)
-  set <id> key=value ...            Update fields: state, step, agent, branch, issue, needs (comma list)
+  set <id> key=value ...            Update an existing task: state, step, agent, branch, issue, needs (comma list)
   event <id> <event> <summary>      Append an event to the task's log
   events <id> [n]                   Print the last n events (default 50)
-  stale [--minutes 20] [--mark]     List Running tasks with no heartbeat; --mark sets Stalled
+  stale [--minutes 20] [--mark] [--all]
+                                    List Running tasks with no heartbeat. --mark sets Stalled
+                                    on the current branch's task; add --all for every task
   digest [--hours 24]               Print the daily digest
 
 States: ${STATES.join(", ")}`;
@@ -61,7 +63,7 @@ function main(argv) {
         const val = p.slice(i + 1);
         patch[key] = key === "issue" ? Number(val) || val : key === "needs" ? val.split(",").filter(Boolean) : val;
       }
-      const t = upsertTask(id, patch);
+      const t = upsertTask(id, patch, undefined, { create: false });
       appendEvent({ task: id, event: "step", summary: `set ${pairs.join(" ")}` });
       console.log(`${t.id}: ${t.state}${t.step ? `, ${t.step}` : ""}`);
       return;
@@ -78,9 +80,9 @@ function main(argv) {
       return;
     }
     case "stale": {
-      const { values } = parseArgs({ args: rest, options: { minutes: { type: "string" }, mark: { type: "boolean" } } });
+      const { values } = parseArgs({ args: rest, options: { minutes: { type: "string" }, mark: { type: "boolean" }, all: { type: "boolean" } } });
       const minutes = Number(values.minutes ?? 20);
-      const list = values.mark ? markStale(undefined, minutes) : staleTasks(undefined, minutes);
+      const list = values.mark ? markStale(undefined, minutes, Date.now(), { all: values.all }) : staleTasks(undefined, minutes);
       for (const t of list) console.log(`${t.id} ${values.mark ? "marked Stalled" : "stale"}: last heartbeat ${t.heartbeat ?? "never"}`);
       return;
     }
