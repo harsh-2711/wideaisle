@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MODEL_PRICES, type ModelPrice } from "../../../app/lib/alt-text/config";
-import { costReport, requestCostUsd, sumUsage } from "../../../app/lib/alt-text/cost";
+import { costReport, estimateRun, requestCostUsd, sumUsage } from "../../../app/lib/alt-text/cost";
 import type { TokenUsage } from "../../../app/lib/alt-text/types";
 
 const u = (input: number, output: number, cacheWrite = 0, cacheRead = 0): TokenUsage => ({
@@ -72,6 +72,17 @@ describe("cost", () => {
     expect(r).toMatchObject({ priced: false, totalUsd: null, per1000DraftsUsd: null, per1000RequestsUsd: null });
     expect(r.priceStatus).toMatch(/no price for claude-unknown/);
     expect(r.tokens.requests).toBe(1);
+  });
+
+  it("estimates a run before sending, from prompt length and image tokens", () => {
+    // 1000 chars * 0.3 + 200 overhead + 361 image tokens = 861 input; 200 output guessed.
+    const est = estimateRun([1000, 1000], 361, "test-model", { "test-model": TEST_PRICE });
+    expect(est.inputTokensPerImage).toBe(861);
+    expect(est.outputTokensPerImage).toBe(200);
+    // (861*2 + 200*10) / 1e6 * 0.5 = 0.001861 each
+    expect(est.totalUsd).toBeCloseTo(0.003722, 9);
+    expect(est.per1000Usd).toBeCloseTo(1.861, 9);
+    expect(estimateRun([10], 64, "nope").totalUsd).toBeNull();
   });
 
   it("handles a run with no billed requests", () => {

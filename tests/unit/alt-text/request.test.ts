@@ -97,8 +97,8 @@ describe("batch requests", () => {
       source: { type: "url", url: "https://cdn.shopify.com/s/files/1/0001/files/shoe-2.jpg?v=1700000000&width=512" },
     });
     expect(text.type).toBe("text");
-    expect(text.text).toContain('"locale": "de-DE"');
-    expect(text.text).toContain('"current_alt": "Schuh"');
+    expect(text.text).toContain('"locale":"de-DE"');
+    expect(text.text).toContain('"current_alt":"Schuh"');
   });
 
   it("drops effort for models that reject it and honours custom limits", () => {

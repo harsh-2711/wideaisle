@@ -15,17 +15,18 @@ Running. Builder agent. Last updated 2026-10-08.
 | Step | Commit |
 |---|---|
 | 1. Branch, pinned `@anthropic-ai/sdk` 0.132.1 and `tsx` 4.23.15, `/data/` ignored | 8a04b59 |
-| 2. Batch client in `app/lib/alt-text/` and 48 unit tests with a mocked SDK client | (this commit) |
+| 2. Batch client in `app/lib/alt-text/` and 48 unit tests with a mocked SDK client | d5b0906 |
+| 3. CLI `scripts/alt-text/run.ts`, npm scripts `alt-text` and `alt-text:sheet`, pre-run estimate, CLI tests | (this commit) |
 
 ## Current step
 
-3: `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
+4: rating sheet script and doc.
 
 ## Next three steps
 
-1. `scripts/alt-text/run.ts` CLI and the `alt-text` npm script.
-2. Rating sheet: `scripts/alt-text/sheet.ts` and `docs/spikes/alt-text-rating-sheet.md`.
-3. Spike doc `docs/spikes/spike-c-alt-text.md`, then all checks and state "In review".
+1. Rating sheet: `app/lib/alt-text/sheet.ts`, `scripts/alt-text/sheet.ts`, `docs/spikes/alt-text-rating-sheet.md`.
+2. Spike doc `docs/spikes/spike-c-alt-text.md`.
+3. All checks (lint, tsc, test, handoff, writing, claims), then state "In review".
 
 ## Blockers and open questions
 
@@ -41,12 +42,15 @@ D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (
 - package.json, package-lock.json (two pinned dependencies)
 - .gitignore (`/data/`)
 - app/lib/alt-text/: config, types, prompt, request, parse, cost, state, runner, index
-- tests/unit/alt-text/: mock-client.ts plus request, parse, cost and runner tests
+- tests/unit/alt-text/: mock-client.ts plus request, parse, cost, runner and cli tests
+- scripts/alt-text/run.ts
 
 ## How to verify
 
 - `npm ci --ignore-scripts && npm ls @anthropic-ai/sdk tsx`
 - `npx vitest run tests/unit/alt-text` (no network, no API key)
+- `npm run alt-text -- --input <products.jsonl> --dry-run` prints the first request and an estimate
+- `npm run alt-text -- --input <products.jsonl> --yes` without a key exits 1 and names ANTHROPIC_API_KEY
 
 ## Lessons and gotchas
 

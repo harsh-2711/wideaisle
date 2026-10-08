@@ -6,6 +6,8 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "alt-text": "tsx scripts/alt-text/run.ts",
+    "alt-text:sheet": "tsx scripts/alt-text/sheet.ts",
     "board": "node scripts/agents/board.mjs",
     "build": "react-router build",
     "commitlint": "commitlint",

@@ -46,7 +46,7 @@ function clip(text: string | undefined): string {
  * <product_data> block or open a new tag. JSON.parse still reads it.
  */
 export function escapeForBlock(value: unknown): string {
-  return JSON.stringify(value, null, 2)
+  return JSON.stringify(value)
     .replace(/</g, "\\u003c")
     .replace(/>/g, "\\u003e")
     .replace(/&/g, "\\u0026");
