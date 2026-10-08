@@ -1,6 +1,7 @@
 // A crawler that behaves: it reads robots.txt before anything else, keeps a
 // gap between requests to the same host, names itself and a contact in its
 // user agent, and never logs in.
+import { assertPublicHost, BlockedAddressError, systemLookup, type Lookup } from "./netguard";
 import { parseRobots, type Robots } from "./robots";
 
 export interface PoliteOptions {
@@ -11,6 +12,9 @@ export interface PoliteOptions {
   fetchImpl?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  lookup?: Lookup;
+  // Only for tests against a local server.
+  allowPrivate?: boolean;
 }
 
 export interface PoliteResponse {
@@ -34,6 +38,8 @@ export class PoliteClient {
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly lookup: Lookup;
+  readonly allowPrivate: boolean;
   private robots = new Map<string, Promise<Robots>>();
   private nextSlot = new Map<string, number>();
 
@@ -44,18 +50,38 @@ export class PoliteClient {
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.now = opts.now ?? Date.now;
     this.sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+    this.lookup = opts.lookup ?? systemLookup;
+    this.allowPrivate = opts.allowPrivate ?? false;
   }
 
+  // Throws BlockedAddressError for anything but public http(s) hosts.
+  async checkUrl(url: string): Promise<void> {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") throw new BlockedAddressError(`${u.protocol} is not crawled`);
+    if (!this.allowPrivate) await assertPublicHost(u.hostname, this.lookup);
+  }
+
+  // Follows redirects one hop at a time, checking every hop's address.
   private async rawGet(url: string): Promise<PoliteResponse> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.timeout);
     try {
-      const res = await this.fetchImpl(url, {
-        headers: { "user-agent": this.userAgent, accept: "text/html,*/*;q=0.8" },
-        redirect: "follow",
-        signal: ctrl.signal,
-      });
-      return { url: res.url || url, status: res.status, text: await res.text(), contentType: res.headers.get("content-type") ?? "" };
+      let current = url;
+      for (let hop = 0; hop <= 5; hop++) {
+        await this.checkUrl(current);
+        const res = await this.fetchImpl(current, {
+          headers: { "user-agent": this.userAgent, accept: "text/html,*/*;q=0.8" },
+          redirect: "manual",
+          signal: ctrl.signal,
+        });
+        const location = res.headers.get("location");
+        if (res.status >= 300 && res.status < 400 && location) {
+          current = new URL(location, current).href;
+          continue;
+        }
+        return { url: current, status: res.status, text: await res.text(), contentType: res.headers.get("content-type") ?? "" };
+      }
+      throw new Error("too many redirects");
     } finally {
       clearTimeout(timer);
     }
@@ -92,6 +118,7 @@ export class PoliteClient {
 
   async canVisit(url: string): Promise<boolean> {
     const u = new URL(url);
+    await this.checkUrl(url);
     const robots = await this.robotsFor(u.origin);
     return robots.isAllowed(u.pathname + u.search);
   }
@@ -99,6 +126,7 @@ export class PoliteClient {
   // Fetches a page if robots.txt allows it; null when it does not.
   async get(url: string): Promise<PoliteResponse | null> {
     const u = new URL(url);
+    await this.checkUrl(url);
     const robots = await this.robotsFor(u.origin);
     if (!robots.isAllowed(u.pathname + u.search)) return null;
     await this.waitTurn(u.origin, (robots.crawlDelaySeconds ?? 0) * 1000);

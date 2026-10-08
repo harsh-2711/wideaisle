@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { detectStore, sampleLinks } from "../../../app/lib/scanner/detect";
+import { isPublicAddress, sameSite } from "../../../app/lib/scanner/netguard";
 import { PoliteClient, userAgentFor } from "../../../app/lib/scanner/polite";
+
+const publicLookup = async () => ["93.184.216.34"];
 import { parseRobots } from "../../../app/lib/scanner/robots";
 import { parseDomains } from "../../../scripts/census/census";
 
@@ -83,7 +86,7 @@ describe("polite client", () => {
       const body = url.endsWith("/robots.txt") ? "User-agent: *\nDisallow: /cart\nCrawl-delay: 3" : "<html></html>";
       return new Response(body, { status: 200 });
     }) as unknown as typeof fetch;
-    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 1000, fetchImpl, now: () => clock, sleep: async (ms) => void (clock += ms) });
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 1000, fetchImpl, now: () => clock, sleep: async (ms) => void (clock += ms), lookup: publicLookup });
     expect(await client.get("https://s.example/cart")).toBeNull();
     await client.get("https://s.example/");
     await client.get("https://s.example/products/x");
@@ -98,10 +101,40 @@ describe("polite client", () => {
       new PoliteClient({
         contact: "a@b.co",
         minDelayMs: 0,
+        lookup: publicLookup,
         fetchImpl: (async (url: string) => new Response(url.endsWith("robots.txt") ? "x" : "<html></html>", { status: url.endsWith("robots.txt") ? status : 200 })) as unknown as typeof fetch,
       });
     expect(await make(503).get("https://s.example/")).toBeNull();
     expect(await make(404).get("https://s.example/")).not.toBeNull();
+  });
+});
+
+describe("network guard", () => {
+  it("knows public from private addresses", () => {
+    for (const ip of ["127.0.0.1", "10.1.2.3", "172.20.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "fe80::1", "::ffff:10.0.0.1"]) {
+      expect(isPublicAddress(ip), ip).toBe(false);
+    }
+    for (const ip of ["93.184.216.34", "23.227.38.65", "2606:4700::6810:84e5"]) expect(isPublicAddress(ip), ip).toBe(true);
+  });
+
+  it("refuses hosts that resolve to private addresses, and redirects to them", async () => {
+    const lookup = async (h: string) => (h === "evil.example" ? ["169.254.169.254"] : ["93.184.216.34"]);
+    const fetchImpl = (async (url: string) =>
+      url.endsWith("robots.txt")
+        ? new Response("", { status: 404 })
+        : new Response("", { status: 302, headers: { location: "http://evil.example/latest/meta-data" } })) as unknown as typeof fetch;
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 0, fetchImpl, lookup });
+    await expect(client.get("https://store.example/")).rejects.toThrow(/non-public/);
+    await expect(new PoliteClient({ contact: "a@b.co", lookup }).get("http://evil.example/")).rejects.toThrow(/non-public/);
+    await expect(client.get("http://127.0.0.1/")).rejects.toThrow(/non-public/);
+  });
+
+  it("treats www, subdomains and myshopify.com as the same store", () => {
+    expect(sameSite("example.com", "www.example.com")).toBe(true);
+    expect(sameSite("www.example.com", "example.com")).toBe(true);
+    expect(sameSite("example.com", "shop.example.com")).toBe(true);
+    expect(sameSite("example.com", "example.myshopify.com")).toBe(true);
+    expect(sameSite("example.com", "evil.com")).toBe(false);
   });
 });
 

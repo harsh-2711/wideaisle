@@ -33,7 +33,7 @@ test("the census finds the store, respects robots.txt and scans the sampled page
   const port = (server.address() as { port: number }).port;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-census-"));
   try {
-    const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 50 });
+    const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 50, allowPrivate: true });
     const storesFile = path.join(dir, "stores.jsonl");
     await discover([`127.0.0.1:${port}`], storesFile, client, { scheme: "http" });
     const stores = fs.readFileSync(storesFile, "utf8").trim().split("\n").map((l) => JSON.parse(l) as StoreRecord);
