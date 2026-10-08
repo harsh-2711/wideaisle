@@ -291,6 +291,39 @@ describe("handoff lint", () => {
       assert.deepEqual(L.lintHandoff(handoff({ body: notStarted }), state), []);
     }
   });
+
+  it("lint-handoff checks one task or every task that is not Done", async () => {
+    const env = { ...process.env, WA_ROOT: root };
+    const write = (id, state, text) => {
+      L.upsertTask(id, { title: id, state }, root);
+      if (text != null) fs.writeFileSync(path.join(root, ".agents", "tasks", id, "HANDOFF.md"), text);
+    };
+    write("T-001", "Running", handoff());
+    write("T-002", "Running", handoff({ body: { "Current step": "Not started." } }));
+    write("T-003", "Done", handoff({ omit: ["How to verify"] }));
+    write("T-004", "Queued", null);
+    const fails = async (args, extra = {}) => {
+      const err = await run("node", [BOARD_CLI, "lint-handoff", ...args], { env: { ...env, ...extra } }).then(() => null, (e) => e);
+      assert.ok(err, `expected lint-handoff ${args.join(" ")} to exit 1`);
+      assert.equal(err.code, 1);
+      return err;
+    };
+
+    const all = await fails(["--all"]);
+    assert.deepEqual(all.stdout.trim().split("\n"), [
+      "T-002: state is Running but the current step says Not started",
+      "T-004: no HANDOFF.md",
+    ]);
+    const { stdout } = await run("node", [BOARD_CLI, "lint-handoff", "T-001"], { env });
+    assert.match(stdout, /1 handoff ok/);
+    // An explicit id is checked even when the task is Done.
+    assert.equal((await fails(["T-003"])).stdout.trim(), "T-003: missing section: How to verify");
+    // No id: the current task, from WA_TASK or the branch.
+    assert.equal((await fails([], { WA_TASK: "T-002" })).stdout.trim(), "T-002: state is Running but the current step says Not started");
+    assert.match((await fails([])).stderr, /no current task/);
+    assert.match((await fails(["--all", "T-001"])).stderr, /one task id, or --all/);
+    assert.match((await fails(["T-099"])).stderr, /T-099 does not exist/);
+  });
 });
 
 describe("planSync", () => {

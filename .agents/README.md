@@ -41,9 +41,13 @@ npm run board -- event T-010 step "crawler respects robots.txt"
 npm run board -- stale --mark
 npm run board -- digest
 npm run board -- build      # writes .agents/board.json
+npm run board -- lint-handoff T-010
+npm run board -- lint-handoff --all
 ```
 
 `set` also logs a step event, so the heartbeat moves with it. Repeat a flag to pass more than one value: `--exit "a" --exit "b"`.
+
+`lint-handoff` checks that a HANDOFF.md is enough for a fresh agent to resume: every section is there, no "(fill in)" is left, and a Running, In review or Stalled task names its current step and at least one commit. With no id it checks the current task. `--all` checks every task that is not Done. It prints `<id>: <problem>` lines and exits 1 if there are any.
 
 ## Status board (D-19)
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Board CLI for the run ledger. Run `node scripts/agents/board.mjs help`.
+import fs from "node:fs";
+import path from "node:path";
 import { parseArgs } from "node:util";
 import {
-  appendEvent, buildBoard, createTask, digest, lastEvents, listTasks,
-  markStale, staleTasks, STATES, upsertTask,
+  appendEvent, buildBoard, createTask, currentTask, digest, getTask, lastEvents, lintHandoff, listTasks,
+  markStale, paths, staleTasks, STATES, upsertTask,
 } from "./ledger.mjs";
 
 const HELP = `Usage: node scripts/agents/board.mjs <command>
@@ -20,8 +22,18 @@ const HELP = `Usage: node scripts/agents/board.mjs <command>
                                     List Running tasks with no heartbeat. --mark sets Stalled
                                     on the current branch's task; add --all for every task
   digest [--hours 24]               Print the daily digest
+  lint-handoff [<id> | --all]       Check that a HANDOFF.md is enough to resume, against the
+                                    task's state. No id: the current task. --all: every task
+                                    that is not Done. Prints <id>: <problem> lines, exits 1 if any
 
 States: ${STATES.join(", ")}`;
+
+// Returns "<id>: <problem>" lines for one task's HANDOFF.md.
+function lintTask(t) {
+  const file = path.join(paths().tasks, t.id, "HANDOFF.md");
+  if (!fs.existsSync(file)) return [`${t.id}: no HANDOFF.md`];
+  return lintHandoff(fs.readFileSync(file, "utf8"), t.state).map((p) => `${t.id}: ${p}`);
+}
 
 function main(argv) {
   const [cmd, ...rest] = argv;
@@ -89,6 +101,27 @@ function main(argv) {
     case "digest": {
       const { values } = parseArgs({ args: rest, options: { hours: { type: "string" } } });
       console.log(digest(undefined, Number(values.hours ?? 24)));
+      return;
+    }
+    case "lint-handoff": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { all: { type: "boolean" } } });
+      if (positionals.length > 1 || (values.all && positionals.length)) throw new Error("lint-handoff takes one task id, or --all");
+      let tasks;
+      if (values.all) {
+        tasks = listTasks().filter((t) => t.state !== "Done");
+      } else if (positionals.length) {
+        const t = getTask(positionals[0]);
+        if (!t) throw new Error(`${positionals[0]} does not exist`);
+        tasks = [t];
+      } else {
+        const t = currentTask();
+        if (!t) throw new Error("no current task: pass a task id or --all, or set WA_TASK");
+        tasks = [t];
+      }
+      const problems = tasks.flatMap(lintTask);
+      for (const p of problems) console.log(p);
+      if (problems.length) process.exitCode = 1;
+      else console.log(`${tasks.length} handoff${tasks.length === 1 ? "" : "s"} ok`);
       return;
     }
     case undefined:
