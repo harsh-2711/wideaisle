@@ -497,7 +497,7 @@ The pain is settled; what we still need are our own numbers on themes, fixabilit
 - More than 5,000 US digital accessibility suits were filed in 2025, and about 70% targeted ecommerce ([Fudge](https://www.fudge.ai/blog/ada-website-compliance/)).
 - Shopify home pages average 75.1 detected errors, 33.9% worse than the average site ([WebAIM Million 2026](https://webaim.org/projects/million/)).
 - Six failure types make up 96% of detected errors, and they have barely changed in seven years (same source).
-- Overlay widgets do not change the underlying code, and the FTC fined the largest overlay vendor $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
+- Overlay widgets do not change the underlying code, and the FTC ordered the largest overlay vendor to pay $1M over its compliance claims ([Wawsome](https://www.wawsome.com/blog/web-accessibility-tools-6-solutions-compared-for-eaa-and-wcag)).
 - Only three Shopify apps change code (Patrol, TestParty, Adafix), priced from $29 to $599 a month ([Fudge](https://www.fudge.ai/blog/best-shopify-accessibility-apps/), [Adafix](https://pickyourapp.com/products/adafix-app)).
 
 **Open questions and how the agents answer them.**
@@ -652,7 +652,7 @@ Pilots get a founding price, for example 50% off for 12 months.
 1. Design partners (weeks 3 to 7): stores on supported themes, picked from the census, get a free personalised report. You approve each batch; the goal is 10 paying pilots.
 2. Agencies (from week 4): Shopify agencies that build on supported themes get the agency plan, white-label reports and a referral share you decide.
 3. Shopify App Store (from launch): a listing tuned for accessibility, ADA, WCAG, EAA and alt-text searches, early reviews from pilots, fast support. The Built for Shopify badge comes later.
-4. Content and free tools (from week 6): a fix guide per supported theme, an accessibility-statement generator, a contrast checker for Shopify palettes, an alt-text audit, and a monthly post on lawsuit trends from public data.
+4. Content and free tools (from week 6): a fix guide per supported theme, an accessibility-statement generator, a contrast checker for Shopify palettes, an alt-text checker, and a monthly post on lawsuit trends from public data.
 5. Communities: genuinely helpful answers in r/shopify and the Shopify Community, never spam.
 6. Theme developers (M8): offer our fixes upstream and co-market with theme makers.
 

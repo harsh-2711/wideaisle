@@ -4,30 +4,33 @@ Update after every step, before compaction, before stopping and before handing o
 
 ## Goal and exit criteria
 
-See TASK.md. US suits and demand letters, EAA and statements, overlays and the FTC order, Title II. Ends with questions for a lawyer.
+See TASK.md. A brief on US suits, the EAA, overlays and the FTC order, and ADA Title II, with questions for a lawyer.
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Legal brief | a8d0f30 |
+| Reviewer fixes: EN 301 549 V3.2.1 as de facto benchmark, NFB suit against the Title II extension, non-EU sellers pending lawyer question 15, FTC disclosure row and narrower question 2 | docs(research): fix review findings in the briefs, quiz and claims policy |
 
 ## Current step
 
-Not started.
+Pull request re-review after the reviewer fixes, then merge.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After merge, set the state to Done.
+2. The owner reads it (Q-20).
+3. Open the FTC's final order and the NFB case docket (D. Md., 1:26-cv-02007) when Q-01 allows; the brief cites both through search.
 
 ## Blockers and open questions
 
-- None yet.
+- None for agents. Q-20 is the owner's reading.
+- The cloud environment blocks most sites (Q-01). Sources marked "via search, not opened" were read through search results only.
 
 ## Decisions used
 
@@ -35,12 +38,13 @@ D-06, D-14
 
 ## Files touched
 
-- None yet.
+- docs/research/legal-brief.md
+- decisions/D-06.md, docs/plan/roadmap.md: FTC wording
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- Open docs/research/legal-brief.md. Rows marked "via search, not opened" still need a direct read.
 
 ## Lessons and gotchas
 
-- None yet.
+- Mark every source as opened or via search, with the date checked.
