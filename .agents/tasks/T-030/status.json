@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "delivery",
   "agent": "builder",
-  "state": "Running",
-  "step": "Read docs, design patch shape",
+  "state": "In review",
+  "step": "Adapters, tests and spike doc done; live run waits on Q-03",
   "branch": "claude/feat-delivery-adapters",
   "issue": 26,
   "needs": [],
-  "updated": "2026-10-08T06:53:54Z",
+  "updated": "2026-10-08T11:49:16Z",
   "id": "T-030"
 }

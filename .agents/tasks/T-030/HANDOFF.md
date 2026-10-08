@@ -8,7 +8,12 @@ See TASK.md. Duplicate a theme and write files through the Admin API; the GitHub
 
 ## Status
 
-Running. Last updated 2026-10-08. All three adapters done; spike doc next.
+In review. Last updated 2026-10-08. Agent-only part done: three adapters, 52 offline tests,
+spike doc. Exit criteria 1 and 2 pass. Criteria 3 (live run) waits on Q-03 and 4 (exemption)
+on Q-27.
+
+The Admin API adapter can write to a live theme once something calls it. Under AGENTS.md
+that makes this pull request one the owner merges.
 
 ## Done so far
 
@@ -18,18 +23,22 @@ Running. Last updated 2026-10-08. All three adapters done; spike doc next.
 | Shared types, validation, limits, retry helpers; patched-theme zip adapter and tests | f8ced04 |
 | Admin API client and adapter, 24 recorded GraphQL fixtures, 20 tests | 07b4d9e |
 | GitHub pull request adapter, 24 recorded REST fixtures, 14 tests | f57148b |
-| docs/spikes/spike-a-delivery.md | this commit |
+| docs/spikes/spike-a-delivery.md | 86c801b |
+| Final checks pass; board set to In review | this commit |
 
 ## Current step
 
-Final checks, then In review.
+Waiting for review and for Q-03.
 
 ## Next three steps
 
-1. Final checks: lint, tsc, npm test, checks.mjs handoff, writing, claims.
-2. Set the board to In review and report to the parent.
-3. After Q-03: run preview, apply and revert on the dev store from a custom-distribution app
-   (steps in the spike doc, section "Q-27"), and replace the fixtures with captures.
+1. After Q-03: install a custom-distribution app (read_themes, write_themes, read_files,
+   write_files) on the dev store and run preview, apply and revert on Dawn with a one-line
+   patch. This answers whether the exemption is needed for custom distribution.
+2. Replace the hand-written fixtures with captured responses; check the items listed under
+   "What still needs a live dev store" in the spike doc.
+3. Tell T-032 (Spike C) that alt text needs write_files, not write_products, and fix the
+   comment in shopify.app.toml there.
 
 ## Blockers and open questions
 
@@ -50,6 +59,7 @@ D-09
 - package.json, package-lock.json (fflate 0.8.2, pinned exactly)
 - app/lib/delivery/: types.ts, errors.ts, limits.ts, patch.ts, http.ts, theme-file.ts,
   shopify-admin.ts, admin-api.ts, github.ts
+- docs/spikes/spike-a-delivery.md
 - tests/unit/delivery/: helpers.ts, theme-data.ts, patch.test.ts, theme-file.test.ts,
   admin-api.test.ts, github.test.ts
 - tests/fixtures/shopify/ and tests/fixtures/github/ (hand-written responses; each README
@@ -57,7 +67,11 @@ D-09
 
 ## How to verify
 
-- `npx vitest run tests/unit/delivery` (offline; no credentials)
+- `npx vitest run tests/unit/delivery` (offline; no credentials; 52 tests)
+- `npm run lint`, `npx tsc --noEmit`, `npm test` (62 vitest pass, 3 db tests skip without
+  Postgres; 299 agent tests pass)
+- `node scripts/ci/checks.mjs handoff --base origin/main --branch claude/feat-delivery-adapters`,
+  then `writing` and `claims` with `--base origin/main`: all ok on 2026-10-08
 - GraphQL documents were checked against the 2026-10 schema with graphql-js `validate`:
   `npm pack @shopify/dev-mcp@1.16.0`, unpack `dist/data/admin_2026-10.json.gz`, then
   `buildClientSchema` on it and `validate` each string in `ADMIN_QUERIES`. All 10 passed.
