@@ -1,0 +1,47 @@
+{
+  "data": {
+    "theme": {
+      "id": "gid://shopify/OnlineStoreTheme/111111111",
+      "files": {
+        "nodes": [
+          {
+            "filename": "assets/base.css",
+            "checksumMd5": "ac86c2327fade62854a7c234fef0f414",
+            "size": "50",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyText",
+              "content": ".button { color: #595959; background: #ffffff; }\r\n"
+            }
+          },
+          {
+            "filename": "sections/header.liquid",
+            "checksumMd5": "ebcbadc2a8dea96b7be768d23e8a3dd2",
+            "size": "127",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyText",
+              "content": "<a href=\"{{ routes.cart_url }}\" class=\"header__icon\" aria-label=\"{{ 'templates.cart.cart' | t }}\">{% render 'icon-cart' %}</a>\n"
+            }
+          },
+          {
+            "filename": "snippets/wa-visually-hidden.liquid",
+            "checksumMd5": "76789ef6d707c8bd5269a46868f6b086",
+            "size": "104",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyText",
+              "content": "{%- comment -%} Added by Wide Aisle {%- endcomment -%}\n<span class=\"visually-hidden\">{{ label }}</span>\n"
+            }
+          }
+        ],
+        "userErrors": [],
+        "pageInfo": { "hasNextPage": false, "endCursor": null }
+      }
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 6,
+      "actualQueryCost": 6,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1988, "restoreRate": 100.0 }
+    }
+  }
+}

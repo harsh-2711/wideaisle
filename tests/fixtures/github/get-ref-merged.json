@@ -1,0 +1,10 @@
+{
+  "ref": "refs/heads/main",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9tYWlu",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/refs/heads/main",
+  "object": {
+    "type": "commit",
+    "sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
+    "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/commits/e5bd3914e2e596debea16f433f57875b5b90bcd6"
+  }
+}

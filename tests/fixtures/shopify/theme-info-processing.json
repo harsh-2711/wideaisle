@@ -1,0 +1,18 @@
+{
+  "data": {
+    "theme": {
+      "id": "gid://shopify/OnlineStoreTheme/222222222",
+      "name": "Wide Aisle preview p-001",
+      "role": "UNPUBLISHED",
+      "processing": true,
+      "processingFailed": false
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 1,
+      "actualQueryCost": 1,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1983, "restoreRate": 100.0 }
+    }
+  }
+}

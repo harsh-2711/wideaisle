@@ -1,0 +1,23 @@
+{
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/pulls/42",
+  "id": 1834526201,
+  "node_id": "PR_kwDOAbCdEf5tWnX5",
+  "html_url": "https://github.com/acme-agency/acme-dawn-theme/pull/42",
+  "number": 42,
+  "state": "closed",
+  "locked": false,
+  "title": "Name the cart link and raise button contrast",
+  "user": { "login": "wide-aisle[bot]", "id": 190000001, "type": "Bot" },
+  "body": "Wide Aisle patch p-001.",
+  "created_at": "2026-10-08T12:00:01Z",
+  "updated_at": "2026-10-08T15:00:00Z",
+  "closed_at": "2026-10-08T15:00:00Z",
+  "merged_at": "2026-10-08T15:00:00Z",
+  "merge_commit_sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
+  "draft": false,
+  "head": { "label": "acme-agency:wide-aisle/p-001-abc123", "ref": "wide-aisle/p-001-abc123", "sha": "7638417db6d59f3c431d3e1f261cc637155684cd" },
+  "base": { "label": "acme-agency:main", "ref": "main", "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e" },
+  "merged": true,
+  "mergeable": null,
+  "merged_by": { "login": "acme-dev", "id": 5551234, "type": "User" }
+}

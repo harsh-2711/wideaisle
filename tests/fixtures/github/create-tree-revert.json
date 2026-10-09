@@ -1,0 +1,12 @@
+{
+  "sha": "4d5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f8",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/4d5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f8",
+  "tree": [
+    { "path": "assets", "mode": "040000", "type": "tree", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" },
+    { "path": "config", "mode": "040000", "type": "tree", "sha": "b2c3d4e5f60718293a4b5c6d7e8f901234567890", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/b2c3d4e5f60718293a4b5c6d7e8f901234567890" },
+    { "path": "layout", "mode": "040000", "type": "tree", "sha": "c3d4e5f60718293a4b5c6d7e8f9012345678901a", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/c3d4e5f60718293a4b5c6d7e8f9012345678901a" },
+    { "path": "locales", "mode": "040000", "type": "tree", "sha": "d4e5f60718293a4b5c6d7e8f9012345678901a2b", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/d4e5f60718293a4b5c6d7e8f9012345678901a2b" },
+    { "path": "sections", "mode": "040000", "type": "tree", "sha": "e5f60718293a4b5c6d7e8f9012345678901a2b3c", "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/e5f60718293a4b5c6d7e8f9012345678901a2b3c" }
+  ],
+  "truncated": false
+}
