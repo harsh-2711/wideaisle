@@ -8,7 +8,7 @@ See TASK.md. Rule-based Liquid and CSS patches for the six failure types on Dawn
 
 ## Status
 
-Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed; back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-08.
+Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed; back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-09.
 
 ## Done so far
 
@@ -23,6 +23,7 @@ Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed
 | Review 3 to 5: contrast at Dawn's text opacity, one colour per key, exact JSON paths | e318ca8 |
 | Review 11, 16: Dawn excerpt tests, revert refuses edited files, spike doc | ac725af |
 | Re-review A to E: quote check, Dawn opacity only for Dawn-family themes, split tags, home-link alt, Liquid attribute names | 6b19058 |
+| Merge main (PR showed conflicted, so CI could not run); package.json keeps both scripts | b139d45 |
 
 ## Current step
 
@@ -70,4 +71,5 @@ PW_CHROMIUM_PATH=/path/to/chrome npx playwright test tests/a11y/fixers.spec.ts
 - The opacity table applies only when contextFor finds rgba(var(--color-foreground), 0.75) in layout/theme.liquid or assets/base.css (ctx.dawnTextOpacity). Unit tests of Dawn behaviour pass that flag.
 - A Liquid part that holds both quote kinds is never copied: attrSafe would turn " into ' and break it.
 - revertFixes returns { theme, refused }: a file edited since the fix is not reverted.
+- A conflicted PR gets no CI run. Check mergeable_state after pushing.
 - loadTheme reads theme folders only. Walking .git failed in CI when git removed a lock file mid-walk.
