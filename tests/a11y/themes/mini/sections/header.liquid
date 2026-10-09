@@ -1,0 +1,9 @@
+<header class="site-header">
+  <a href="/" class="site-header__logo"><img src="{{ 'logo.png' | asset_url }}" alt="" width="120" height="40"></a>
+  <button class="header__menu-toggle" type="button">{% render 'icon-hamburger' %}</button>
+  <a href="{{ routes.search_url }}" class="site-header__icon">{% render 'icon-search' %}</a>
+  <a href="{{ routes.cart_url }}" class="site-header__icon">{% render 'icon-cart' %}</a>
+  <div class="drawer">
+    <button class="drawer__close" type="button">{% render 'icon-close' %}</button>
+  </div>
+</header>

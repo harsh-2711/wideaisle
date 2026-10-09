@@ -37,6 +37,7 @@ These need you once agents finish their part. Agents will move each one to Open 
 | Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |
 | Q-29 | Gate G1 review | 30 min | M4 and M5 | M1 to M3 exits |
 | Q-30 | Pick for D-13: B (expert every release) or D (AI checks every release, expert at G2, G3, then quarterly). Agents recommend D. D costs about the same as B or more for the first 12 releases ($1,650 to $6,150 against $1,200 to $3,600) but covers all five themes; see decisions/D-13.md | 10 min | M4 test harness lane, G2 | D-13 research merged |
+| Q-33 | Approve the alt-text model for Spike C: the latest Haiku (claude-haiku-5-5, batch about a tenth of Haiku 4.5's price) in place of the Haiku 4.5 that D-11 names. Haiku 4.5 (claude-haiku-4-5-20251001) retires not sooner than October 15, 2026; Haiku 5.5 not sooner than October 7, 2027 (Anthropic deprecations page, read 2026-10-08). | 5 min | M3 Spike C real run | After Q-04 |
 
 ## Domains the agents need (for Q-01)
 

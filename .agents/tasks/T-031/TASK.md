@@ -12,14 +12,14 @@
 
 ## Goal
 
-Rule-based Liquid and CSS patches for the six failure types on Dawn, checked by axe before and after, with Theme Check passing.
+Rule-based Liquid and CSS patches for the six failure types on Dawn, checked by axe before and after, with no new Theme Check offenses.
 
 ## Exit criteria
 
 Each one is a test or a check someone can run.
 
 - [ ] Each fixer has unit tests on Dawn source
-- [ ] Theme Check passes on the patched theme
+- [ ] Theme Check: no new offenses on the patched theme (no check has more offenses after than before)
 - [ ] Rendered fixtures: zero axe findings of the six types after
 - [ ] Live golden-store scan (needs Q-03)
 

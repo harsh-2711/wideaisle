@@ -6,6 +6,8 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "alt-text": "tsx scripts/alt-text/run.ts",
+    "alt-text:sheet": "tsx scripts/alt-text/sheet.ts",
     "board": "node scripts/agents/board.mjs",
     "build": "react-router build",
     "commitlint": "commitlint",
@@ -28,12 +30,14 @@
     "test": "npm run test:unit && npm run test:agents",
     "test:a11y": "playwright test",
     "test:agents": "node --test 'scripts/agents/*.test.mjs' 'scripts/ci/*.test.mjs' '.claude/hooks/*.test.mjs'",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run tests/unit app",
     "typecheck": "react-router typegen && tsc --noEmit",
     "vite": "vite",
+    "test:integration": "vitest run tests/integration",
     "census": "tsx scripts/census/census.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.132.1",
     "@axe-core/playwright": "^4.13.0",
     "@react-router/dev": "7.18.2",
     "@react-router/fs-routes": "7.18.2",
@@ -60,6 +64,7 @@
     "@shopify/api-codegen-preset": "^2.0.0",
     "@shopify/polaris-types": "1.0.1",
     "@shopify/shopify-api": "^15.0.0",
+    "@shopify/theme-check-node": "^3.30.1",
     "@types/eslint": "^9.6.1",
     "@types/node": "^25.5.2",
     "@types/pg": "^8.15.6",
@@ -76,6 +81,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "graphql-config": "^5.1.1",
     "husky": "^9.1.7",
+    "liquidjs": "^10.30.0",
     "prettier": "^3.6.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
