@@ -164,12 +164,21 @@ export function sameUrl(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function openScanContext(browser: Browser, client: PoliteClient, domain: string): Promise<ScanContext> {
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
   // The one main-frame navigation the scan asked for, where it redirected,
   // and a signal for a redirect that arrives while the page is loading.
-  const nav: { expected: string | null; redirect: string | null; loading: boolean; signal: () => void } = {
+  const nav: { expected: string | null; current: string | null; redirect: string | null; loading: boolean; signal: () => void } = {
     expected: null,
+    current: null,
     redirect: null,
     loading: false,
     signal: () => {},
@@ -194,7 +203,14 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
       if (!nav.expected || !sameUrl(url, nav.expected) || !sameSite(domain, new URL(url).host)) {
         // A page script navigating while the page loads would stop the load
         // event; treat it as a redirect, which goto vets like any other hop.
-        if (nav.loading && !nav.redirect && sameSite(domain, new URL(url).host)) {
+        // Only the page being loaded may redirect this way: the window opens
+        // once it commits, so the previous page's timers cannot land here.
+        // A Referer, when sent, must come from that page's origin. Compare
+        // origins only: a referrer policy or history.replaceState can change
+        // the rest of it.
+        const referer = req.headers()["referer"];
+        const fromCurrent = !referer || (nav.current !== null && sameOrigin(referer, nav.current));
+        if (nav.loading && fromCurrent && !nav.redirect && sameSite(domain, new URL(url).host)) {
           nav.redirect = url;
           nav.signal();
         }
@@ -234,11 +250,12 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         }
         nav.expected = new URL(current).href;
         nav.redirect = null;
+        nav.current = new URL(current).href;
         const redirected = new Promise<void>((resolve) => (nav.signal = resolve));
-        nav.loading = true;
         let res: Response | null;
         try {
           res = await page.goto(current, { waitUntil: "commit", timeout: 30000 });
+          nav.loading = true;
           if (!nav.redirect) await Promise.race([page.waitForLoadState("load", { timeout: 30000 }), redirected]);
         } finally {
           nav.loading = false;
