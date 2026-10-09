@@ -6,6 +6,8 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "alt-text": "tsx scripts/alt-text/run.ts",
+    "alt-text:sheet": "tsx scripts/alt-text/sheet.ts",
     "board": "node scripts/agents/board.mjs",
     "build": "react-router build",
     "commitlint": "commitlint",
@@ -34,6 +36,7 @@
     "census": "tsx scripts/census/census.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.132.1",
     "@axe-core/playwright": "^4.13.0",
     "@react-router/dev": "7.18.2",
     "@react-router/fs-routes": "7.18.2",
