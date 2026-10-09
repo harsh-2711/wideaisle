@@ -68,6 +68,50 @@ const APP_HINTS: [string, RegExp][] = [
   ["TikTok Pixel", /analytics\.tiktok\.com/i],
 ];
 
+// How each app's markup shows up on the page, for tying a failing element
+// to an app. Apps that render nothing visible (pixels, tag managers) have
+// no marker and are never blamed for a failure.
+export const APP_DOM_MARKERS: Record<string, RegExp> = {
+  Klaviyo: /klaviyo/i,
+  "Judge.me": /jdgm|judgeme/i,
+  Yotpo: /yotpo/i,
+  Loox: /loox/i,
+  Privy: /privy/i,
+  Omnisend: /omnisend/i,
+  Gorgias: /gorgias/i,
+  Tidio: /tidio/i,
+  Rebuy: /rebuy/i,
+  ReCharge: /recharge/i,
+  Afterpay: /afterpay/i,
+  Klarna: /klarna/i,
+  "Shop Pay Installments": /shopify-payment-terms|shop-pay-installments|installments-banner/i,
+  accessiBe: /acsb/i,
+  UserWay: /userway/i,
+};
+// One attribute's value from every opening tag of a kind. A plain scan
+// with indexOf, so the work stays linear in the page size whatever the
+// markup: no regex runs over more than one tag.
+export function attrValues(html: string, tag: string, attr: string): string[] {
+  const out: string[] = [];
+  // Lower-case ASCII only: toLowerCase can change the length ("İ" becomes
+  // two characters), which would shift every position after it.
+  const lower = html.replace(/[A-Z]+/g, (s) => s.toLowerCase());
+  const open = `<${tag}`;
+  const attrRe = new RegExp(`\\s${attr}\\s*=\\s*["']([^"']*)["']`, "i");
+  let pos = lower.indexOf(open);
+  while (pos !== -1) {
+    const next = lower[pos + open.length];
+    const end = lower.indexOf(">", pos);
+    if (end === -1) break;
+    if (next === undefined || /[\s/>]/.test(next)) {
+      const v = attrRe.exec(html.slice(pos, end + 1))?.[1];
+      if (v) out.push(v);
+    }
+    pos = lower.indexOf(open, end + 1);
+  }
+  return out;
+}
+
 export function detectStore(html: string): StoreFacts {
   const isShopify =
     /cdn\.shopify\.com|\/cdn\/shop\/|Shopify\.theme\s*=|shopify-features|window\.Shopify\s*=|Shopify\.shop\s*=/.test(html);
@@ -82,15 +126,15 @@ export function detectStore(html: string): StoreFacts {
         role: (t.role as string) ?? null,
       }
     : null;
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
-  const haystack = scripts.join(" ") + " " + (html.match(/<link\b[^>]*>/gi) ?? []).join(" ");
+  const scripts = attrValues(html, "script", "src");
+  const haystack = scripts.join(" ") + " " + attrValues(html, "link", "href").join(" ");
   const apps = APP_HINTS.filter(([, re]) => re.test(haystack)).map(([name]) => name);
   return { isShopify, shopDomain, theme, apps };
 }
 
 // Links to a collection and a product on the same site, for page sampling.
 export function sampleLinks(html: string, origin: string): { collection: string | null; product: string | null } {
-  const hrefs = [...html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#]+)["']/gi)].map((m) => m[1]);
+  const hrefs = attrValues(html, "a", "href").map((h) => h.split("#")[0]).filter(Boolean);
   const local = hrefs
     .map((h) => {
       try {
