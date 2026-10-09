@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appFor, buildReport, CUSTOM_THEME, fixKind, OTHER, patternOf, pickRecords, renderReport, themeFamily, type ScanLine, type StoreLine } from "../../app/lib/census/report";
+import { appFor, brandKey, buildReport, CUSTOM_THEME, fixKind, OTHER, patternOf, pickRecords, renderReport, themeFamily, type ScanLine, type StoreLine } from "../../app/lib/census/report";
 
 const six = (o: Partial<Record<string, number>> = {}) => ({
   "low-contrast": 0, "missing-alt": 0, "missing-label": 0, "empty-link": 0, "empty-button": 0, "missing-lang": 0, ...o,
@@ -108,9 +108,30 @@ describe("gap report", () => {
     expect(md).not.toMatch(/acme/i);
   });
 
+  it("counts a brand once even with expansion stores or no shop name", () => {
+    expect(["acme.com", "www.acme.co.uk", "acme.de", "shop.acme.com.au"].map(brandKey)).toEqual(["acme", "acme", "acme", "acme"]);
+    const domains = ["acme.com", "acme.co.uk", "acme.de", "acme.fr", "acme.com.au"];
+    const hero = { rule: "color-contrast", nodes: 4, bySource: { theme: 4, app: 0, unknown: 0 }, samples: [{ target: "p", html: '<p class="acme-outdoor-hero">Sale</p>' }] };
+    const dawn: StoreLine[] = Array.from({ length: 5 }, (_, i) => ({ domain: `d${i}.com`, isShopify: true, apps: [], theme: theme("Dawn", "15.0.0") }));
+    for (const shopDomain of [(d: string) => `${d.split(".")[0]}-${d.split(".").slice(1).join("")}.myshopify.com`, () => null]) {
+      const acme: StoreLine[] = domains.map((d) => ({
+        domain: d, shopDomain: shopDomain(d), isShopify: true, apps: [],
+        theme: { name: "Acme Outdoor", schemaName: "Acme Outdoor", version: "2.0.0", themeStoreId: 1234 },
+      }));
+      const scansA: ScanLine[] = acme.map((s) => ({ domain: s.domain, theme: s.theme, apps: [], pages: [{ kind: "home", totalNodes: 4, sixTypes: six({ "low-contrast": 4 }), rules: [hero] }] }));
+      const r = buildReport([...acme, ...dawn], scansA);
+      expect(r.v1Themes).toEqual(["Dawn"]);
+      expect(r.patterns).toEqual([]);
+      expect(renderReport(r, "2026-10-09")).not.toMatch(/acme/i);
+    }
+  });
+
   it("does not call a theme asset a content edit", () => {
     expect(fixKind("image-alt", "theme", '<img class="product-card__badge" src="/cdn/shop/t/2/assets/badge.svg">')).toBe("theme patch");
     expect(fixKind("image-alt", "theme", '<img src="//shop.com/cdn/shop/products/x.jpg">')).toBe("content edit");
+    // Cut off before src, or lazy-loaded with data-src.
+    expect(fixKind("image-alt", "theme", '<img srcset="//shop.com/cdn/shop/files/a.jpg?width=165 165w, //shop.com/cdn/shop/files/a.jpg?wid')).toBe("content edit");
+    expect(fixKind("image-alt", "theme", '<img class="lazyload" data-src="//cdn.shopify.com/s/files/1/0/products/x.jpg">')).toBe("content edit");
   });
 
   it("ties app failures to the app whose markup is in the element", () => {

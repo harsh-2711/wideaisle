@@ -104,7 +104,9 @@ export function patternOf(rule: string, html: string): string {
 export function fixKind(rule: string, source: "theme" | "app" | "unknown", html: string): FixKind {
   if (source === "app") return "app change";
   const type = failureTypeForRule(rule);
-  const src = /\ssrc\s*=\s*["']([^"']*)["']/i.exec(html)?.[1] ?? "";
+  // Samples are cut at 300 characters, so read any image URL attribute and
+  // do not need its closing quote.
+  const src = [...html.matchAll(/\s(?:data-)?src(?:set)?\s*=\s*["']?([^"'\s>]*)/gi)].map((m) => m[1]).join(" ");
   if (type === "missing-alt" && /cdn\.shopify\.com\/s\/files|\/cdn\/shop\/(products|files)\//i.test(src)) return "content edit";
   if (!type) return "unclear";
   return source === "theme" ? "theme patch" : "source unclear";
@@ -139,47 +141,75 @@ export function shopKey(s: { domain: string; shopDomain?: string | null }): stri
   return (s.shopDomain || s.domain).toLowerCase();
 }
 
+// Suffixes where the brand sits one label further left (acme.co.uk).
+const TWO_PART_SUFFIXES = new Set([
+  "co.uk", "org.uk", "me.uk", "com.au", "net.au", "org.au", "co.nz", "com.br", "co.jp", "com.mx", "co.za",
+  "com.sg", "co.in", "com.tr", "co.kr", "com.cn", "com.hk", "com.ar", "co.il", "com.my", "com.co", "com.pe",
+]);
+
+// A brand key from a domain: the label left of the public suffix, so
+// acme.com, acme.co.uk and acme.de are one brand. Two unrelated brands with
+// the same name are merged, which only lowers counts: the safe direction
+// for the reporting floor.
+export function brandKey(domain: string): string {
+  const parts = domain.toLowerCase().replace(/^www\./, "").split(":")[0].split(".").filter(Boolean);
+  if (parts.length < 2) return parts.join(".");
+  const lastTwo = parts.slice(-2).join(".");
+  return TWO_PART_SUFFIXES.has(lastTwo) && parts.length >= 3 ? parts[parts.length - 3] : parts[parts.length - 2];
+}
+
 function majorVersion(version: string | null | undefined): string {
   const major = /^\s*(\d+)\./.exec(version ?? "")?.[1];
   return major ? `${major}.x` : "unknown";
 }
 
-// Folds labels seen in fewer than minStores stores into OTHER.
-function floor(counts: Map<string, number>, minStores: number): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const [label, count] of counts) bump(out, count >= minStores || NOT_A_FAMILY.has(label) ? label : OTHER, count);
-  return out;
+// Shop counts per label, plus the brands behind them. A label is reported
+// only when at least minStores distinct brands use it.
+class Tally {
+  shops = new Map<string, number>();
+  brands = new Map<string, Set<string>>();
+  add(label: string, brand: string) {
+    bump(this.shops, label);
+    if (!this.brands.has(label)) this.brands.set(label, new Set());
+    this.brands.get(label)!.add(brand);
+  }
+  passes(label: string, minStores: number): boolean {
+    return (this.brands.get(label)?.size ?? 0) >= minStores;
+  }
+  // Labels under the floor fold into `other`.
+  folded(minStores: number, other: string, keep: (label: string) => boolean = () => false): Map<string, number> {
+    const out = new Map<string, number>();
+    for (const [label, count] of this.shops) bump(out, keep(label) || this.passes(label, minStores) ? label : other, count);
+    return out;
+  }
 }
 
 export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minStores?: number } = {}): GapReport {
   const minStores = opts.minStores ?? 5;
   const keyOf = new Map(stores.map((s) => [s.domain, shopKey(s)]));
   const shopify = [...new Map(stores.filter((s) => s.isShopify).map((s) => [shopKey(s), s])).values()];
-  const rawThemes = new Map<string, number>();
-  for (const s of shopify) bump(rawThemes, themeFamily(s.theme));
-  const themeCounts = floor(rawThemes, minStores);
+  const rawThemes = new Tally();
+  for (const s of shopify) rawThemes.add(themeFamily(s.theme), brandKey(s.domain));
+  const themeCounts = rawThemes.folded(minStores, OTHER, (label) => NOT_A_FAMILY.has(label));
   const familyOf = (t: StoreLine["theme"]) => {
     const fam = themeFamily(t);
     return themeCounts.has(fam) ? fam : OTHER;
   };
-  const versions = new Map<string, Map<string, number>>();
+  const versionTallies = new Map<string, Tally>();
   for (const s of shopify) {
     const fam = familyOf(s.theme);
     if (NOT_A_FAMILY.has(fam)) continue;
-    if (!versions.has(fam)) versions.set(fam, new Map());
-    bump(versions.get(fam)!, majorVersion(s.theme?.version));
+    if (!versionTallies.has(fam)) versionTallies.set(fam, new Tally());
+    versionTallies.get(fam)!.add(majorVersion(s.theme?.version), brandKey(s.domain));
   }
   // Versions are free text a merchant can edit; small groups fold away too.
-  for (const [fam, m] of versions) {
-    const folded = new Map<string, number>();
-    for (const [v, count] of m) bump(folded, count >= minStores ? v : "other", count);
-    versions.set(fam, folded);
-  }
+  const versions = new Map<string, Map<string, number>>([...versionTallies].map(([fam, t]) => [fam, t.folded(minStores, "other")]));
 
   // One scan per shop, so a brand's country domains count once.
   const scanned = [...new Map(scans.filter((s) => !s.error && s.pages.length).map((s) => [keyOf.get(s.domain) ?? s.domain.toLowerCase(), s])).values()];
   const prevalence = new Map<string, number>(Object.values(FAILURE_TYPES).map((t) => [t.label, 0]));
-  const patternStores = new Map<string, Set<string>>();
+  const patternTally = new Tally();
+  const patternSeen = new Set<string>();
   const pagesByKind = new Map<string, number>();
   const apps = new Map<string, number>();
   const kinds = new Map<string, number>();
@@ -200,8 +230,12 @@ export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minS
         // The first sample stands for the rule on this page.
         const sample = r.samples[0]?.html ?? "";
         const pattern = patternOf(r.rule, sample);
-        if (!patternStores.has(pattern)) patternStores.set(pattern, new Set());
-        patternStores.get(pattern)!.add(keyOf.get(store.domain) ?? store.domain.toLowerCase());
+        // Each shop counts once per pattern; the floor counts brands.
+        const shop = keyOf.get(store.domain) ?? store.domain.toLowerCase();
+        if (!patternSeen.has(`${pattern}\u0000${shop}`)) {
+          patternSeen.add(`${pattern}\u0000${shop}`);
+          patternTally.add(pattern, brandKey(store.domain));
+        }
         for (const src of ["theme", "app", "unknown"] as const) {
           const count = r.bySource[src] ?? 0;
           if (!count || !failureTypeForRule(r.rule)) continue;
@@ -216,7 +250,7 @@ export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minS
   // A pattern is reported by how many stores show it, and only when enough
   // stores do, so one store's class names never reach the report.
   const patterns = new Map<string, number>();
-  for (const [p, set] of patternStores) if (set.size >= minStores) patterns.set(p, set.size);
+  for (const [p, count] of patternTally.shops) if (patternTally.passes(p, minStores)) patterns.set(p, count);
 
   const themes = rows(themeCounts, shopify.length);
   const families = themes.filter((t) => !NOT_A_FAMILY.has(t.label));
