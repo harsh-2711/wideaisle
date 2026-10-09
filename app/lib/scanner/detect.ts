@@ -105,7 +105,7 @@ export function detectStore(html: string): StoreFacts {
       }
     : null;
   const scripts = attrValues(html, "script", "src");
-  const haystack = scripts.join(" ") + " " + (html.match(/<link\b[^>]*>/gi) ?? []).join(" ");
+  const haystack = scripts.join(" ") + " " + attrValues(html, "link", "href").join(" ");
   const apps = APP_HINTS.filter(([, re]) => re.test(haystack)).map(([name]) => name);
   return { isShopify, shopDomain, theme, apps };
 }

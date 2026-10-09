@@ -108,7 +108,7 @@ Shopify.theme = {"name":"Dawn - live","id":123,"schema_name":"Dawn","schema_vers
   });
 
   it("reads tags in linear time on hostile pages", () => {
-    const hostile = "<script ".repeat(50_000) + "<a href ".repeat(50_000);
+    const hostile = "<script ".repeat(50_000) + "<a href ".repeat(50_000) + "<link ".repeat(50_000);
     const started = performance.now();
     detectStore(hostile);
     sampleLinks(hostile, "https://example.com");
@@ -173,17 +173,28 @@ describe("polite client", () => {
   });
 
   it("spaces concurrent page loads on one host", async () => {
+    // A virtual clock: each sleep wakes at its own target time, in order,
+    // so the check does not depend on how busy the test machine is.
+    let clock = 0;
+    const sleep = (ms: number) => {
+      const target = clock + ms;
+      return new Promise<void>((resolve) =>
+        setImmediate(() => {
+          clock = Math.max(clock, target);
+          resolve();
+        }),
+      );
+    };
     const at: number[] = [];
     const fetchImpl = (async (url: string) => {
-      if (!url.endsWith("robots.txt")) at.push(Date.now());
+      if (!url.endsWith("robots.txt")) at.push(clock);
       return new Response(url.endsWith("robots.txt") ? "" : "<html></html>", { status: 200 });
     }) as unknown as typeof fetch;
-    // Real clock: three page loads started together must still be 60 ms apart.
-    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 60, fetchImpl, lookup: publicLookup });
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 2000, fetchImpl, now: () => clock, sleep, lookup: publicLookup });
     await Promise.all(["/a", "/b", "/c"].map((p) => client.get("https://s.example" + p)));
     at.sort((x, y) => x - y);
-    expect(at[1] - at[0]).toBeGreaterThanOrEqual(55);
-    expect(at[2] - at[1]).toBeGreaterThanOrEqual(55);
+    expect(at[1] - at[0]).toBeGreaterThanOrEqual(2000);
+    expect(at[2] - at[1]).toBeGreaterThanOrEqual(2000);
   });
 
   it("skips a store that asks for a very long crawl delay", async () => {
