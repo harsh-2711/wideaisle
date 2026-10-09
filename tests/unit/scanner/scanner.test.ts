@@ -115,6 +115,13 @@ Shopify.theme = {"name":"Dawn - live","id":123,"schema_name":"Dawn","schema_vers
     expect(performance.now() - started).toBeLessThan(500);
   });
 
+  it("keeps tag positions on pages with letters that grow when lower-cased", () => {
+    const turkish = `<nav>${"<a href=\"/pages/iletisim\">\u0130LET\u0130\u015e\u0130M</a>".repeat(5)}</nav>` + "\u0130".repeat(40);
+    const page = "\u0130".repeat(40) + turkish + html;
+    expect(sampleLinks(page, "https://example.com")).toEqual({ collection: "/collections/shirts", product: "/products/linen-shirt" });
+    expect(detectStore(page).apps).toEqual(["Klaviyo"]);
+  });
+
   it("says no for a site that is not Shopify", () => {
     expect(detectStore("<html><body>Hello</body></html>")).toEqual({ isShopify: false, shopDomain: null, theme: null, apps: [] });
   });

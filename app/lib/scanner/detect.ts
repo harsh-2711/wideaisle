@@ -73,7 +73,9 @@ const APP_HINTS: [string, RegExp][] = [
 // markup: no regex runs over more than one tag.
 export function attrValues(html: string, tag: string, attr: string): string[] {
   const out: string[] = [];
-  const lower = html.toLowerCase();
+  // Lower-case ASCII only: toLowerCase can change the length ("İ" becomes
+  // two characters), which would shift every position after it.
+  const lower = html.replace(/[A-Z]+/g, (s) => s.toLowerCase());
   const open = `<${tag}`;
   const attrRe = new RegExp(`\\s${attr}\\s*=\\s*["']([^"']*)["']`, "i");
   let pos = lower.indexOf(open);

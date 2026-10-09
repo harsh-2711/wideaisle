@@ -127,6 +127,13 @@ test("browser redirects are vetted before the browser requests them", async ({ b
       res.writeHead(200, { "content-type": "text/html" });
       return res.end(`<!doctype html><html lang="en"><head><title>g</title><script>location.href = "/h";</script></head><body>g</body></html>`);
     }
+    // The same, from a page whose Referer is only its origin, and from one
+    // that rewrote its own URL first.
+    if (req.url === "/i" || req.url === "/j") {
+      res.writeHead(200, { "content-type": "text/html", "referrer-policy": "origin" });
+      const rewrite = req.url === "/j" ? `history.replaceState(null, "", "/j?variant=1");` : "";
+      return res.end(`<!doctype html><html lang="en"><head><title>${req.url}</title><script>${rewrite}location.href = "/h";</script></head><body>i</body></html>`);
+    }
     if (req.url === "/robots.txt") return res.end("User-agent: *\nDisallow: /secret\n");
     const to = redirects[req.url ?? ""];
     if (to) {
@@ -161,6 +168,12 @@ test("browser redirects are vetted before the browser requests them", async ({ b
     const parsed = await ctx.goto(page, origin + "/g");
     expect("url" in parsed && parsed.url).toBe(origin + "/h");
     expect(Date.now() - started).toBeLessThan(10_000);
+    for (const from of ["/i", "/j"]) {
+      const t0 = Date.now();
+      const hop = await ctx.goto(page, origin + from);
+      expect("url" in hop && hop.url).toBe(origin + "/h");
+      expect(Date.now() - t0).toBeLessThan(10_000);
+    }
 
     expect(hits).not.toContain("/secret");
     expect(hits).not.toContain("/x");

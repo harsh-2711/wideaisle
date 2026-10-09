@@ -164,6 +164,14 @@ export function sameUrl(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function openScanContext(browser: Browser, client: PoliteClient, domain: string): Promise<ScanContext> {
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
   // The one main-frame navigation the scan asked for, where it redirected,
@@ -196,10 +204,12 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // A page script navigating while the page loads would stop the load
         // event; treat it as a redirect, which goto vets like any other hop.
         // Only the page being loaded may redirect this way: the window opens
-        // once it commits, so the previous page's timers cannot land here,
-        // and a Referer, when sent, must name that page.
+        // once it commits, so the previous page's timers cannot land here.
+        // A Referer, when sent, must come from that page's origin. Compare
+        // origins only: a referrer policy or history.replaceState can change
+        // the rest of it.
         const referer = req.headers()["referer"];
-        const fromCurrent = !referer || (nav.current !== null && sameUrl(referer, nav.current));
+        const fromCurrent = !referer || (nav.current !== null && sameOrigin(referer, nav.current));
         if (nav.loading && fromCurrent && !nav.redirect && sameSite(domain, new URL(url).host)) {
           nav.redirect = url;
           nav.signal();
