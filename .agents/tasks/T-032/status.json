@@ -2,12 +2,12 @@
   "title": "Spike C: alt text with Claude Haiku in batch",
   "milestone": "M3",
   "lane": "fixers",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "builder",
+  "state": "In review",
+  "step": "review fixes done; real run waits on Q-04 and Q-33, ratings on Q-26",
   "branch": "claude/feat-alt-text",
   "issue": 28,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T17:38:16Z",
   "id": "T-032"
 }

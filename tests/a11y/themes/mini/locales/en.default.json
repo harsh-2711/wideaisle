@@ -1,0 +1,5 @@
+{
+  "accessibility": { "close": "Close" },
+  "newsletter": { "label": "Email", "button_label": "Subscribe" },
+  "general": { "social": { "links": { "instagram": "Instagram" } } }
+}

@@ -31,6 +31,9 @@ blob-report/
 # Local Claude Code settings
 .claude/settings.local.json
 
+# Local run data: census output, alt-text batch state, drafts and rating sheets
+/data/
+
 # Logs and OS files
 *.log
 npm-debug.log*
@@ -53,5 +56,3 @@ Thumbs.db
 # Agent worktrees created by Claude Code
 .claude/worktrees/
 
-# Census and scan output (private; summaries go in docs/)
-/data/
