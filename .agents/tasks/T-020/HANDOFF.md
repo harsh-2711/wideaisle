@@ -8,7 +8,7 @@ See TASK.md. Find about 2,000 live Shopify stores from public top-site lists, re
 
 ## Status
 
-In review. The crawler and its tests are done. The full run waits on Q-01 (network) and Q-02 (contact address). Last updated 2026-10-08.
+Blocked on you. Merged in PR #34. Fix PR #43 (script navigation race, linear tag reading) is in review. The run waits on Q-01 and Q-02.
 
 ## Done so far
 
@@ -21,13 +21,12 @@ In review. The crawler and its tests are done. The full run waits on Q-01 (netwo
 
 ## Current step
 
-Pull request review, then merge.
+Merge PR #43, then wait for Q-01 and Q-02.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-01, Q-02.
-2. When Q-01 and Q-02 clear: build the domain list (docs/census/README.md, "Run it"), run `discover`, then `scan`.
-3. Hand the scans file to T-021 for the gap report.
+1. When Q-01 and Q-02 clear: build the domain list (docs/census/README.md, "Run it"), run `discover`, then `scan`.
+2. Hand the scans file to T-021 for the gap report.
 
 ## Blockers and open questions
 

@@ -3,11 +3,13 @@
   "milestone": "M3",
   "lane": "fixers",
   "agent": "",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Blocked on you",
+  "step": "Merged in PR #35; before and after scans need a dev store",
   "branch": "claude/feat-dawn-fixers",
   "issue": 27,
-  "needs": [],
-  "updated": "2026-10-08T06:46:56Z",
+  "needs": [
+    "owner:Q-03"
+  ],
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-031"
 }

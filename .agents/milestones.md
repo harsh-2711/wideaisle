@@ -26,11 +26,11 @@ Exit criteria from docs/plan/roadmap.md. Tick a box only with evidence: a merged
 
 ## M0 Foundations
 
-- [ ] An agent-opened pull request passes CI and a reviewer agent's check
+- [x] An agent-opened pull request passes CI and a reviewer agent's check (PR 34 and later)
 - [x] Decision log live with D-01 to D-05 approved (decisions/INDEX.md, PR 3)
 - [ ] Spend limit set and shown in the weekly brief **(owner)**
 - [ ] The status board shows every running agent with its current step and heartbeat **(owner creates the GitHub Project)**
-- [ ] A test task stopped mid-step is resumed by a fresh agent from HANDOFF.md, losing at most one step
+- [x] A test task stopped mid-step is resumed by a fresh agent from HANDOFF.md, losing at most one step (T-008, PR 38)
 
 ## M1 Understand the problem
 
@@ -39,7 +39,7 @@ Exit criteria from docs/plan/roadmap.md. Tick a box only with evidence: a merged
 
 ## M2 Measure the market and the gap
 
-- [ ] Gap report: the top themes and their share of stores, the 10 most common failure patterns, the 10 apps that cause the most failures
+- [ ] Gap report: the top themes and their share of stores, the 10 most common failure patterns, the 10 apps that cause the most failures **(the run needs web access, Q-01, and a contact, Q-02)**
 - [ ] Interview synthesis with evidence of willingness to pay **(owner runs the calls)**
 - [x] D-08 and D-16 approved
 
@@ -47,7 +47,7 @@ Exit criteria from docs/plan/roadmap.md. Tick a box only with evidence: a merged
 
 - [ ] Architecture and delivery-path records approved (D-09, D-10, D-11) **(owner approves the ADRs)**
 - [ ] Cost per merchant per month estimated
-- [ ] All six fixers pass on Dawn: zero axe-core findings of those types and no visual change beyond the agreed threshold
+- [ ] All six fixers pass on Dawn: zero axe-core findings of those types and no visual change beyond the agreed threshold **(needs a dev store, Q-03)**
 
 ## M4 Proof of concept
 

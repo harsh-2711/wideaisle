@@ -3,11 +3,13 @@
   "milestone": "M2",
   "lane": "research",
   "agent": "researcher",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Blocked on you",
+  "step": "Merged in PR #37; direct reading needs web access",
   "branch": "claude/docs-m2-market",
   "issue": 24,
-  "needs": [],
-  "updated": "2026-10-08T06:51:01Z",
+  "needs": [
+    "owner:Q-01"
+  ],
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-023"
 }

@@ -3,11 +3,13 @@
   "milestone": "M2",
   "lane": "research",
   "agent": "researcher",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Blocked on you",
+  "step": "Merged in PR #37; app installs need a dev store",
   "branch": "claude/docs-m2-market",
   "issue": 23,
-  "needs": [],
-  "updated": "2026-10-08T06:51:01Z",
+  "needs": [
+    "owner:Q-03"
+  ],
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-022"
 }

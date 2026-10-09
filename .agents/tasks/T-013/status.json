@@ -3,11 +3,13 @@
   "milestone": "M1",
   "lane": "research",
   "agent": "researcher",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Blocked on you",
+  "step": "Merged in PRs #36 and #40; policy approval",
   "branch": "claude/docs-m1-research",
   "issue": 19,
-  "needs": [],
-  "updated": "2026-10-08T06:49:51Z",
+  "needs": [
+    "owner:Q-23"
+  ],
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-013"
 }

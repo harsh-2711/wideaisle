@@ -10,7 +10,7 @@ The test task is real work: a `lint-handoff` check that says whether a HANDOFF.m
 
 ## Status
 
-In review in pull request harsh-2711/wideaisle#38. A fresh agent resumed it from this file and finished steps 2 and 3; review fixes are in. Last updated 2026-10-08.
+Done. Merged in PR #38 on 2026-10-09. `lint-handoff --all` exits 0 on main.
 
 ## Done so far
 
@@ -24,13 +24,11 @@ In review in pull request harsh-2711/wideaisle#38. A fresh agent resumed it from
 
 ## Current step
 
-Pull request review, then merge.
+None. The task is done.
 
 ## Next three steps
 
-1. Review and merge the pull request once CI is green.
-2. Set the state to Done.
-3. After the M1 and M2 research pull requests merge, `lint-handoff --all` should exit 0 on main; fix anything it still reports.
+None.
 
 ## Blockers and open questions
 

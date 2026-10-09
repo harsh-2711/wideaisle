@@ -8,7 +8,7 @@ See TASK.md. Script, recruiting messages, scheduling and a per-call summary temp
 
 ## Status
 
-In review in the M2 market research pull request. Last updated 2026-10-08.
+Blocked on you. Merged in PR #37. Waits on the five kit choices (Q-31) and the calls (Q-24).
 
 ## Done so far
 
@@ -20,13 +20,12 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the fixes, then merge.
+Waiting for Q-31.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-24 and Q-31.
-2. The owner settles the five choices in section 14 (Q-31).
-3. The owner builds the first recruiting batch in their private folder, with an agent opened there, not in the repo clone (kit section 8), and approves it (Q-25).
+1. The owner settles the five choices in section 14 (Q-31).
+2. The owner builds the first recruiting batch in their private folder, with an agent opened there, not in the repo clone (kit section 8), and approves it (Q-25).
 
 ## Blockers and open questions
 

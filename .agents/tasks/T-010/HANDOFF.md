@@ -8,7 +8,7 @@ See TASK.md. A primer on the WCAG 2.2 AA criteria that matter for Shopify themes
 
 ## Status
 
-In review in the M1 research pull request. Last updated 2026-10-08.
+Done. Merged in PR #36.
 
 ## Done so far
 
@@ -19,13 +19,12 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the reviewer fixes, then merge.
+None. The owner reads the primer (Q-20).
 
 ## Next three steps
 
-1. After merge, set the state to Done.
-2. The owner reads it (Q-20).
-3. Refresh the sources when Q-01 opens the web; most were seen through search, not opened.
+1. The owner reads it (Q-20).
+2. Refresh the sources when Q-01 opens the web; most were seen through search, not opened.
 
 ## Blockers and open questions
 
