@@ -22,6 +22,8 @@ export interface FakeHooks {
   textBodies?: boolean;
   // fileUpdate answers MEDIA_CANNOT_BE_MODIFIED this many times.
   mediaBusy?: number;
+  // Runs once, right after our first write lands: someone else edits.
+  afterFirstWrite?: (files: Map<string, Buffer>) => void;
 }
 
 const md5 = (b: Buffer) => createHash("md5").update(b).digest("hex");
@@ -103,7 +105,12 @@ export class FakeShopify implements AdminGraphql {
           const raw = Buffer.from(f.body.value, "utf8");
           return [f.filename, this.hooks.normalize ? this.hooks.normalize(f.filename, raw) : raw] as const;
         });
-        const run = () => written.forEach(([n, b]) => t.files.set(n, b));
+        const run = () => {
+          written.forEach(([n, b]) => t.files.set(n, b));
+          const edit = this.hooks.afterFirstWrite;
+          this.hooks.afterFirstWrite = undefined;
+          edit?.(t.files);
+        };
         const upserted = written.map(([n, b]) => ({ filename: n, checksumMd5: md5(b), size: String(b.length) }));
         if (this.hooks.slowJobs) {
           const id = `gid://shopify/Job/${++this.jobs}`;

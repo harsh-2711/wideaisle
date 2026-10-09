@@ -109,8 +109,10 @@ export interface AdminApiPreview extends DeliveryPreview {
 }
 
 export interface AdminFileRecord extends ThemeFileChange {
-  // The MD5 Shopify reported for the file after our write. Revert treats a
-  // file with this checksum as ours, even if Shopify changed our bytes.
+  // The MD5 that themeFilesUpsert returned for our own write
+  // (upsertedThemeFiles.checksumMd5), never one read back later. Revert
+  // treats a file with this checksum as ours, even if Shopify changed our
+  // bytes on write.
   storedMd5: string | null;
 }
 
@@ -292,7 +294,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
         files.push(...group);
         await this.upsert(themeId as string, group.map((c) => ({ file: c.file, text: c.after })), pendingJobs, stored);
       }
-      if (themeId) await this.verifyFiles(themeId, patch.files.map((c) => ({ file: c.file, text: c.after })), stored);
+      if (themeId) await this.verifyFiles(themeId, patch.files.map((c) => ({ file: c.file, text: c.after })));
       for (const group of chunk(patch.altText, LIMITS.altTextPerCall)) {
         alts.push(...group);
         await this.updateAlt(group.map((a) => ({ id: a.mediaId, alt: a.after })));
@@ -573,10 +575,10 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
   }
 
   // Reads the files back and compares bytes. text null means "must be gone".
-  // Records the checksum Shopify holds for each file in `stored`.
-  private async verifyFiles(themeId: string, expected: { file: string; text: string | null }[], stored?: Map<string, string>): Promise<void> {
+  // It never records what it reads as ours: someone else may have written
+  // the file since our write. Only our write's own response does that.
+  private async verifyFiles(themeId: string, expected: { file: string; text: string | null }[]): Promise<void> {
     const current = await this.readFiles(themeId, expected.map((e) => e.file));
-    for (const [file, f] of current) stored?.set(file, f.md5);
     const wrong = expected.filter((e) => !holds(current.get(e.file), e.text)).map((e) => e.file);
     if (wrong.length) throw new DeliveryApiError(`Shopify holds different bytes than we wrote for ${wrong.join(", ")}`, "VERIFY_FAILED", wrong);
   }

@@ -68,6 +68,22 @@ describe("AdminApiAdapter failure paths", () => {
     expect(r).toMatchObject({ code: "VERIFY_FAILED" });
   });
 
+  it("never records someone else's edit as ours when it lands between our write and the read-back", async () => {
+    const { shop, adapter } = setup(
+      { "snippets/a.liquid": "a\n" },
+      { afterFirstWrite: (files) => files.set("snippets/a.liquid", Buffer.from("merchant edit\n")) },
+    );
+    const err = await adapter.apply(patch([{ file: "snippets/a.liquid", before: "a\n", after: "A\n" }])).catch((e) => e);
+    expect(err).toBeInstanceOf(PartialApplyError);
+    expect(err.cause).toMatchObject({ code: "VERIFY_FAILED" });
+    // Only the checksum our own write returned counts as ours.
+    expect(err.receipt.files[0].storedMd5).toBe(md5Hex(utf8("A\n")));
+
+    const r = await adapter.revert(err.receipt).catch((e) => e);
+    expect(r).toMatchObject({ name: "PatchConflictError", conflicts: [{ file: "snippets/a.liquid", reason: "changed" }] });
+    expect(shop.live("snippets/a.liquid")).toBe("merchant edit\n");
+  });
+
   it("refuses to write when the bytes it read do not match Shopify's checksum (item 5)", async () => {
     // <p>é</p> in Latin-1: not valid UTF-8, so a Text body loses bytes.
     const latin1 = Buffer.from([0x3c, 0x70, 0x3e, 0xe9, 0x3c, 0x2f, 0x70, 0x3e, 0x0a]);
