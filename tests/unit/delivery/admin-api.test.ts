@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { AdminApiAdapter, type AdminApiAdapterOptions, type AdminApiReceipt } from "../../../app/lib/delivery/admin-api";
+import { ADMIN_QUERIES, AdminApiAdapter, type AdminApiAdapterOptions, type AdminApiReceipt } from "../../../app/lib/delivery/admin-api";
 import { DeliveryApiError, PartialApplyError, PatchConflictError } from "../../../app/lib/delivery/errors";
+import { md5Hex, utf8 } from "../../../app/lib/delivery/patch";
 import { AdminGraphqlClient } from "../../../app/lib/delivery/shopify-admin";
 import {
   ALT_AFTER,
@@ -43,11 +44,15 @@ function receipt(overrides: Partial<AdminApiReceipt> = {}): AdminApiReceipt {
     appliedAt: FIXED_NOW().toISOString(),
     shop: SHOP,
     themeId: LIVE,
-    files: samplePatch().files,
+    // The checksums in theme-files-applied.json, read back after the write.
+    files: samplePatch().files.map((c) => ({ ...c, storedMd5: md5Hex(utf8(c.after)) })),
     altText: [],
+    pendingJobs: [],
     ...overrides,
   };
 }
+
+const NO_PREVIEW_YET: Exchange = { op: "WaThemesByName", body: f("themes-by-name-none"), check: (b) => expect(vars(b)).toEqual({ names: ["Wide Aisle preview p-001"] }) };
 
 const mutations = (calls: { op: string }[]) =>
   calls.map((c) => c.op).filter((op) => /Upsert|Delete|Duplicate|FileUpdate/.test(op));
@@ -59,6 +64,7 @@ describe("AdminApiAdapter preview", () => {
     const t = setup([
       { op: "WaMainTheme", body: f("themes-main") },
       { op: "WaThemeFiles", body: f("theme-files-live"), check: (b) => expect(vars(b)).toMatchObject({ id: LIVE }) },
+      NO_PREVIEW_YET,
       {
         op: "WaThemeDuplicate",
         body: f("theme-duplicate"),
@@ -101,6 +107,7 @@ describe("AdminApiAdapter preview", () => {
     const t = setup([
       { op: "WaMainTheme", body: f("themes-main") },
       { op: "WaThemeFiles", body: f("theme-files-live") },
+      NO_PREVIEW_YET,
       { op: "WaThemeDuplicate", body: f("theme-duplicate") },
       { op: "WaThemeInfo", body: f("theme-info-ready") },
       { op: "WaThemeFiles", body: f("theme-files-live") },
@@ -115,9 +122,39 @@ describe("AdminApiAdapter preview", () => {
     const t = setup([
       { op: "WaMainTheme", body: f("themes-main") },
       { op: "WaThemeFiles", body: f("theme-files-live") },
+      NO_PREVIEW_YET,
       { op: "WaThemeDuplicate", body: f("theme-duplicate-not-found") },
     ]);
     await expect(t.adapter.preview(samplePatch())).rejects.toMatchObject({ code: "NOT_FOUND", message: /Theme does not exist/ });
+  });
+
+  it("does not resend themeDuplicate after a 5xx; it finds the copy by name (item 7)", async () => {
+    const t = setup([
+      { op: "WaMainTheme", body: f("themes-main") },
+      { op: "WaThemeFiles", body: f("theme-files-live") },
+      NO_PREVIEW_YET,
+      { op: "WaThemeDuplicate", status: 502, body: "" },
+      { op: "WaThemesByName", body: f("themes-by-name-found") },
+      { op: "WaThemeInfo", body: f("theme-info-ready") },
+      { op: "WaThemeFiles", body: f("theme-files-live") },
+      { op: "WaThemeFilesUpsert", body: f("files-upsert-done") },
+      { op: "WaThemeFiles", body: f("theme-files-applied") },
+    ]);
+    const p = await t.adapter.preview(samplePatch());
+    expect(p.themeId).toBe(COPY);
+    expect(t.calls.filter((c) => c.op === "WaThemeDuplicate")).toHaveLength(1);
+    expect(t.left()).toEqual([]);
+  });
+
+  it("passes the 5xx on when no copy was made", async () => {
+    const t = setup([
+      { op: "WaMainTheme", body: f("themes-main") },
+      { op: "WaThemeFiles", body: f("theme-files-live") },
+      NO_PREVIEW_YET,
+      { op: "WaThemeDuplicate", status: 502, body: "" },
+      { op: "WaThemesByName", body: f("themes-by-name-none") },
+    ]);
+    await expect(t.adapter.preview(samplePatch())).rejects.toMatchObject({ code: "HTTP_502" });
   });
 });
 
@@ -293,6 +330,33 @@ describe("AdminApiAdapter throttling and errors", () => {
     expect(err.cause).toBeInstanceOf(DeliveryApiError);
     expect(err.cause.code).toBe("ACCESS_DENIED");
     expect(err.cause.message).toMatch(/exemption/);
+  });
+
+  it("retries a query after a 5xx but never a mutation that may have run (item 7)", async () => {
+    const q = setup([
+      { op: "WaMainTheme", status: 503, body: "" },
+      { op: "WaMainTheme", body: f("themes-main") },
+    ]);
+    const client = new AdminGraphqlClient({ shop: SHOP, accessToken: "x", fetch: q.fetch, sleep: async () => {}, random: () => 1 });
+    await expect(client.request(ADMIN_QUERIES.mainTheme)).resolves.toMatchObject({ themes: { nodes: [{ id: LIVE }] } });
+
+    const m = setup([{ op: "WaThemeDuplicate", status: 502, body: "" }]);
+    const client2 = new AdminGraphqlClient({ shop: SHOP, accessToken: "x", fetch: m.fetch, sleep: async () => {} });
+    await expect(client2.request(ADMIN_QUERIES.themeDuplicate, { id: LIVE, name: "n" })).rejects.toMatchObject({ code: "HTTP_502" });
+    expect(m.calls).toHaveLength(1);
+    // An idempotent write may be retried.
+    const u = setup([
+      { op: "WaThemeFilesUpsert", status: 502, body: "" },
+      { op: "WaThemeFilesUpsert", body: f("files-upsert-done") },
+    ]);
+    const client3 = new AdminGraphqlClient({ shop: SHOP, accessToken: "x", fetch: u.fetch, sleep: async () => {} });
+    await expect(client3.request(ADMIN_QUERIES.filesUpsert, { themeId: LIVE, files: [] }, { idempotent: true })).resolves.toBeDefined();
+  });
+
+  it("keeps the access token out of JSON and string output (item 12)", () => {
+    const client = new AdminGraphqlClient({ shop: SHOP, accessToken: "shpat_SECRET", fetch: async () => Promise.reject(new Error("no")) });
+    expect(JSON.stringify(client)).not.toContain("shpat_SECRET");
+    expect(Object.values(client).join(" ")).not.toContain("shpat_SECRET");
   });
 
   it("refuses a bad shop domain and an unauthorized token", async () => {

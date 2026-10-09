@@ -8,8 +8,14 @@ import { DEFAULT_RETRY, backoffMs, parseJson, realSleep, retryAfterMs, type Fetc
 // app/shopify.server.ts.
 export const ADMIN_API_VERSION = "2026-10";
 
+export interface RequestOptions {
+  // Safe to send twice. A 5xx may come after Shopify ran the call, so only
+  // idempotent calls are resent after one. Default: queries yes, mutations no.
+  idempotent?: boolean;
+}
+
 export interface AdminGraphql {
-  request<T>(query: string, variables?: Record<string, unknown>): Promise<T>;
+  request<T>(query: string, variables?: Record<string, unknown>, opts?: RequestOptions): Promise<T>;
 }
 
 export interface AdminClientOptions {
@@ -54,7 +60,8 @@ export function throttleWaitMs(body: GraphqlBody): number | null {
 export class AdminGraphqlClient implements AdminGraphql {
   readonly shop: string;
   readonly endpoint: string;
-  private readonly accessToken: string;
+  // A true private field, so the token never shows up in JSON or logs.
+  readonly #accessToken: string;
   private readonly fetch: FetchLike;
   private readonly sleep: Sleep;
   private readonly policy: RetryPolicy;
@@ -66,14 +73,15 @@ export class AdminGraphqlClient implements AdminGraphql {
     }
     this.shop = opts.shop;
     this.endpoint = `https://${opts.shop}/admin/api/${opts.apiVersion ?? ADMIN_API_VERSION}/graphql.json`;
-    this.accessToken = opts.accessToken;
+    this.#accessToken = opts.accessToken;
     this.fetch = opts.fetch;
     this.sleep = opts.sleep ?? realSleep;
     this.policy = { ...DEFAULT_RETRY, ...opts.retry };
     this.random = opts.random ?? Math.random;
   }
 
-  async request<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  async request<T>(query: string, variables: Record<string, unknown> = {}, opts: RequestOptions = {}): Promise<T> {
+    const idempotent = opts.idempotent ?? !/^\s*mutation\b/.test(query);
     for (let attempt = 0; ; attempt++) {
       const last = attempt + 1 >= this.policy.maxAttempts;
       const res = await this.fetch(this.endpoint, {
@@ -81,12 +89,17 @@ export class AdminGraphqlClient implements AdminGraphql {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "X-Shopify-Access-Token": this.accessToken,
+          "X-Shopify-Access-Token": this.#accessToken,
         },
         body: JSON.stringify({ query, variables }),
       });
 
+      // 429 means Shopify did not run the call, so it is always safe to
+      // resend. A 5xx may come after the call ran.
       if (res.status === 429 || res.status >= 500) {
+        if (res.status >= 500 && !idempotent) {
+          throw new DeliveryApiError(`Shopify answered HTTP ${res.status}; the call may have run, so it was not resent`, `HTTP_${res.status}`);
+        }
         if (last) throw new DeliveryApiError(`Shopify answered HTTP ${res.status} ${attempt + 1} times`, res.status === 429 ? "THROTTLED" : `HTTP_${res.status}`);
         await this.sleep(retryAfterMs(res.headers) ?? backoffMs(attempt, this.policy, this.random));
         continue;

@@ -1,16 +1,22 @@
 // D-09 option A: write theme files through the Admin GraphQL API.
-//   preview  duplicates the live theme as an unpublished theme and writes
-//            the patch there, so the merchant can look before anything
-//            changes on the live store
+//   preview  duplicates the live theme (or the theme passed as themeId) as an
+//            unpublished theme and writes the patch there, so the merchant
+//            can look before anything changes on the live store
 //   apply    writes the patch to the live theme (or a chosen theme)
 //   revert   writes every original back, byte for byte, and deletes files
-//            the patch created
+//            the patch created; it first waits for any write job from apply
+//            that was still running
 // Alt text goes through fileUpdate and needs no theme edit. Every theme
 // write needs write_themes plus an exemption from Shopify (Q-27).
+//
+// Shopify has no compare-and-swap for theme files: themeFilesUpsert
+// overwrites whatever is there. We check every before just ahead of the
+// write and read every file back after it, but an edit that lands between
+// the two can still be overwritten.
 import { DeliveryApiError, PartialApplyError, PatchConflictError, type Conflict } from "./errors";
 import { DEFAULT_RETRY, backoffMs, realSleep, type FetchLike, type RetryPolicy, type Sleep } from "./http";
 import { LIMITS } from "./limits";
-import { chunk, fileConflict, plansFor, utf8, validatePatch } from "./patch";
+import { chunk, md5Hex, plansFor, sameBytes, utf8, validatePatch } from "./patch";
 import type { AdminGraphql } from "./shopify-admin";
 import type { AltTextChange, DeliveryAdapter, DeliveryPatch, DeliveryPreview, DeliveryReceipt, RevertResult, ThemeFileChange } from "./types";
 
@@ -19,6 +25,11 @@ export const ADMIN_QUERIES = {
   mainTheme: `query WaMainTheme {
   themes(first: 1, roles: [MAIN]) {
     nodes { id name role }
+  }
+}`,
+  themesByName: `query WaThemesByName($names: [String!]) {
+  themes(first: 5, names: $names) {
+    nodes { id name role processing }
   }
 }`,
   themeInfo: `query WaThemeInfo($id: ID!) {
@@ -97,21 +108,32 @@ export interface AdminApiPreview extends DeliveryPreview {
   previewUrl: string | null;
 }
 
+export interface AdminFileRecord extends ThemeFileChange {
+  // The MD5 Shopify reported for the file after our write. Revert treats a
+  // file with this checksum as ours, even if Shopify changed our bytes.
+  storedMd5: string | null;
+}
+
 export interface AdminApiReceipt extends DeliveryReceipt {
   route: "admin-api";
   shop: string;
   themeId: string | null;
+  files: AdminFileRecord[];
+  // Write jobs from apply not known to have finished. Revert waits for them.
+  pendingJobs: string[];
 }
 
 export interface AdminApiRevert extends RevertResult {
   route: "admin-api";
   themeId: string | null;
+  // Media deleted since apply: nothing left to revert.
+  skippedMedia: string[];
 }
 
 export interface AdminApiAdapterOptions {
   client: AdminGraphql;
   shop: string;
-  // The theme apply writes to. Default: the live (MAIN) theme.
+  // The theme preview copies and apply writes to. Default: the live theme.
   themeId?: string;
   // Reads file bodies Shopify serves as a short-lived URL.
   fetch?: FetchLike;
@@ -139,6 +161,11 @@ interface ThemeNode {
   processingFailed?: boolean;
 }
 
+interface StoredFile {
+  bytes: Uint8Array;
+  md5: string;
+}
+
 type FileBody =
   | { __typename: "OnlineStoreThemeFileBodyText"; content: string }
   | { __typename: "OnlineStoreThemeFileBodyBase64"; contentBase64: string }
@@ -155,8 +182,12 @@ interface ThemeFilesData {
   } | null;
 }
 
-// Codes worth a retry: Shopify says try again later, or the file is busy.
-const RETRY_CODES = new Set(["THROTTLED", "FILE_LOCKED", "MEDIA_CANNOT_BE_MODIFIED", "NON_READY_STATE"]);
+// Codes worth a retry: Shopify says try again later, or the file is not
+// ready yet. MEDIA_CANNOT_BE_MODIFIED is not here: another operation is
+// changing that media, and writing over it could undo the other change.
+const RETRY_CODES = new Set(["THROTTLED", "FILE_LOCKED", "NON_READY_STATE"]);
+// Writes that are safe to send twice after a 5xx: they set a fixed value.
+const IDEMPOTENT = { idempotent: true };
 
 function userErrorsToError(operation: string, errors: UserError[]): DeliveryApiError {
   const code = errors.find((e) => e.code)?.code ?? "USER_ERROR";
@@ -173,6 +204,9 @@ export function previewThemeName(patch: DeliveryPatch): string {
   // Shopify's theme name limit is not in the schema; 50 characters is our guess.
   return `${PREVIEW_THEME_PREFIX} ${patch.id}`.slice(0, 50);
 }
+
+const holds = (current: StoredFile | undefined, text: string | null) =>
+  text === null ? current === undefined : current !== undefined && sameBytes(current.bytes, utf8(text));
 
 export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminApiReceipt, AdminApiRevert> {
   readonly route = "admin-api" as const;
@@ -205,23 +239,26 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
   async preview(patch: DeliveryPatch): Promise<AdminApiPreview> {
     validatePatch(patch);
     const base = { route: this.route, patchId: patch.id, files: plansFor(patch.files), altText: patch.altText };
-    const altConflicts = await this.altConflicts(patch.altText, "before");
+    const altConflicts = await this.altConflicts(patch.altText);
     if (!patch.files.length) {
       if (altConflicts.length) throw new PatchConflictError("preview", altConflicts);
       return { ...base, themeId: null, sourceThemeId: null, themeName: null, previewUrl: null };
     }
-    const live = await this.mainTheme();
-    const conflicts = [...(await this.fileConflicts(live.id, patch.files, "before")), ...altConflicts];
+    const sourceId = await this.targetTheme();
+    const conflicts = [...(await this.fileConflicts(sourceId, patch.files)), ...altConflicts];
     if (conflicts.length) throw new PatchConflictError("preview", conflicts);
 
     const name = previewThemeName(patch);
-    const copy = await this.duplicate(live.id, name);
+    if ((await this.themesNamed(name)).length) {
+      throw new DeliveryApiError(`A theme named "${name}" already exists; discard it before a new preview`, "PREVIEW_EXISTS");
+    }
+    const copy = await this.duplicate(sourceId, name);
     try {
       await this.waitForTheme(copy.id);
       // The copy is taken after our check, so check it again.
-      const again = await this.fileConflicts(copy.id, patch.files, "before");
+      const again = await this.fileConflicts(copy.id, patch.files);
       if (again.length) throw new PatchConflictError("preview", again);
-      await this.writeFiles(copy.id, patch.files.map((c) => ({ file: c.file, text: c.after })));
+      await this.writeFiles(copy.id, patch.files.map((c) => ({ file: c.file, text: c.after })), []);
       await this.verifyFiles(copy.id, patch.files.map((c) => ({ file: c.file, text: c.after })));
     } catch (e) {
       // Leave no half-written preview theme behind.
@@ -231,7 +268,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
     return {
       ...base,
       themeId: copy.id,
-      sourceThemeId: live.id,
+      sourceThemeId: sourceId,
       themeName: name,
       previewUrl: `https://${this.shop}/?preview_theme_id=${numericId(copy.id)}`,
     };
@@ -239,53 +276,70 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
 
   async apply(patch: DeliveryPatch): Promise<AdminApiReceipt> {
     validatePatch(patch);
-    const themeId = patch.files.length ? (this.targetThemeId ?? (await this.mainTheme()).id) : null;
-    const conflicts = [
-      ...(themeId ? await this.fileConflicts(themeId, patch.files, "before") : []),
-      ...(await this.altConflicts(patch.altText, "before")),
-    ];
+    const themeId = patch.files.length ? await this.targetTheme() : null;
+    const conflicts = [...(themeId ? await this.fileConflicts(themeId, patch.files) : []), ...(await this.altConflicts(patch.altText))];
     if (conflicts.length) throw new PatchConflictError("apply", conflicts);
 
     const files: ThemeFileChange[] = [];
     const alts: AltTextChange[] = [];
+    const stored = new Map<string, string>();
+    const pendingJobs: string[] = [];
+    const receipt = (f: ThemeFileChange[], a: AltTextChange[]) => this.receipt(patch, themeId, f, a, stored, pendingJobs);
     try {
       for (const group of chunk(patch.files, this.filesPerCall)) {
         // Count the group before the call: if Shopify wrote part of it, revert
         // must cover it. Revert skips files that still hold their before.
         files.push(...group);
-        await this.upsert(themeId as string, group.map((c) => ({ file: c.file, text: c.after })));
+        await this.upsert(themeId as string, group.map((c) => ({ file: c.file, text: c.after })), pendingJobs, stored);
       }
-      if (themeId) await this.verifyFiles(themeId, patch.files.map((c) => ({ file: c.file, text: c.after })));
+      if (themeId) await this.verifyFiles(themeId, patch.files.map((c) => ({ file: c.file, text: c.after })), stored);
       for (const group of chunk(patch.altText, LIMITS.altTextPerCall)) {
         alts.push(...group);
         await this.updateAlt(group.map((a) => ({ id: a.mediaId, alt: a.after })));
       }
     } catch (e) {
-      if (files.length || alts.length) throw new PartialApplyError(this.receipt(patch, themeId, files, alts), e);
+      if (files.length || alts.length) throw new PartialApplyError(receipt(files, alts), e);
       throw e;
     }
-    return this.receipt(patch, themeId, patch.files, patch.altText);
+    return receipt(patch.files, patch.altText);
   }
 
   async revert(receipt: AdminApiReceipt): Promise<AdminApiRevert> {
+    // A write from apply that is still running would land after our revert
+    // and put the patch back. Wait for it, or stop before writing anything.
+    for (const id of receipt.pendingJobs ?? []) {
+      try {
+        await this.waitForJob(id);
+      } catch (e) {
+        if (e instanceof DeliveryApiError && e.code === "JOB_TIMEOUT") {
+          throw new DeliveryApiError(`A write from apply is still running (${id}); try the revert again later`, "JOB_PENDING", { jobId: id });
+        }
+        throw e;
+      }
+    }
+
     const conflicts: Conflict[] = [];
-    const files: ThemeFileChange[] = [];
+    const files: AdminFileRecord[] = [];
     if (receipt.files.length) {
       if (!receipt.themeId) throw new DeliveryApiError("The receipt lists files but no theme", "INVALID_RECEIPT");
       const current = await this.readFiles(receipt.themeId, receipt.files.map((c) => c.file));
       for (const c of receipt.files) {
-        const now = current.get(c.file) ?? null;
-        if (!fileConflict(c.file, now, c.after)) files.push(c);
-        else if (fileConflict(c.file, now, c.before)) conflicts.push({ file: c.file, reason: now === null ? "missing" : "changed" });
+        const now = current.get(c.file);
+        // Ours: the bytes we wrote, or the bytes Shopify said it stored for them.
+        const ours = holds(now, c.after) || (!!now && !!c.storedMd5 && now.md5 === c.storedMd5);
+        if (ours) files.push(c);
+        else if (!holds(now, c.before)) conflicts.push({ file: c.file, reason: now ? "changed" : "missing" });
         // Else the file already holds its before: nothing to do.
       }
     }
     const alts: AltTextChange[] = [];
+    const skippedMedia: string[] = [];
     if (receipt.altText.length) {
       const current = await this.readAlt(receipt.altText.map((a) => a.mediaId));
       for (const a of receipt.altText) {
         const now = current.get(a.mediaId);
-        if (now === undefined) conflicts.push({ mediaId: a.mediaId, reason: "missing" });
+        // The image was deleted after apply: there is nothing left to revert.
+        if (now === undefined) skippedMedia.push(a.mediaId);
         else if (now === a.after) alts.push(a);
         else if (now !== a.before) conflicts.push({ mediaId: a.mediaId, reason: "changed" });
       }
@@ -295,7 +349,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
     if (files.length && receipt.themeId) {
       const restore = files.filter((c) => c.before !== null).map((c) => ({ file: c.file, text: c.before as string }));
       const created = files.filter((c) => c.before === null).map((c) => c.file);
-      await this.writeFiles(receipt.themeId, restore);
+      await this.writeFiles(receipt.themeId, restore, []);
       if (created.length) await this.deleteFiles(receipt.themeId, created);
       await this.verifyFiles(receipt.themeId, files.map((c) => ({ file: c.file, text: c.before })));
     }
@@ -309,6 +363,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
       themeId: receipt.themeId,
       files: files.map((c) => c.file),
       altText: alts.map((a) => a.mediaId),
+      skippedMedia,
     };
   }
 
@@ -322,40 +377,66 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
     await this.deleteTheme(themeId);
   }
 
-  private receipt(patch: DeliveryPatch, themeId: string | null, files: ThemeFileChange[], altText: AltTextChange[]): AdminApiReceipt {
+  private receipt(
+    patch: DeliveryPatch,
+    themeId: string | null,
+    files: ThemeFileChange[],
+    altText: AltTextChange[],
+    stored: Map<string, string>,
+    pendingJobs: string[],
+  ): AdminApiReceipt {
     return {
       route: this.route,
       patchId: patch.id,
       appliedAt: this.now().toISOString(),
       shop: this.shop,
       themeId,
-      files: files.map((c) => ({ file: c.file, before: c.before, after: c.after })),
+      files: files.map((c) => ({ file: c.file, before: c.before, after: c.after, storedMd5: stored.get(c.file) ?? null })),
       altText: altText.map((a) => ({ ...a })),
+      pendingJobs: [...pendingJobs],
     };
   }
 
-  private async mainTheme(): Promise<ThemeNode> {
+  private async targetTheme(): Promise<string> {
+    if (this.targetThemeId) return this.targetThemeId;
     const data = await this.client.request<{ themes: { nodes: ThemeNode[] } }>(ADMIN_QUERIES.mainTheme);
     const main = data.themes.nodes[0];
     if (!main) throw new DeliveryApiError("The store has no published theme", "NO_MAIN_THEME");
-    return main;
+    return main.id;
+  }
+
+  private async themesNamed(name: string): Promise<ThemeNode[]> {
+    const data = await this.client.request<{ themes: { nodes: ThemeNode[] } }>(ADMIN_QUERIES.themesByName, { names: [name] });
+    // `names` treats * as a wildcard; our names have none, but match exactly anyway.
+    return data.themes.nodes.filter((t) => t.name === name);
   }
 
   private async duplicate(themeId: string, name: string): Promise<ThemeNode> {
-    const data = await this.client.request<{ themeDuplicate: { newTheme: ThemeNode | null; userErrors: UserError[] } }>(
-      ADMIN_QUERIES.themeDuplicate,
-      { id: themeId, name },
-    );
+    let data: { themeDuplicate: { newTheme: ThemeNode | null; userErrors: UserError[] } };
+    try {
+      // Never resent after a 5xx: a second call would make a second copy.
+      data = await this.client.request(ADMIN_QUERIES.themeDuplicate, { id: themeId, name });
+    } catch (e) {
+      if (e instanceof DeliveryApiError && e.code.startsWith("HTTP_5")) {
+        // The call may have run. Look for the copy by its name instead.
+        const found = await this.themesNamed(name);
+        if (found.length === 1) return found[0];
+      }
+      throw e;
+    }
     const p = data.themeDuplicate;
     if (p.userErrors.length || !p.newTheme) throw userErrorsToError("themeDuplicate", p.userErrors.length ? p.userErrors : [{ message: "no theme returned" }]);
     return p.newTheme;
   }
 
   private async deleteTheme(themeId: string): Promise<void> {
-    const data = await this.client.request<{ themeDelete: { deletedThemeId: string | null; userErrors: UserError[] } }>(ADMIN_QUERIES.themeDelete, {
-      id: themeId,
-    });
-    if (data.themeDelete.userErrors.length) throw userErrorsToError("themeDelete", data.themeDelete.userErrors);
+    const data = await this.client.request<{ themeDelete: { deletedThemeId: string | null; userErrors: UserError[] } }>(
+      ADMIN_QUERIES.themeDelete,
+      { id: themeId },
+      IDEMPOTENT,
+    );
+    const errors = data.themeDelete.userErrors.filter((e) => e.code !== "NOT_FOUND");
+    if (errors.length) throw userErrorsToError("themeDelete", errors);
   }
 
   private async waitForTheme(themeId: string): Promise<void> {
@@ -374,21 +455,27 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
       const data = await this.client.request<{ job: { id: string; done: boolean } | null }>(ADMIN_QUERIES.job, { id: jobId });
       // A job Shopify no longer knows is finished; verifyFiles checks the result.
       if (!data.job || data.job.done) return;
-      if (polls + 1 >= this.maxPolls) throw new DeliveryApiError(`Job ${jobId} not done after ${this.maxPolls} checks`, "JOB_TIMEOUT");
+      if (polls + 1 >= this.maxPolls) throw new DeliveryApiError(`Job ${jobId} not done after ${this.maxPolls} checks`, "JOB_TIMEOUT", { jobId });
       await this.sleep(this.pollIntervalMs);
     }
   }
 
-  private async writeFiles(themeId: string, files: { file: string; text: string }[]): Promise<void> {
-    for (const group of chunk(files, this.filesPerCall)) await this.upsert(themeId, group);
+  private async writeFiles(themeId: string, files: { file: string; text: string }[], pendingJobs: string[]): Promise<void> {
+    for (const group of chunk(files, this.filesPerCall)) await this.upsert(themeId, group, pendingJobs);
   }
 
-  private async upsert(themeId: string, files: { file: string; text: string }[]): Promise<void> {
+  // Writes one batch and waits for its job. A job still running is left in
+  // pendingJobs; checksums Shopify reports go into `stored`.
+  private async upsert(themeId: string, files: { file: string; text: string }[], pendingJobs: string[], stored?: Map<string, string>): Promise<void> {
     const input = files.map((f) => ({ filename: f.file, body: { type: "TEXT", value: f.text } }));
     for (let attempt = 0; ; attempt++) {
       const data = await this.client.request<{
-        themeFilesUpsert: { job: { id: string; done: boolean } | null; userErrors: UserError[] };
-      }>(ADMIN_QUERIES.filesUpsert, { themeId, files: input });
+        themeFilesUpsert: {
+          job: { id: string; done: boolean } | null;
+          upsertedThemeFiles: { filename: string; checksumMd5: string | null }[] | null;
+          userErrors: UserError[];
+        };
+      }>(ADMIN_QUERIES.filesUpsert, { themeId, files: input }, IDEMPOTENT);
       const p = data.themeFilesUpsert;
       if (p.userErrors.length) {
         const retry = p.userErrors.every((e) => RETRY_CODES.has(e.code ?? "")) && attempt + 1 < this.policy.maxAttempts;
@@ -396,22 +483,33 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
         await this.sleep(backoffMs(attempt, this.policy, this.random));
         continue;
       }
-      if (p.job && !p.job.done) await this.waitForJob(p.job.id);
+      for (const f of p.upsertedThemeFiles ?? []) if (f.checksumMd5) stored?.set(f.filename, f.checksumMd5.toLowerCase());
+      if (p.job && !p.job.done) {
+        pendingJobs.push(p.job.id);
+        await this.waitForJob(p.job.id);
+        pendingJobs.splice(pendingJobs.indexOf(p.job.id), 1);
+      }
       return;
     }
   }
 
   private async deleteFiles(themeId: string, files: string[]): Promise<void> {
     for (const group of chunk(files, this.filesPerCall)) {
-      const data = await this.client.request<{ themeFilesDelete: { userErrors: UserError[] } }>(ADMIN_QUERIES.filesDelete, { themeId, files: group });
+      const data = await this.client.request<{ themeFilesDelete: { userErrors: UserError[] } }>(
+        ADMIN_QUERIES.filesDelete,
+        { themeId, files: group },
+        IDEMPOTENT,
+      );
       const errors = data.themeFilesDelete.userErrors.filter((e) => e.code !== "NOT_FOUND");
       if (errors.length) throw userErrorsToError("themeFilesDelete", errors);
     }
   }
 
-  // Current bytes of each file. A missing file is absent from the map.
-  private async readFiles(themeId: string, files: string[]): Promise<Map<string, Uint8Array>> {
-    const out = new Map<string, Uint8Array>();
+  // Current bytes and MD5 of each file. A missing file is absent from the map.
+  // Refuses when the bytes do not match the checksum Shopify sent with them,
+  // for example a non-UTF-8 file served as a Text body.
+  private async readFiles(themeId: string, files: string[]): Promise<Map<string, StoredFile>> {
+    const out = new Map<string, StoredFile>();
     for (const group of chunk(files, LIMITS.upsertFilesPerCall)) {
       let after: string | null = null;
       do {
@@ -427,7 +525,18 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
         if (errors.length) {
           throw new DeliveryApiError(`Could not read ${errors.map((e) => `${e.filename} (${e.code})`).join(", ")}`, errors[0].code, errors);
         }
-        for (const node of conn.nodes) out.set(node.filename, await this.bodyBytes(node.filename, node.body));
+        for (const node of conn.nodes) {
+          const bytes = await this.bodyBytes(node.filename, node.body);
+          const md5 = md5Hex(bytes);
+          if (node.checksumMd5 && node.checksumMd5.toLowerCase() !== md5) {
+            throw new DeliveryApiError(
+              `${node.filename}: the bytes Shopify sent do not match its checksum, so we cannot compare or restore them exactly`,
+              "CHECKSUM_MISMATCH",
+              { file: node.filename, expected: node.checksumMd5, actual: md5 },
+            );
+          }
+          out.set(node.filename, { bytes, md5 });
+        }
         after = conn.pageInfo.hasNextPage ? conn.pageInfo.endCursor : null;
       } while (after);
     }
@@ -442,6 +551,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
         return Buffer.from(body.contentBase64, "base64");
       case "OnlineStoreThemeFileBodyUrl": {
         if (!this.fetch) throw new DeliveryApiError(`${file} is served as a URL; pass fetch to read it`, "BODY_URL");
+        if (!body.url.startsWith("https://")) throw new DeliveryApiError(`${file} is served from a URL that is not https`, "BODY_URL");
         const res = await this.fetch(body.url, { method: "GET", headers: {} });
         if (res.status !== 200) throw new DeliveryApiError(`Could not download ${file} (HTTP ${res.status})`, `HTTP_${res.status}`);
         return new Uint8Array(await res.arrayBuffer());
@@ -451,15 +561,23 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
     }
   }
 
-  private async fileConflicts(themeId: string, changes: ThemeFileChange[], side: "before" | "after"): Promise<Conflict[]> {
+  private async fileConflicts(themeId: string, changes: ThemeFileChange[]): Promise<Conflict[]> {
     const current = await this.readFiles(themeId, changes.map((c) => c.file));
-    return changes.map((c) => fileConflict(c.file, current.get(c.file) ?? null, c[side])).filter((c): c is Conflict => c !== null);
+    const out: Conflict[] = [];
+    for (const c of changes) {
+      const now = current.get(c.file);
+      if (holds(now, c.before)) continue;
+      out.push({ file: c.file, reason: c.before === null ? "exists" : now ? "changed" : "missing" });
+    }
+    return out;
   }
 
   // Reads the files back and compares bytes. text null means "must be gone".
-  private async verifyFiles(themeId: string, expected: { file: string; text: string | null }[]): Promise<void> {
+  // Records the checksum Shopify holds for each file in `stored`.
+  private async verifyFiles(themeId: string, expected: { file: string; text: string | null }[], stored?: Map<string, string>): Promise<void> {
     const current = await this.readFiles(themeId, expected.map((e) => e.file));
-    const wrong = expected.filter((e) => fileConflict(e.file, current.get(e.file) ?? null, e.text) !== null).map((e) => e.file);
+    for (const [file, f] of current) stored?.set(file, f.md5);
+    const wrong = expected.filter((e) => !holds(current.get(e.file), e.text)).map((e) => e.file);
     if (wrong.length) throw new DeliveryApiError(`Shopify holds different bytes than we wrote for ${wrong.join(", ")}`, "VERIFY_FAILED", wrong);
   }
 
@@ -473,14 +591,14 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
     return out;
   }
 
-  private async altConflicts(changes: AltTextChange[], side: "before" | "after"): Promise<Conflict[]> {
+  private async altConflicts(changes: AltTextChange[]): Promise<Conflict[]> {
     if (!changes.length) return [];
     const current = await this.readAlt(changes.map((a) => a.mediaId));
     const conflicts: Conflict[] = [];
     for (const a of changes) {
       const now = current.get(a.mediaId);
       if (now === undefined) conflicts.push({ mediaId: a.mediaId, reason: "missing" });
-      else if (now !== a[side]) conflicts.push({ mediaId: a.mediaId, reason: "changed" });
+      else if (now !== a.before) conflicts.push({ mediaId: a.mediaId, reason: "changed" });
     }
     return conflicts;
   }
@@ -490,6 +608,7 @@ export class AdminApiAdapter implements DeliveryAdapter<AdminApiPreview, AdminAp
       const data = await this.client.request<{ fileUpdate: { files: { id: string; alt: string | null }[] | null; userErrors: UserError[] } }>(
         ADMIN_QUERIES.fileUpdate,
         { files: items },
+        IDEMPOTENT,
       );
       const p = data.fileUpdate;
       if (p.userErrors.length) {
