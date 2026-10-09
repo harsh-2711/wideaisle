@@ -179,6 +179,40 @@ describe("ThemeFileAdapter refuses hostile or broken zips", () => {
     }
   });
 
+  it("refuses a __proto__ entry fast and writes nothing (re-review item 1)", async () => {
+    // As an object key, "__proto__" replaced the prototype and fflate wrote
+    // one junk entry per byte of the data.
+    // Kept small: before the fix, each byte became one zip entry.
+    const big = Buffer.alloc(5_000, 0x41);
+    for (const name of ["__proto__", "assets/__proto__", "__proto__/x.css"]) {
+      const adapter = new ThemeFileAdapter(buildRawZip([...base(), { name, data: big }]));
+      const started = Date.now();
+      const err = await adapter.apply(patch).catch((e) => e);
+      expect(err, name).toMatchObject({ code: "INVALID_ZIP", message: /__proto__/ });
+      expect(Date.now() - started, name).toBeLessThan(1000);
+    }
+  });
+
+  it("keeps names like constructor and prototype, which are plain keys", async () => {
+    const zip = buildRawZip([...base(), { name: "assets/constructor", data: utf8("a\n") }, { name: "prototype", data: utf8("b\n") }]);
+    const receipt = await new ThemeFileAdapter(zip, { now: FIXED_NOW }).apply(patch);
+    expect(Object.keys(unzipSync(receipt.zip)).sort()).toEqual(["assets/constructor", "layout/theme.liquid", "prototype", "sections/header.liquid"]);
+  });
+
+  it("reads UTF-8 names with or without the UTF-8 flag, and Latin-1 names (re-review item 2)", async () => {
+    const zip = buildRawZip([
+      ...base(),
+      { name: "assets/café.png", data: utf8("1"), utf8Flag: true },
+      { name: "assets/naïve.css", data: utf8("2"), utf8Flag: false },
+      // "olé.css" in Latin-1: not valid UTF-8, so it must read as Latin-1.
+      { name: "assets/olé.css", rawName: Buffer.from("assets/ol\xe9.css", "latin1"), data: utf8("3"), utf8Flag: false },
+    ]);
+    const receipt = await new ThemeFileAdapter(zip, { now: FIXED_NOW }).apply(patch);
+    const names = Object.keys(unzipSync(receipt.zip));
+    expect(names).toEqual(expect.arrayContaining(["assets/café.png", "assets/naïve.css", "assets/olé.css"]));
+    expect(names.some((n) => n.includes("Ã"))).toBe(false);
+  });
+
   it("refuses symbolic links", async () => {
     const zip = buildRawZip([...base(), { name: "assets/link.css", data: utf8("/etc/passwd"), unixMode: 0o120777 }]);
     await expect(refuse(zip)).rejects.toMatchObject({ code: "INVALID_ZIP", message: /symbolic link/ });

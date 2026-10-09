@@ -30,6 +30,8 @@ export function themePathProblem(file: string): string | null {
   const parts = file.split("/");
   if (!(THEME_DIRS as readonly string[]).includes(parts[0])) return `${file} is not under a theme folder (${THEME_DIRS.join(", ")})`;
   if (parts.length < 2 || parts.some((p) => p === "" || p === "." || p === "..")) return `${file} is not a plain relative path`;
+  // Paths become zip entry names and object keys on the zip route.
+  if (parts.includes("__proto__")) return `${file} has a "__proto__" segment`;
   // theme.files treats * as a wildcard, and \ is not a theme path separator.
   if (/[\\*?\0]/.test(file)) return `${file} has a character theme paths do not use`;
   return null;

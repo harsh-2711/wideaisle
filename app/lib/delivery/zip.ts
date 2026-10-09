@@ -27,8 +27,28 @@ export function zipNameProblem(name: string): string | null {
   if (!name) return "an entry has no name";
   if (/[\\\0]/.test(name)) return `${name}: backslash or NUL in the name`;
   if (name.startsWith("/") || /^[A-Za-z]:/.test(name)) return `${name}: absolute path`;
-  if (name.split("/").includes("..")) return `${name}: ".." in the path`;
+  const segments = name.split("/");
+  if (segments.includes("..")) return `${name}: ".." in the path`;
+  // Entry names become object keys (ours, then fflate's). "__proto__" as a
+  // key replaces the object's prototype instead of adding an entry; fflate
+  // then wrote one junk entry per byte. "constructor" and "prototype" are
+  // plain keys on these objects, so they stay allowed.
+  if (segments.includes("__proto__")) return `${name}: "__proto__" in the path`;
   return null;
+}
+
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+// Names with the UTF-8 flag (bit 11) are UTF-8. Info-ZIP on Linux writes
+// UTF-8 names without the flag, so an unflagged name that is valid UTF-8 is
+// read as UTF-8 too; anything else is read as Latin-1.
+function decodeName(bytes: Buffer, utf8Flag: boolean): string {
+  try {
+    return UTF8.decode(bytes);
+  } catch {
+    if (utf8Flag) throw invalid(`an entry name is flagged UTF-8 but is not valid UTF-8`);
+    return bytes.toString("latin1");
+  }
 }
 
 const invalid = (why: string) => new DeliveryApiError(`Not a usable theme zip: ${why}`, "INVALID_ZIP");
@@ -84,7 +104,7 @@ export function readZip(zip: Uint8Array, opts: ReadZipOptions): ZipEntry[] {
     const external = b.readUInt32LE(p + 38);
     const headerAt = b.readUInt32LE(p + 42);
     const nameBytes = b.subarray(p + 46, p + 46 + nameLength);
-    const name = nameBytes.toString(flags & 0x800 ? "utf8" : "latin1");
+    const name = decodeName(nameBytes, (flags & 0x800) !== 0);
     p += 46 + nameLength + extraLength + commentLength;
 
     if (compressed === 0xffffffff || size === 0xffffffff || headerAt === 0xffffffff) throw invalid("ZIP64 is not supported");

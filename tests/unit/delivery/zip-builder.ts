@@ -12,6 +12,11 @@ export interface RawEntry {
   crc?: number;
   // Unix mode for the external attributes, for example 0o120777 for a link.
   unixMode?: number;
+  // Set the UTF-8 name flag (bit 11). Default true. Info-ZIP on Linux
+  // writes UTF-8 names without it.
+  utf8Flag?: boolean;
+  // Raw name bytes, for names that are not UTF-8.
+  rawName?: Buffer;
 }
 
 // Extra central directory records that point at an existing local header.
@@ -30,11 +35,11 @@ export function buildZip(entries: RawEntry[], aliases: AliasEntry[] = []): Uint8
     const method = e.method ?? 8;
     const comp = method === 8 ? deflateRawSync(e.data) : e.data;
     const crc = (e.crc ?? crc32(e.data)) >>> 0;
-    const name = Buffer.from(e.name, "utf8");
+    const name = e.rawName ?? Buffer.from(e.name, "utf8");
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
-    local.writeUInt16LE(0x800, 6);
+    local.writeUInt16LE(e.utf8Flag === false ? 0 : 0x800, 6);
     local.writeUInt16LE(method, 8);
     local.writeUInt32LE(crc, 14);
     local.writeUInt32LE(comp.length, 18);
@@ -46,12 +51,12 @@ export function buildZip(entries: RawEntry[], aliases: AliasEntry[] = []): Uint8
   }
   const record = (nameText: string, i: number, declaredSize: number) => {
     const { offset: at, comp, e, crc } = meta[i];
-    const name = Buffer.from(nameText, "utf8");
+    const name = nameText === e.name && e.rawName ? e.rawName : Buffer.from(nameText, "utf8");
     const h = Buffer.alloc(46);
     h.writeUInt32LE(0x02014b50, 0);
     h.writeUInt16LE((3 << 8) | 20, 4);
     h.writeUInt16LE(20, 6);
-    h.writeUInt16LE(0x800, 8);
+    h.writeUInt16LE(e.utf8Flag === false ? 0 : 0x800, 8);
     h.writeUInt16LE(e.method ?? 8, 10);
     h.writeUInt32LE(crc, 16);
     h.writeUInt32LE(comp.length, 20);

@@ -61,6 +61,8 @@ describe("validatePatch", () => {
     expect(themePathProblem("sections\\header.liquid")).not.toBeNull();
     expect(themePathProblem("sections/a\\b.liquid")).toMatch(/character/);
     expect(themePathProblem("sections/a/../../x.liquid")).toMatch(/plain relative/);
+    expect(themePathProblem("assets/__proto__")).toMatch(/__proto__/);
+    expect(themePathProblem("assets/constructor")).toBeNull();
   });
 });
 
