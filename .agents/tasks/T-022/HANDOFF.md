@@ -8,7 +8,7 @@ See TASK.md. Patrol, Adafix, TestParty's free scan and two widgets: what each fi
 
 ## Status
 
-In review in the M2 market research pull request. Last updated 2026-10-08.
+Blocked on you. Merged in PR #37. App installs wait on a dev store (Q-03).
 
 ## Done so far
 
@@ -20,13 +20,12 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the fixes, then merge.
+Waiting for Q-03.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-03.
-2. With a dev store: install Patrol (free Monitor), Adafix (trial), TestParty's free scan, UserWay and Avada; record fixes, misses and onboarding.
-3. Check whether AccessFix by MK-Way changes theme code, and whether its $199 Agency tier covers several stores. Confirm TestParty's Pro contents on the live listing.
+1. With a dev store: install Patrol (free Monitor), Adafix (trial), TestParty's free scan, UserWay and Avada; record fixes, misses and onboarding.
+2. Check whether AccessFix by MK-Way changes theme code, and whether its $199 Agency tier covers several stores. Confirm TestParty's Pro contents on the live listing.
 
 ## Blockers and open questions
 

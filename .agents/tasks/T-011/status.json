@@ -3,11 +3,11 @@
   "milestone": "M1",
   "lane": "research",
   "agent": "researcher",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Done",
+  "step": "Merged in PR #36",
   "branch": "claude/docs-m1-research",
   "issue": 17,
   "needs": [],
-  "updated": "2026-10-08T06:49:50Z",
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-011"
 }

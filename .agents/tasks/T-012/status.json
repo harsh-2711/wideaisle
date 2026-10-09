@@ -3,11 +3,14 @@
   "milestone": "M1",
   "lane": "research",
   "agent": "researcher",
-  "state": "In review",
-  "step": "PR review",
+  "state": "Blocked on you",
+  "step": "Merged in PR #36; VoiceOver walk and quiz",
   "branch": "claude/docs-m1-research",
   "issue": 18,
-  "needs": [],
-  "updated": "2026-10-08T06:49:51Z",
+  "needs": [
+    "owner:Q-21",
+    "owner:Q-22"
+  ],
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-012"
 }

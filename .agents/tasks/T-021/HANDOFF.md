@@ -8,26 +8,30 @@ See TASK.md. Failures by theme and by app; share inside the six types; what a th
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+Blocked on you. Merged in PR #42 on 2026-10-09. The generator is tested on fixture data. The real report waits on the census run (T-020, Q-01, Q-02).
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Gap report generator and `report` command | 162d1f1 |
+| Crawler fixes merged in | 3abe4a3 |
+| Review fixes: Theme Store names only, store-count floor, source unclear, app markers, coverage lines | 6358a58 |
+| Review fixes: count shops, fold free-text versions, pickRecords keeps data | f5f52a0 |
+| Review fixes: floor by brand, cut-off image URLs | 551c4f4 |
+| Merged to main | 9fc97b6 |
 
 ## Current step
 
-Not started.
+Waiting for the census run (T-020), which waits on Q-01 and Q-02.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. After the census run: `npm run census -- report ...` (docs/census/README.md), commit docs/census/gap-report.md, and feed the top themes into D-08.
 
 ## Blockers and open questions
 
-- None yet.
+- The real report needs the census run: Q-01 (network) and Q-02 (contact address).
 
 ## Decisions used
 
@@ -35,12 +39,17 @@ D-08
 
 ## Files touched
 
-- None yet.
+- app/lib/census/report.ts, scripts/census/census.ts (report command), docs/census/README.md
+- tests/unit/census-report.test.ts
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+```bash
+npx vitest run tests/unit/census-report.test.ts
+```
 
 ## Lessons and gotchas
 
-- None yet.
+- The source guess (theme, app, unknown) is a heuristic from selectors and markup. Treat app shares as a lower bound.
+- Census output files can hold several lines per domain after retries. pickRecords keeps the last one with data.
+- The report is public. It floors themes, versions and patterns by brand (the domain label left of the public suffix), not by domain or shop, and folds free-text version strings. A brand with differently named domains can still pass the floor, so check the real report by hand before committing it.

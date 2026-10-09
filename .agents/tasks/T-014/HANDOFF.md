@@ -8,7 +8,7 @@ See TASK.md. Find out whether AI-driven checks can replace a human check per rel
 
 ## Status
 
-In review in the M1 research pull request. Last updated 2026-10-08.
+Done. Merged in PR #36. The owner's pick is Q-30.
 
 ## Done so far
 
@@ -19,13 +19,12 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the reviewer fixes, then merge.
+None. The owner picks B or D (Q-30).
 
 ## Next three steps
 
-1. After merge, set the state to Done. The memo carries the agents' proposal (D), pending the owner's pick (Q-30).
-2. The owner picks B or D (Q-30).
-3. If D: the M4 test harness lane builds Guidepup flows on the golden stores. If the repo turns private, paid CI minutes need D-04 approval first.
+1. The owner picks B or D (Q-30).
+2. If D: the M4 test harness lane builds Guidepup flows on the golden stores. If the repo turns private, paid CI minutes need D-04 approval first.
 
 ## Blockers and open questions
 

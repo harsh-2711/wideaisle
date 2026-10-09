@@ -8,7 +8,7 @@ See TASK.md. Rule-based Liquid and CSS patches for the six failure types on Dawn
 
 ## Status
 
-Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed; back in review. Three of four exit criteria pass. The live golden-store scan waits on Q-03 (dev store). Last updated 2026-10-09.
+Blocked on you. Merged in PR #35. Before and after scans wait on a dev store (Q-03).
 
 ## Done so far
 
@@ -27,17 +27,17 @@ Review findings on PR #35 fixed (16 of 16), then re-review findings A to E fixed
 
 ## Current step
 
-Pull request #35 re-review, then merge.
+Waiting for Q-03.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-03.
-2. With a dev store: render Dawn, scan before and after, take screenshots (docs/spikes/spike-b-fixers.md, "Next").
-3. Run the fixers on the top themes the census finds (T-020, T-021).
+1. With a dev store: render Dawn, scan before and after, take screenshots (docs/spikes/spike-b-fixers.md, "Next").
+2. Run the fixers on the top themes the census finds (T-020, T-021).
 
 ## Blockers and open questions
 
 - Q-03: Partner account and dev stores for the live scan.
+- Follow-up from the PR #35 review (nit): `linkHasOtherText` in app/lib/fixers/fixers.ts counts Liquid output such as `{{ shop.name }}` as visible text. Output can render empty, so the logo fix may give an empty alt to an image that is the link's only name. Check this on the dev store; if it happens, treat output-only text like conditional text.
 
 ## Decisions used
 
