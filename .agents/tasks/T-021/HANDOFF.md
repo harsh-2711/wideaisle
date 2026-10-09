@@ -8,7 +8,7 @@ See TASK.md. Failures by theme and by app; share inside the six types; what a th
 
 ## Status
 
-In review. T-020 merged in harsh-2711/wideaisle#34 and main is merged in. The generator is tested on fixture data. The real report waits on the census run (T-020, Q-01, Q-02). Last updated 2026-10-08.
+Blocked on you. Merged in PR #42 on 2026-10-09. The generator is tested on fixture data. The real report waits on the census run (T-020, Q-01, Q-02).
 
 ## Done so far
 
@@ -19,16 +19,15 @@ In review. T-020 merged in harsh-2711/wideaisle#34 and main is merged in. The ge
 | Review fixes: Theme Store names only, store-count floor, source unclear, app markers, coverage lines | 6358a58 |
 | Review fixes: count shops, fold free-text versions, pickRecords keeps data | f5f52a0 |
 | Review fixes: floor by brand, cut-off image URLs | 551c4f4 |
+| Merged to main | 9fc97b6 |
 
 ## Current step
 
-Pull request review, then merge.
+Waiting for the census run (T-020), which waits on Q-01 and Q-02.
 
 ## Next three steps
 
-1. Review and merge the pull request.
-2. Set the state to Blocked on you with needs Q-01, Q-02 (through T-020).
-3. After the census run: `npm run census -- report ...` (docs/census/README.md), commit docs/census/gap-report.md, and feed the top themes into D-08.
+1. After the census run: `npm run census -- report ...` (docs/census/README.md), commit docs/census/gap-report.md, and feed the top themes into D-08.
 
 ## Blockers and open questions
 
