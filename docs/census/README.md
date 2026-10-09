@@ -32,10 +32,19 @@ CENSUS_CONTACT=you@example.com npm run census -- scan --input data/census/stores
 
 Both steps resume: stores already in the output file are skipped, so a stopped run can be restarted. Records for errors that may pass (robots.txt unreachable, a 5xx, a crash) carry `retry: true` and are tried again, up to 3 times. `--delay` cannot go below 2000 ms.
 
+```bash
+# 4. Write the gap report (T-021). Only this summary is committed.
+#    Before committing it, check every theme name and pattern class in the
+#    report against the store list: none may point to a single brand.
+npm run census -- report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md   # both files are required
+```
+
 Time, from the 2-second gap and 4 to 6 requests a store: about 10 to 15 seconds a store per worker. With 4 workers, 2,000 stores take about 2 hours. This is an estimate; Spike D (T-033) measures it.
 
 ## Output
 
-`stores.jsonl`, one line per attempt for each domain (a retried domain has several; readers take the last one, see `latest()`): whether it is Shopify, theme name, schema name, version, Theme Store id, and the apps whose scripts load.
+`stores.jsonl`, one line per attempt for each domain (a retried domain has several; the report keeps the last one with data, see `pickRecords()`): whether it is Shopify, theme name, schema name, version, Theme Store id, and the apps whose scripts load.
 
-`scans.jsonl`, one line per attempt for each store (readers take the last one): per page, axe violations by rule with node counts, counts for the six v1 types, a guess at each node's source (theme, app or unknown), and three sample nodes per rule.
+`scans.jsonl`, one line per attempt for each store (the report keeps the last one with data): per page, axe violations by rule with node counts, counts for the six v1 types, a guess at each node's source (theme, app or unknown), and three sample nodes per rule.
+
+`gap-report.md`: theme share among Shopify stores and how much of the market the top five cover, pages scanned by kind, how often each of the six types appears, the most common failure patterns by number of stores, the apps behind the most failures, and how many failing elements need a theme patch, a content edit or an app change. It names no store: only Theme Store theme names appear, domains that share one myshopify.com shop count once, and themes, versions or patterns seen in fewer than 5 shops are grouped as "Other" or left out. Reading the source of a failure is a heuristic, so those rows are estimates.

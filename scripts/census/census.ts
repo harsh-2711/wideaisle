@@ -12,10 +12,12 @@
 //
 //   npx tsx scripts/census/census.ts discover --input domains.txt --out data/census/stores.jsonl
 //   npx tsx scripts/census/census.ts scan --input data/census/stores.jsonl --out data/census/scans.jsonl
+//   npx tsx scripts/census/census.ts report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
+import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine } from "../../app/lib/census/report";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
@@ -361,12 +363,26 @@ async function main() {
       limit: { type: "string" },
       concurrency: { type: "string" },
       delay: { type: "string" },
+      scans: { type: "string" },
     },
   });
   const [cmd] = positionals;
-  if (!values.input || !values.out || !["discover", "scan"].includes(cmd)) {
-    console.error("Usage: census.ts discover|scan --input FILE --out FILE [--limit N] [--concurrency N] [--delay MS]");
+  if (!values.input || !values.out || !["discover", "scan", "report"].includes(cmd)) {
+    console.error("Usage: census.ts discover|scan|report --input FILE --out FILE [--scans FILE] [--limit N] [--concurrency N] [--delay MS]");
     process.exit(2);
+  }
+  if (cmd === "report") {
+    if (!values.scans) {
+      console.error("report needs --scans as well as --input (stores).");
+      process.exit(2);
+    }
+    // A resumed run can hold several lines per domain; keep the last one
+    // with data, so a failed retry does not hide an earlier scan.
+    const stores = pickRecords(readRecords<StoreLine>(values.input));
+    const scans = pickRecords(readRecords<ScanLine>(values.scans));
+    fs.writeFileSync(values.out, renderReport(buildReport(stores, scans), new Date().toISOString().slice(0, 10)));
+    console.log(`wrote ${values.out}`);
+    return;
   }
   // 2 seconds between page loads on one store is the floor (plan crawl rules).
   const delay = intArg("delay", values.delay, 2000, 2000, 60000);
