@@ -1,10 +1,14 @@
 // D-09 option C: the merchant gives us a theme zip (Online Store > Themes >
 // Download theme file) and uploads the patched zip we return. Works offline.
-import { unzipSync, zipSync, type Zippable } from "fflate";
+// Reading uses our own strict reader (zip.ts); writing uses fflate. The
+// output keeps every file's bytes but not zip metadata: timestamps (all set
+// to the apply time), permissions, comments and extra fields are dropped.
+import { zipSync, type Zippable } from "fflate";
 import { DeliveryApiError, PatchConflictError, type Conflict } from "./errors";
 import { LIMITS } from "./limits";
 import { fileConflict, plansFor, requireNoAltText, sha256Hex, utf8, validatePatch } from "./patch";
 import type { DeliveryAdapter, DeliveryPatch, DeliveryPreview, DeliveryReceipt, RevertResult } from "./types";
+import { readZip } from "./zip";
 
 export interface ThemeFilePreview extends DeliveryPreview {
   route: "theme-file";
@@ -132,21 +136,7 @@ export class ThemeFileAdapter implements DeliveryAdapter<ThemeFilePreview, Theme
     if (this.original.byteLength > this.maxZipBytes) {
       throw new DeliveryApiError(`The zip is ${this.original.byteLength} bytes; Shopify accepts up to ${this.maxZipBytes}`, "TOO_LARGE");
     }
-    let total = 0;
-    let unzipped: Record<string, Uint8Array>;
-    try {
-      unzipped = unzipSync(this.original, {
-        filter: (f) => {
-          total += f.originalSize;
-          if (total > this.maxUnzippedBytes) throw new DeliveryApiError("The zip unpacks to more than we accept", "TOO_LARGE");
-          return true;
-        },
-      });
-    } catch (e) {
-      if (e instanceof DeliveryApiError) throw e;
-      throw new DeliveryApiError(`Not a readable zip: ${e instanceof Error ? e.message : String(e)}`, "INVALID_ZIP");
-    }
-    const entries = Object.entries(unzipped);
+    const entries: [string, Uint8Array][] = readZip(this.original, { maxUnzippedBytes: this.maxUnzippedBytes }).map((e) => [e.name, e.data]);
     const root = findThemeRoot(entries.map(([n]) => n));
     const files = new Map<string, Uint8Array>();
     for (const [name, data] of entries) {

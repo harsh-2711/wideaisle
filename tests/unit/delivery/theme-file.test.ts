@@ -4,6 +4,7 @@ import { DeliveryApiError, InvalidPatchError, PatchConflictError } from "../../.
 import { sha256Hex, utf8 } from "../../../app/lib/delivery/patch";
 import { ThemeFileAdapter, findThemeRoot } from "../../../app/lib/delivery/theme-file";
 import { CSS_AFTER, FIXED_NOW, HEADER_AFTER, HEADER_BEFORE, LOGO_BYTES, NEW_SNIPPET, THEME_TEXT, samplePatch } from "./helpers";
+import { buildZip as buildRawZip, type RawEntry } from "./zip-builder";
 
 function buildZip(root = ""): Uint8Array {
   const files: Zippable = {};
@@ -112,9 +113,74 @@ describe("ThemeFileAdapter (patched theme zip, offline)", () => {
     await expect(new ThemeFileAdapter(zip, { maxUnzippedBytes: 100 }).preview(samplePatch())).rejects.toBeInstanceOf(DeliveryApiError);
   });
 
+  it("reads its own output and a hand-built zip the same way", async () => {
+    const hand = buildRawZip([
+      { name: "layout/theme.liquid", data: utf8(THEME_TEXT["layout/theme.liquid"]) },
+      { name: "sections/header.liquid", data: utf8(HEADER_BEFORE), method: 0 },
+    ]);
+    const receipt = await new ThemeFileAdapter(hand, { now: FIXED_NOW }).apply(
+      samplePatch({ files: [{ file: "sections/header.liquid", before: HEADER_BEFORE, after: HEADER_AFTER }] }),
+    );
+    expect(Buffer.from(unzipSync(receipt.zip)["sections/header.liquid"]).toString("utf8")).toBe(HEADER_AFTER);
+  });
+
   it("finds the theme root or explains why not", () => {
     expect(findThemeRoot(["layout/theme.liquid"])).toBe("");
     expect(findThemeRoot(["x/", "x/layout/theme.liquid"])).toBe("x/");
     expect(() => findThemeRoot(["a/layout/theme.liquid", "b/layout/theme.liquid"])).toThrow(/more than one theme/);
+  });
+});
+
+// Regression tests from the review of PR #41. Each zip here is built by hand.
+describe("ThemeFileAdapter refuses hostile or broken zips", () => {
+  const HEAD = "<a>cart</a>\n";
+  const base = (): RawEntry[] => [
+    { name: "layout/theme.liquid", data: utf8("<html></html>\n") },
+    { name: "sections/header.liquid", data: utf8(HEAD) },
+  ];
+  const patch = samplePatch({ files: [{ file: "sections/header.liquid", before: HEAD, after: '<a aria-label="Cart">cart</a>\n' }] });
+  const refuse = (zip: Uint8Array, opts = {}) => new ThemeFileAdapter(zip, opts).preview(patch);
+
+  it("counts a stored entry by its real size, not the size it declares", async () => {
+    // 2 MB stored, declaring size 0, against a 1 MB cap.
+    const big: RawEntry = { name: "assets/big.bin", data: Buffer.alloc(2_000_000, 0x41), method: 0, declaredSize: 0 };
+    await expect(refuse(buildRawZip([...base(), big]), { maxUnzippedBytes: 1_000_000 })).rejects.toMatchObject({ code: "TOO_LARGE" });
+  });
+
+  it("refuses entries that share the same bytes", async () => {
+    // 40 extra directory records pointing at one 1 MB entry: 41 MB unpacked
+    // from a 1 MB file.
+    const big: RawEntry = { name: "assets/big.bin", data: Buffer.alloc(1_000_000, 0x41), method: 0 };
+    const aliases = Array.from({ length: 40 }, (_, i) => ({ name: `assets/copy-${i}.bin`, target: 2, declaredSize: 1_000_000 }));
+    await expect(refuse(buildRawZip([...base(), big], aliases))).rejects.toMatchObject({ code: "INVALID_ZIP" });
+  });
+
+  it("refuses duplicate entry names", async () => {
+    const zip = buildRawZip([...base(), { name: "assets/a.css", data: utf8("first\n") }, { name: "assets/a.css", data: utf8("second\n") }]);
+    await expect(refuse(zip)).rejects.toMatchObject({ code: "INVALID_ZIP", message: /appears twice/ });
+  });
+
+  it("refuses an entry whose real size differs from its declared size", async () => {
+    const zip = buildRawZip([...base(), { name: "assets/lie.css", data: utf8(`${"x".repeat(1000)}END\n`), declaredSize: 10 }]);
+    await expect(refuse(zip)).rejects.toMatchObject({ code: "INVALID_ZIP", message: /size/ });
+    const stored = buildRawZip([...base(), { name: "assets/lie.css", data: utf8("abc\n"), method: 0, declaredSize: 2 }]);
+    await expect(refuse(stored)).rejects.toMatchObject({ code: "INVALID_ZIP" });
+  });
+
+  it("refuses an entry with a bad CRC", async () => {
+    const zip = buildRawZip([...base(), { name: "assets/bad.css", data: utf8("body{}\n"), method: 0, crc: 12345 }]);
+    await expect(refuse(zip)).rejects.toMatchObject({ code: "INVALID_ZIP", message: /CRC/ });
+  });
+
+  it("refuses traversal, absolute and backslash names", async () => {
+    for (const name of ["../layout/theme.liquid", "/etc/x", "C:/x", "assets\\x.css", "assets/../../x"]) {
+      const zip = buildRawZip([...base(), { name, data: utf8("x\n") }]);
+      await expect(refuse(zip), name).rejects.toMatchObject({ code: "INVALID_ZIP" });
+    }
+  });
+
+  it("refuses symbolic links", async () => {
+    const zip = buildRawZip([...base(), { name: "assets/link.css", data: utf8("/etc/passwd"), unixMode: 0o120777 }]);
+    await expect(refuse(zip)).rejects.toMatchObject({ code: "INVALID_ZIP", message: /symbolic link/ });
   });
 });
