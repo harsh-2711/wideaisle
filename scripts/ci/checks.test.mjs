@@ -88,6 +88,91 @@ describe("claims and writing", () => {
     assert.match(errors[1], /landing\.md:1/);
   });
 
+  it("covers the claims policy word list and its allowed negations", () => {
+    const banned = [
+      "Your store now meets WCAG 2.2 AA.",
+      "Lawsuit protection for every plan",
+      "Get your accessibility certificate",
+      "Make your shop fully accessible",
+      "A free accessibility audit",
+      "Guaranteed results in a week",
+      "One-click accessibility for Shopify",
+      "Approved by Shopify",
+      "WCAG conformant themes",
+      "We protect you from demand letters",
+      "Never settle for less than 100% accessible.",
+      "Why not get guaranteed compliance?",
+      "Not only ADA compliant, but fast.",
+      "Not just fully accessible, but beautiful.",
+      "It's not hard to be ADA compliant with Wide Aisle.",
+      "WCAG 2.2 AA compliance in a click",
+      "Avoid ADA lawsuits.",
+      "Stop ADA lawsuits before they start.",
+      "We certify your store",
+      "Download your certificate",
+      "Reach WCAG 2.2 AA conformance",
+      "Your store meets the WCAG 2.2 AA standard.",
+      "Shopify-approved",
+      "Makes your site accessible",
+      "We fix everything",
+      "Congratulations, your store is accessible!",
+      "Meeting WCAG 2.2 AA is easy.",
+      "Protection against lawsuits",
+      "Lower your legal risk",
+      "Guaranteeing results",
+      "Making your store accessible with AI",
+      "Approved by the Shopify App Store",
+    ];
+    const allowed = [
+      "We do not guarantee any legal outcome.",
+      "This is not an audit and not a certification.",
+      "We never claim your store is fully accessible.",
+      "Automated scans cannot make your store accessible on their own.",
+      "Fixed 12 of 40 detected issues.",
+      "console.log(`Unexpected compliance topic ${topic}`);",
+      "Some barriers need a person to find them.",
+      "We don't guarantee any legal outcome.",
+      "This isn't an audit.",
+      "This report isn\u2019t a certification.",
+      "Wide Aisle doesn't make your store fully accessible.",
+      "They are not a statement that your store conforms to WCAG or meets any law.",
+      "See the audit log for each change.",
+      "// Unexpected compliance topic, M6 compliance lane",
+      "They are not a WCAG conformance claim.",
+      "We do not offer a WCAG certificate.",
+      "Alt text should conform to your brand voice.",
+      "GDPR compliance requests are answered within 30 days.",
+      'import { action } from "./webhooks.compliance";',
+    ];
+    write("app/routes/claims.tsx", [...banned, ...allowed].join("\n"));
+    const errors = checkClaims(["app/routes/claims.tsx"], root);
+    assert.deepEqual(errors.map((e) => Number(e.split(":")[1])), banned.map((_, i) => i + 1));
+  });
+
+  it("flags negated scare copy that the negation rule would let through", () => {
+    const scare = [
+      "Your store is not ADA compliant and is at risk of a lawsuit.",
+      "You could get sued this year.",
+      "Your store may not be ADA compliant.",
+      "You're not ADA compliant.",
+      "You could be next.",
+      "Act now, before you get a demand letter.",
+      "Overlays get you sued.",
+      "Stores like yours are at risk of ADA lawsuits.",
+      "You can't afford not to be ADA compliant.",
+    ];
+    const fine = ["We found 12 issues on your home page.", "The shop is not compliant with our webhook format", "Documentation you can share with your lawyer."];
+    write("app/emails/outreach.txt", [...scare, ...fine].join("\n"));
+    const errors = checkClaims(["app/emails/outreach.txt"], root);
+    assert.deepEqual(errors.map((e) => Number(e.split(":")[1])), scare.map((_, i) => i + 1));
+    assert.ok(errors.every((e) => /scare copy/.test(e)));
+  });
+
+  it("lets the required limits text through even when it wraps across lines", () => {
+    write("app/templates/report.tsx", "<p>Our results cover the pages listed, on the dates shown. They are not a statement that your store\nconforms to WCAG or meets any law.</p>");
+    assert.deepEqual(checkClaims(["app/templates/report.tsx"], root), []);
+  });
+
   it("flags em dashes in changed text files", () => {
     write("docs/a.md", "Fine line.\nBad \u2014 line.");
     write("docs/licenses/x.md", "Licence \u2014 text");
