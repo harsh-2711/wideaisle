@@ -8,7 +8,7 @@ See TASK.md. App Store reviews of accessibility apps, r/shopify and Shopify Comm
 
 ## Status
 
-In review in the M2 market research pull request. Last updated 2026-10-08.
+Blocked on you. Merged in PR #37. Direct reading waits on web access (Q-01).
 
 ## Done so far
 
@@ -20,13 +20,12 @@ In review in the M2 market research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the fixes, then merge.
+Waiting for Q-01.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-01.
-2. When Q-01 opens the web: read the App Store reviews and Community threads directly and add Reddit.
-3. Update the synthesis with direct quotes and links that were opened. Record the exact page for each quote. Any sued store found goes to the suppression list in private storage, never into this repo (Q-32, Q-07).
+1. When Q-01 opens the web: read the App Store reviews and Community threads directly and add Reddit.
+2. Update the synthesis with direct quotes and links that were opened. Record the exact page for each quote. Any sued store found goes to the suppression list in private storage, never into this repo (Q-32, Q-07).
 
 ## Blockers and open questions
 

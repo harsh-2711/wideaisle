@@ -8,7 +8,7 @@ See TASK.md. A learning path for the owner, a VoiceOver walk-through script and 
 
 ## Status
 
-In review in the M1 research pull request. Last updated 2026-10-08.
+Blocked on you. Merged in PR #36. Waits on Q-21 and Q-22.
 
 ## Done so far
 
@@ -19,13 +19,12 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the reviewer fixes, then merge.
+Waiting for the owner's VoiceOver walk (Q-21) and quiz score (Q-22).
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-21, Q-22.
-2. The owner walks three stores with VoiceOver (Q-21).
-3. The owner takes the quiz; the bar is 80% (Q-22).
+1. The owner walks three stores with VoiceOver (Q-21).
+2. The owner takes the quiz; the bar is 80% (Q-22).
 
 ## Blockers and open questions
 

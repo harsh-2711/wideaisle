@@ -3,11 +3,14 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "In review",
-  "step": "PR review (#42)",
+  "state": "Blocked on you",
+  "step": "Merged in PR #42; report waits on the census run",
   "branch": "claude/feat-census-analysis",
   "issue": 22,
-  "needs": [],
-  "updated": "2026-10-08T17:39:32Z",
+  "needs": [
+    "owner:Q-01",
+    "owner:Q-02"
+  ],
+  "updated": "2026-10-09T06:06:32Z",
   "id": "T-021"
 }

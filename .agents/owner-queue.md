@@ -18,6 +18,14 @@ Status: Open, Done or Dropped. Times are estimates.
 | Q-10 | Approve the weekly brief routine: a scheduled Claude Code run every Monday that writes the brief. It uses plan usage, so it waits for your yes. | 2 min | M0 ops lane, M0 exit (spend in the weekly brief) | Open |
 | Q-11 | On your machine, open Claude Code in the repo and accept the project's plugins and MCP servers when asked. Run `/plugin` to confirm Shopify AI Toolkit, code-review and security-guidance are on. | 10 min | Toolkit lane checked on a real machine | Open |
 | Q-32 | The GitHub repo harsh-2711/wideaisle is public, but the plan assumed private. Choose one. (a) Keep it public. This works if sensitive material stays out of it: interview recordings, transcripts, contact and outreach lists, and anything about sued stores live outside it (docs/research/interview-kit.md, section 8). (b) Make it private (GitHub Settings, General, Danger Zone, Change visibility). This is not free. On GitHub Free, branch protection works only on public repos, so you would lose Q-08's protection or need GitHub Pro, a paid plan that needs your approval (D-04). Private repos on Free also get about 2,000 Actions minutes a month, and CI runs four jobs on every pull request update. Until you decide, agents treat the repo as public. | 5 min to choose | Nothing waits on it today. It settles whether ID-coded interview summaries could ever live in this repo (kit section 8) | Open |
+| Q-20 | Read the WCAG primer and the legal brief: docs/research/wcag-primer.md and docs/research/legal-brief.md. | 2 to 3 h | M1 | Open |
+| Q-21 | Walk three stores with VoiceOver using the agent-written script in docs/research/learning-path.md. | 1 h | M1 | Open |
+| Q-22 | Take the 20-question quiz in docs/research/quiz.md (bar: 80%). Answers are in quiz-answers.md; read them after. | 30 min | M1 exit | Open |
+| Q-23 | Approve the written claims policy in docs/policy/claims-policy.md (D-06). | 15 min | M1 exit | Open |
+| Q-31 | Before the first recruiting batch, settle the five choices in section 14 of docs/research/interview-kit.md: what "recently" means for D-16 (proposal: 24 months), the founding price to quote, how long to keep recordings, transcripts and notes (proposal: 30 days for recordings and transcripts, 12 months for the ID key that links summaries to people), the willingness-to-pay bar, and any paid thank-you (needs D-04 approval) | 15 min | Q-24, Q-25 | Open |
+| Q-24 | Run 15 merchant and 5 agency calls (D-07), using the interview kit in docs/research/interview-kit.md. Settle Q-31 first. | 8 to 10 h over weeks 1 to 4 | M2 exit | Open |
+| Q-30 | Pick for D-13: B (expert every release) or D (AI checks every release, expert at G2, G3, then quarterly). Agents recommend D. D costs about the same as B or more for the first 12 releases ($1,650 to $6,150 against $1,200 to $3,600) but covers all five themes; see decisions/D-13.md | 10 min | M4 test harness lane, G2 | Open |
+| Q-33 | Approve the alt-text model for Spike C: the latest Haiku (claude-haiku-5-5, batch about a tenth of Haiku 4.5's price) in place of the Haiku 4.5 that D-11 names. No API key is needed to decide, so this is open before Q-04. Haiku 4.5 (claude-haiku-4-5-20251001) retires not sooner than October 15, 2026; Haiku 5.5 not sooner than October 7, 2027 (Anthropic deprecations page, read 2026-10-08). | 5 min | M3 Spike C real run | Open |
 
 ## Queued for later milestones
 
@@ -25,19 +33,12 @@ These need you once agents finish their part. Agents will move each one to Open 
 
 | ID | What you do | Time | Unblocks | Ready when |
 |---|---|---|---|---|
-| Q-20 | Read the WCAG primer and the legal brief | 2 to 3 h | M1 | Primer and brief merged |
-| Q-21 | Walk three stores with VoiceOver using the agent-written script | 1 h | M1 | Script merged |
-| Q-22 | Take the 20-question quiz (bar: 80%) | 30 min | M1 exit | Quiz merged |
-| Q-23 | Approve the written claims policy (D-06) | 15 min | M1 exit | Policy merged |
-| Q-24 | Run 15 merchant and 5 agency calls (D-07), using the interview kit | 8 to 10 h over weeks 1 to 4 | M2 exit | Kit merged |
 | Q-25 | Approve each outreach and recruiting batch (D-16) | 15 min a batch | Interview recruiting | Drafts ready |
-| Q-31 | Before the first recruiting batch, settle the five choices in section 14 of docs/research/interview-kit.md: what "recently" means for D-16 (proposal: 24 months), the founding price to quote, how long to keep recordings, transcripts and notes (proposal: 30 days for recordings and transcripts, 12 months for the ID key that links summaries to people), the willingness-to-pay bar, and any paid thank-you (needs D-04 approval) | 15 min | Q-24, Q-25 | Kit merged |
 | Q-26 | Rate 50 AI alt texts in the rating sheet | 30 min | M3 Spike C | After Q-04 |
 | Q-27 | File the theme exemption request if Spike A shows it is needed (D-09) | 20 min | M3 Spike A | After Q-03 |
 | Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |
 | Q-29 | Gate G1 review | 30 min | M4 and M5 | M1 to M3 exits |
-| Q-30 | Pick for D-13: B (expert every release) or D (AI checks every release, expert at G2, G3, then quarterly). Agents recommend D. D costs about the same as B or more for the first 12 releases ($1,650 to $6,150 against $1,200 to $3,600) but covers all five themes; see decisions/D-13.md | 10 min | M4 test harness lane, G2 | D-13 research merged |
-| Q-33 | Approve the alt-text model for Spike C: the latest Haiku (claude-haiku-5-5, batch about a tenth of Haiku 4.5's price) in place of the Haiku 4.5 that D-11 names. Haiku 4.5 (claude-haiku-4-5-20251001) retires not sooner than October 15, 2026; Haiku 5.5 not sooner than October 7, 2027 (Anthropic deprecations page, read 2026-10-08). | 5 min | M3 Spike C real run | After Q-04 |
+| Q-34 | Merge pull request harsh-2711/wideaisle#41 (Spike A delivery adapters). Under AGENTS.md the owner merges anything that writes to a live store. The adapters are not called from the app yet. | 15 min | M3 Spike A, T-034 ADRs | Reviewer approves #41 and CI is green |
 
 ## Domains the agents need (for Q-01)
 

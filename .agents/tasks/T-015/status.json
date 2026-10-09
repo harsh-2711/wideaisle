@@ -1,0 +1,15 @@
+{
+  "title": "M1 source checks once the web is open",
+  "milestone": "M1",
+  "lane": "research",
+  "agent": "researcher",
+  "state": "Blocked on you",
+  "step": "Waits on web access (Q-01)",
+  "branch": "",
+  "issue": null,
+  "needs": [
+    "owner:Q-01"
+  ],
+  "updated": "2026-10-09T06:05:35Z",
+  "id": "T-015"
+}
