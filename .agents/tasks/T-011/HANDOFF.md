@@ -24,7 +24,7 @@ None. The owner reads the brief (Q-20).
 ## Next three steps
 
 1. The owner reads it (Q-20).
-2. Open the FTC's final order and the NFB case docket (D. Md., 1:26-cv-02007) when Q-01 allows; the brief cites both through search.
+2. Opening the FTC order and the NFB docket moved to T-015, which waits on Q-01.
 
 ## Blockers and open questions
 

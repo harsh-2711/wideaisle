@@ -10,7 +10,7 @@ The test task is real work: a `lint-handoff` check that says whether a HANDOFF.m
 
 ## Status
 
-Done. Merged in PR #38 on 2026-10-09. `lint-handoff --all` exits 0 on main.
+Done. Merged in PR #38 on 2026-10-08. `lint-handoff --all` exits 0 on main.
 
 ## Done so far
 
@@ -32,7 +32,7 @@ None.
 
 ## Blockers and open questions
 
-- None. The lead picked option B from the report: placeholders are allowed while a task is Queued or Blocked on you. T-010 to T-014 still fail on this branch because their real handoffs are on claude/docs-m1-research; they pass once that pull request merges.
+None.
 
 ## Decisions used
 
@@ -50,7 +50,7 @@ D-18
 
 - `node --test scripts/agents/ledger.test.mjs` passes.
 - `node scripts/agents/board.mjs lint-handoff T-008` (and T-001, T-002) prints `1 handoff ok`.
-- `node scripts/agents/board.mjs lint-handoff --all` reports only T-010 to T-014 on this branch (their handoffs arrive with the M1 research pull request).
+- `node scripts/agents/board.mjs lint-handoff --all` exits 0 on main (checked 2026-10-09).
 - .agents/tasks/T-008/children/resume-report.md says what the resuming agent read, what it guessed, how much of step 2 was lost, and its commits.
 
 ## Lessons and gotchas

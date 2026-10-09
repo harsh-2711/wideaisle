@@ -24,7 +24,7 @@ None. The owner reads the primer (Q-20).
 ## Next three steps
 
 1. The owner reads it (Q-20).
-2. Refresh the sources when Q-01 opens the web; most were seen through search, not opened.
+2. Source checks moved to T-015, which waits on Q-01.
 
 ## Blockers and open questions
 
