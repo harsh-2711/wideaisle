@@ -16,6 +16,9 @@ In review. T-020 merged in harsh-2711/wideaisle#34 and main is merged in. The ge
 |---|---|
 | Gap report generator and `report` command | 162d1f1 |
 | Crawler fixes merged in | 3abe4a3 |
+| Review fixes: Theme Store names only, store-count floor, source unclear, app markers, coverage lines | 6358a58 |
+| Review fixes: count shops, fold free-text versions, pickRecords keeps data | f5f52a0 |
+| Review fixes: floor by brand, cut-off image URLs | 551c4f4 |
 
 ## Current step
 
@@ -49,4 +52,5 @@ npx vitest run tests/unit/census-report.test.ts
 ## Lessons and gotchas
 
 - The source guess (theme, app, unknown) is a heuristic from selectors and markup. Treat app shares as a lower bound.
-- Census output files can hold several lines per domain after retries. The report reads the last one (latest()).
+- Census output files can hold several lines per domain after retries. pickRecords keeps the last one with data.
+- The report is public. It floors themes, versions and patterns by brand (the domain label left of the public suffix), not by domain or shop, and folds free-text version strings. A brand with differently named domains can still pass the floor, so check the real report by hand before committing it.

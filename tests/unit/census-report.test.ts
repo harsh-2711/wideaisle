@@ -109,7 +109,7 @@ describe("gap report", () => {
   });
 
   it("counts a brand once even with expansion stores or no shop name", () => {
-    expect(["acme.com", "www.acme.co.uk", "acme.de", "shop.acme.com.au"].map(brandKey)).toEqual(["acme", "acme", "acme", "acme"]);
+    expect(["acme.com", "www.acme.co.uk", "acme.de", "shop.acme.com.au", "acme.com.ph", "acme.co.id", "acme.myshopify.com"].map(brandKey)).toEqual(Array(7).fill("acme"));
     const domains = ["acme.com", "acme.co.uk", "acme.de", "acme.fr", "acme.com.au"];
     const hero = { rule: "color-contrast", nodes: 4, bySource: { theme: 4, app: 0, unknown: 0 }, samples: [{ target: "p", html: '<p class="acme-outdoor-hero">Sale</p>' }] };
     const dawn: StoreLine[] = Array.from({ length: 5 }, (_, i) => ({ domain: `d${i}.com`, isShopify: true, apps: [], theme: theme("Dawn", "15.0.0") }));

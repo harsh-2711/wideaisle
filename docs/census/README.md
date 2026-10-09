@@ -34,6 +34,8 @@ Both steps resume: stores already in the output file are skipped, so a stopped r
 
 ```bash
 # 4. Write the gap report (T-021). Only this summary is committed.
+#    Before committing it, check every theme name and pattern class in the
+#    report against the store list: none may point to a single brand.
 npm run census -- report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md   # both files are required
 ```
 

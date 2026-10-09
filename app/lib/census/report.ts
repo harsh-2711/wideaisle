@@ -147,6 +147,8 @@ const TWO_PART_SUFFIXES = new Set([
   "com.sg", "co.in", "com.tr", "co.kr", "com.cn", "com.hk", "com.ar", "co.il", "com.my", "com.co", "com.pe",
 ]);
 
+const GENERIC_LABELS = new Set(["com", "co", "net", "org", "gov", "edu", "ac", "myshopify", "shop", "store"]);
+
 // A brand key from a domain: the label left of the public suffix, so
 // acme.com, acme.co.uk and acme.de are one brand. Two unrelated brands with
 // the same name are merged, which only lowers counts: the safe direction
@@ -155,7 +157,11 @@ export function brandKey(domain: string): string {
   const parts = domain.toLowerCase().replace(/^www\./, "").split(":")[0].split(".").filter(Boolean);
   if (parts.length < 2) return parts.join(".");
   const lastTwo = parts.slice(-2).join(".");
-  return TWO_PART_SUFFIXES.has(lastTwo) && parts.length >= 3 ? parts[parts.length - 3] : parts[parts.length - 2];
+  let i = TWO_PART_SUFFIXES.has(lastTwo) && parts.length >= 3 ? parts.length - 3 : parts.length - 2;
+  // A generic label (acme.com.ph, x.myshopify.com) is a suffix we do not
+  // list, not a brand: step one label further left.
+  while (i > 0 && GENERIC_LABELS.has(parts[i])) i--;
+  return parts[i];
 }
 
 function majorVersion(version: string | null | undefined): string {
