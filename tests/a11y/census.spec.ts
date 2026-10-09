@@ -130,7 +130,8 @@ test("browser redirects are vetted before the browser requests them", async ({ b
     // The same, from a page whose Referer is only its origin, and from one
     // that rewrote its own URL first.
     if (req.url === "/i" || req.url === "/j") {
-      res.writeHead(200, { "content-type": "text/html", "referrer-policy": "origin" });
+      const policy: Record<string, string> = req.url === "/i" ? { "referrer-policy": "origin" } : {};
+      res.writeHead(200, { "content-type": "text/html", ...policy });
       const rewrite = req.url === "/j" ? `history.replaceState(null, "", "/j?variant=1");` : "";
       return res.end(`<!doctype html><html lang="en"><head><title>${req.url}</title><script>${rewrite}location.href = "/h";</script></head><body>i</body></html>`);
     }
