@@ -89,14 +89,42 @@ describe("gap report", () => {
     expect(md).not.toMatch(/acme/i);
   });
 
+  it("counts a brand's country domains as one shop and hides free-text versions", () => {
+    const acme = ["acme.com", "acme.co.uk", "acme.de", "acme.fr", "acme.com.au"].map((d) => ({
+      domain: d, shopDomain: "acme-outdoor.myshopify.com", isShopify: true, apps: [],
+      theme: { name: "Acme Outdoor", schemaName: "Acme Outdoor", version: "2.0.0", themeStoreId: 1234 },
+    }));
+    const dawn: StoreLine[] = [
+      ...["15.0.0", "15.1.0", "15.2.0", "14.0.0", "Acme Outdoor | acme.com build 3"].map((v, i) => ({ domain: `d${i}.com`, isShopify: true, apps: [], theme: { name: "Dawn", schemaName: "Dawn", version: v, themeStoreId: 887 } })),
+    ];
+    const hero = { rule: "color-contrast", nodes: 4, bySource: { theme: 4, app: 0, unknown: 0 }, samples: [{ target: "p", html: '<p class="acme-outdoor-hero">Sale</p>' }] };
+    const scansA: ScanLine[] = acme.map((s) => ({ domain: s.domain, theme: s.theme, apps: [], pages: [{ kind: "home", totalNodes: 4, sixTypes: six({ "low-contrast": 4 }), rules: [hero] }] }));
+    const r = buildReport([...acme, ...dawn], scansA);
+    expect(r.shopifyStores).toBe(6);
+    expect(r.v1Themes).toEqual(["Dawn"]);
+    expect(r.patterns).toEqual([]);
+    expect(r.themeVersions.Dawn.map((v) => v.label)).toEqual(["other"]);
+    const md = renderReport(r, "2026-10-09");
+    expect(md).not.toMatch(/acme/i);
+  });
+
+  it("does not call a theme asset a content edit", () => {
+    expect(fixKind("image-alt", "theme", '<img class="product-card__badge" src="/cdn/shop/t/2/assets/badge.svg">')).toBe("theme patch");
+    expect(fixKind("image-alt", "theme", '<img src="//shop.com/cdn/shop/products/x.jpg">')).toBe("content edit");
+  });
+
   it("ties app failures to the app whose markup is in the element", () => {
     expect(appFor(["Shop Pay Installments", "Judge.me"], [{ target: "#shopify-section-template--1__apps .jdgm-btn", html: "<a>" }])).toBe("Judge.me");
     expect(appFor(["Meta Pixel"], [{ target: ".product__meta", html: "<p>" }])).toBeNull();
   });
 
   it("keeps a partial scan over a later failed retry", () => {
-    const recs = [{ domain: "a.com", pages: [1] }, { domain: "a.com", error: "timeout" }, { domain: "b.com", error: "x" }, { domain: "b.com", pages: [2] }];
-    expect(pickRecords(recs as { domain: string; error?: string }[])).toEqual([{ domain: "a.com", pages: [1] }, { domain: "b.com", pages: [2] }]);
+    const recs = [
+      { domain: "a.com", pages: [1] }, { domain: "a.com", error: "timeout" },
+      { domain: "b.com", error: "x" }, { domain: "b.com", pages: [2] },
+      { domain: "c.com", pages: [3] }, { domain: "c.com", pages: [] },
+    ];
+    expect(pickRecords(recs as { domain: string; error?: string }[])).toEqual([{ domain: "a.com", pages: [1] }, { domain: "b.com", pages: [2] }, { domain: "c.com", pages: [3] }]);
   });
 
   it("says so when there are no scans instead of printing zeros", () => {

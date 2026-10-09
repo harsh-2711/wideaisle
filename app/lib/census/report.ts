@@ -11,6 +11,8 @@ import { APP_DOM_MARKERS } from "../scanner/detect";
 
 export interface StoreLine {
   domain: string;
+  // The myshopify.com name; several country domains can share one shop.
+  shopDomain?: string | null;
   isShopify: boolean;
   theme: { name: string | null; schemaName: string | null; version: string | null; themeStoreId: number | null } | null;
   apps: string[];
@@ -91,7 +93,7 @@ export function themeFamily(theme: StoreLine["theme"]): string {
 export function patternOf(rule: string, html: string): string {
   const open = /^<[^>]*>/.exec(html.trim())?.[0] ?? "";
   const tag = /^<([a-z0-9-]+)/i.exec(open)?.[1]?.toLowerCase() ?? "?";
-  const cls = /\sclass\s*=\s*["']([^"']+)["']/i.exec(open)?.[1]?.split(/\s+/).find((c) => c && !/\d{3,}/.test(c)) ?? "";
+  const cls = /\sclass\s*=\s*["']([^"']+)["']/i.exec(open)?.[1]?.replace(/`/g, "").split(/\s+/).find((c) => c && !/\d{3,}/.test(c)) ?? "";
   return `${rule}: <${tag}${cls ? ` class="${cls}"` : ""}>`;
 }
 
@@ -102,7 +104,8 @@ export function patternOf(rule: string, html: string): string {
 export function fixKind(rule: string, source: "theme" | "app" | "unknown", html: string): FixKind {
   if (source === "app") return "app change";
   const type = failureTypeForRule(rule);
-  if (type === "missing-alt" && /cdn\.shopify\.com\/s\/files|\/cdn\/shop\/(products|files)|product|media/i.test(html)) return "content edit";
+  const src = /\ssrc\s*=\s*["']([^"']*)["']/i.exec(html)?.[1] ?? "";
+  if (type === "missing-alt" && /cdn\.shopify\.com\/s\/files|\/cdn\/shop\/(products|files)\//i.test(src)) return "content edit";
   if (!type) return "unclear";
   return source === "theme" ? "theme patch" : "source unclear";
 }
@@ -118,14 +121,27 @@ export function appFor(storeApps: string[], samples: { target: string; html: str
 }
 
 // The record to report for each domain: the last one with data, else the
-// last one. A failed retry should not hide an earlier partial scan.
+// last one. A failed or empty retry should not hide an earlier scan.
 export function pickRecords<T extends { domain: string; error?: string }>(records: T[]): T[] {
+  const has = (x: T) => !x.error && (!("pages" in x) || (x as { pages: unknown[] }).pages.length > 0);
   const out = new Map<string, T>();
   for (const r of records) {
     const prev = out.get(r.domain);
-    if (!prev || !r.error || prev.error) out.set(r.domain, r);
+    if (!prev || has(r) || !has(prev)) out.set(r.domain, r);
   }
   return [...out.values()];
+}
+
+// One shop can answer on several domains (country domains with Shopify
+// Markets). Counting each would let one brand pass the reporting floor
+// alone, so stores are keyed by their myshopify.com name when known.
+export function shopKey(s: { domain: string; shopDomain?: string | null }): string {
+  return (s.shopDomain || s.domain).toLowerCase();
+}
+
+function majorVersion(version: string | null | undefined): string {
+  const major = /^\s*(\d+)\./.exec(version ?? "")?.[1];
+  return major ? `${major}.x` : "unknown";
 }
 
 // Folds labels seen in fewer than minStores stores into OTHER.
@@ -137,7 +153,8 @@ function floor(counts: Map<string, number>, minStores: number): Map<string, numb
 
 export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minStores?: number } = {}): GapReport {
   const minStores = opts.minStores ?? 5;
-  const shopify = stores.filter((s) => s.isShopify);
+  const keyOf = new Map(stores.map((s) => [s.domain, shopKey(s)]));
+  const shopify = [...new Map(stores.filter((s) => s.isShopify).map((s) => [shopKey(s), s])).values()];
   const rawThemes = new Map<string, number>();
   for (const s of shopify) bump(rawThemes, themeFamily(s.theme));
   const themeCounts = floor(rawThemes, minStores);
@@ -150,10 +167,17 @@ export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minS
     const fam = familyOf(s.theme);
     if (NOT_A_FAMILY.has(fam)) continue;
     if (!versions.has(fam)) versions.set(fam, new Map());
-    bump(versions.get(fam)!, s.theme?.version ? s.theme.version.split(".")[0] + ".x" : "unknown");
+    bump(versions.get(fam)!, majorVersion(s.theme?.version));
+  }
+  // Versions are free text a merchant can edit; small groups fold away too.
+  for (const [fam, m] of versions) {
+    const folded = new Map<string, number>();
+    for (const [v, count] of m) bump(folded, count >= minStores ? v : "other", count);
+    versions.set(fam, folded);
   }
 
-  const scanned = scans.filter((s) => !s.error && s.pages.length);
+  // One scan per shop, so a brand's country domains count once.
+  const scanned = [...new Map(scans.filter((s) => !s.error && s.pages.length).map((s) => [keyOf.get(s.domain) ?? s.domain.toLowerCase(), s])).values()];
   const prevalence = new Map<string, number>(Object.values(FAILURE_TYPES).map((t) => [t.label, 0]));
   const patternStores = new Map<string, Set<string>>();
   const pagesByKind = new Map<string, number>();
@@ -177,7 +201,7 @@ export function buildReport(stores: StoreLine[], scans: ScanLine[], opts: { minS
         const sample = r.samples[0]?.html ?? "";
         const pattern = patternOf(r.rule, sample);
         if (!patternStores.has(pattern)) patternStores.set(pattern, new Set());
-        patternStores.get(pattern)!.add(store.domain);
+        patternStores.get(pattern)!.add(keyOf.get(store.domain) ?? store.domain.toLowerCase());
         for (const src of ["theme", "app", "unknown"] as const) {
           const count = r.bySource[src] ?? 0;
           if (!count || !failureTypeForRule(r.rule)) continue;
