@@ -7,12 +7,15 @@ credentials.
 ## Findings first
 
 1. All three delivery routes from D-09 are built behind one interface
-   (preview, apply, revert) and pass 80 offline tests. Those run against
+   (preview, apply, revert) and pass 83 offline tests. Those run against
    hand-written recorded responses and, for failure paths, a small fake
    store. Every route refuses a patch whose `before` differs from the store.
-   Every revert restores the original bytes, or refuses and writes nothing
-   when it cannot be sure the file is still ours. None of this has run
-   against a real store yet (Q-03).
+   A revert ends in one of three ways: it restores the original bytes; it
+   refuses and writes nothing when it cannot be sure a file is still ours;
+   or, on the Admin API route, it writes the originals and then reports
+   `VERIFY_FAILED` because Shopify rewrote them on write (for example, a
+   trimmed JSON template). None of this has run against a real store yet
+   (Q-03).
 2. The Admin API 2026-10 schema marks every theme write as needing
    `write_themes` plus an exemption from Shopify: `themeDuplicate`,
    `themeCreate`, `themeFilesUpsert`, `themeFilesDelete`, `themeDelete`.
@@ -153,9 +156,12 @@ theme files only; `splitPatch` sends alt text to the Admin API route.
 - Reading uses our own strict reader (`zip.ts`), not fflate. It reads the
   central directory itself and, before unpacking anything, caps the sum of
   max(compressed, declared) sizes. It refuses duplicate names, names with
-  `..`, a leading `/`, a drive letter or `\`, symbolic links, encryption,
-  ZIP64, and entries that share or overlap bytes. It unpacks each entry no
-  further than its declared size and checks the real size and the CRC.
+  `..`, a leading `/`, a drive letter or `\`, any `__proto__` segment (as an
+  object key it replaced the prototype and stalled the zip writer),
+  symbolic links, encryption, ZIP64, and entries that share or overlap
+  bytes. It unpacks each entry no further than its declared size and checks
+  the real size and the CRC. Names are read as UTF-8 when the bytes are
+  valid UTF-8, with or without the UTF-8 flag, and as Latin-1 otherwise.
 - Revert returns the original zip, checked against its SHA-256.
 - Refuses zips over 50 MB and archives that unpack past 300 MB.
 - The output keeps every file's bytes but not zip metadata: timestamps (all
@@ -262,6 +268,12 @@ it either way.
     as a job. Without it, revert falls back to comparing bytes.
 11. How Shopify serves and stores files that are not UTF-8: as a Text body
     (which we refuse after the checksum check) or as Base64.
+12. Whether two `themeFilesUpsert` jobs on one theme can finish out of
+    order. After a 5xx we resend the upsert, and the first call's job ID is
+    never seen, so the receipt's pending jobs cannot cover it. If that job
+    could land after a later revert, it would put the patch back. If jobs
+    can run out of order, stop resending the upsert after a 5xx and re-read
+    the files instead.
 
 ## Limits the code enforces
 
@@ -312,9 +324,9 @@ they are available.
 npx vitest run tests/unit/delivery
 ```
 
-Offline, no credentials. 80 tests: 10 shared, 16 zip route (7 with
-hostile zips built by hand), 24 Admin API against recorded responses, 8
+Offline, no credentials. 83 tests: 10 shared, 19 zip route (10 with
+hostile or unusual zips built by hand), 24 Admin API against recorded responses, 8
 Admin API failure paths against a fake store (`fake-shopify.ts`), and 22
 GitHub. Each adapter has a test that refuses a `before` mismatch and writes
-nothing. Each item from the review of PR #41 has a regression test that
-failed before its fix.
+nothing. Each code fix from the reviews of PR #41 has a regression test
+that failed before its fix.

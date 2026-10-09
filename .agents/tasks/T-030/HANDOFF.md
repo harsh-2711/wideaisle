@@ -19,9 +19,12 @@ Exit criteria today:
 ## Status
 
 In review. Last updated 2026-10-09. All blocking, should-fix and nit items from the review of
-PR #41 are fixed, each with a regression test that failed before its fix, plus the security
-finding on storedMd5. Optional item 14 (inline tree content) was left out on purpose: separate
-blob calls let us check each blob ID against our own hash.
+PR #41 are fixed, each code fix with a regression test that failed before it, plus the
+security finding on storedMd5. Optional item 14 (inline tree content) was left out on
+purpose: separate blob calls let us check each blob ID against our own hash.
+
+The re-review at 1a39a6c found one more blocker (a `__proto__` zip entry stalled apply) and
+three nits. All four are done: two code fixes with tests, two doc changes.
 
 The Admin API adapter can write to a live theme once something calls it. Under AGENTS.md
 that makes this pull request one the owner merges.
@@ -41,7 +44,10 @@ that makes this pull request one the owner merges.
 | Review items 1, 2, 5, 6, 7, 12 (admin), 13, 17: Admin API failure paths | 324dcdb |
 | Security finding: storedMd5 only from our own write, never from read-back | 4758659 |
 | Review items 4, 8, 12 (GitHub): revert bound to its own repo and branches | f32dcb6 |
-| Items 10, 11 (patch paths), 15, 16: tests, spike doc, fixture READMEs, this file | this commit |
+| Items 10, 11 (patch paths), 15, 16: tests, spike doc, fixture READMEs, this file | 7b37888 |
+| Merged main (no conflicts; package.json and lockfile auto-merged) | 1a39a6c |
+| Re-review items 1, 2: refuse `__proto__` segments; UTF-8 names without the flag | 5327df8 |
+| Re-review items 3, 4: spike doc (job order check, third revert outcome), this file | this commit |
 
 ## Review of PR #41: where each item is
 
@@ -63,6 +69,10 @@ that makes this pull request one the owner merges.
 | 15, 16 doc notes | Zip metadata and symlinks; no compare-and-swap | spike doc |
 | 17 preview ignores themeId | Preview copies the themeId theme | admin-api-failures item 17 |
 | Extra: GitHub PR resent on 5xx | Branch and PR creation not resent; PR found by head | github "does not resend a pull request after a 5xx" |
+| Re-review 1: `__proto__` entry | zipNameProblem and themePathProblem refuse a `__proto__` segment; constructor and prototype checked and left allowed | theme-file "refuses a __proto__ entry fast..." and "keeps names like constructor..." |
+| Re-review 2: unflagged UTF-8 names | Decode as UTF-8 when valid, else Latin-1 | theme-file "reads UTF-8 names with or without the UTF-8 flag..." |
+| Re-review 3: resent upsert job | Dev-store check 12 in the spike doc | none (docs) |
+| Re-review 4: third revert outcome | Findings line reworded | none (docs) |
 
 ## Current step
 
@@ -73,9 +83,9 @@ Waiting for review and for Q-03.
 1. After Q-03: install a custom-distribution app (read_themes, write_themes, read_files,
    write_files) on the dev store and run preview, apply and revert on Dawn with a one-line
    patch. This answers whether the exemption is needed for custom distribution.
-2. Replace the hand-written fixtures with captured responses; check the 11 items listed
-   under "What still needs a live dev store" in the spike doc (checksumMd5 meaning and
-   non-UTF-8 files are new there).
+2. Replace the hand-written fixtures with captured responses; check the 12 items listed
+   under "What still needs a live dev store" in the spike doc (checksumMd5 meaning,
+   non-UTF-8 files and upsert job order are new there).
 3. Tell T-032 (Spike C) that alt text needs write_files, not write_products, and fix the
    comment in shopify.app.toml there.
 
@@ -107,7 +117,7 @@ D-09
 
 ## How to verify
 
-- `npx vitest run tests/unit/delivery` (offline; no credentials; 80 tests)
+- `npx vitest run tests/unit/delivery` (offline; no credentials; 83 tests)
 - `npm run lint`, `npx tsc --noEmit`, `npm test`
 - `node scripts/ci/checks.mjs handoff --base origin/main --branch claude/feat-delivery-adapters`,
   then `writing`, `claims` and `decisions`
@@ -128,5 +138,7 @@ D-09
   imports vitest and cannot load outside a test run.
 - Anything read back after our write may be someone else's: never record it as ours.
 - A 5xx can come after the call ran. Resend only calls that set a fixed value.
+- Untrusted names used as object keys: refuse `__proto__`. A null-prototype object does not
+  help when a library copies the keys into its own `{}`, as fflate's zipSync does.
 - `git merge -F -` does not read stdin; write the message to a file. Commitlint reads a body
   line that starts with "word:" as a footer.
