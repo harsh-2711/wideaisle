@@ -1,0 +1,12 @@
+/*
+ * Fixture theme settings for Wide Aisle's render tests.
+ */
+{
+  "current": {
+    "social_instagram_link": "https://instagram.com/example",
+    "color_schemes": {
+      "scheme-1": { "settings": { "background": "#FFFFFF", "text": "#9A9A9A", "button": "#FF9E80", "button_label": "#FFFFFF", "secondary_button_label": "#121212" } }
+    }
+  },
+  "presets": {}
+}

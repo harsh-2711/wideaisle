@@ -8,24 +8,26 @@ See TASK.md. A written claims policy for D-06: words we never use, what we may s
 
 ## Status
 
-In review in the M1 research pull request. Last updated 2026-10-08.
+The policy merged in harsh-2711/wideaisle#36. The wider CI claims check is in review in harsh-2711/wideaisle#40. The owner's approval (Q-23) is the last exit criterion. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
 | Claims policy draft | 2f267f9 |
+| Policy merged | c566b10 |
 | Reviewer fixes: describes the existing CI claims check and its gaps, "audit" banned, "failures automated tools can detect" wording, items pending lawyer questions 4 and 11, D-06 scope and hype-word source corrected | docs(research): fix review findings in the briefs, quiz and claims policy |
+| CI claims check widened to the policy word list, scare copy and required text | (pull request #40) |
 
 ## Current step
 
-Pull request re-review after the reviewer fixes, then merge.
+Merge the claims check pull request (#40) once it is reviewed and green.
 
 ## Next three steps
 
-1. After merge, set the state to Blocked on you with needs Q-23.
-2. The owner approves the policy (Q-23).
-3. Planner follow-up: widen the claims check in scripts/ci/checks.mjs to the policy's word list and folders (see "How we enforce it").
+1. Merge #40, then set the state to Blocked on you with needs Q-23.
+2. The owner approves the policy, including the "How we enforce it" changes from #40 (Q-23).
+3. Add new banned phrases to scripts/ci/checks.mjs and its tests whenever the policy's word list changes.
 
 ## Blockers and open questions
 
