@@ -107,6 +107,14 @@ Shopify.theme = {"name":"Dawn - live","id":123,"schema_name":"Dawn","schema_vers
     expect(facts.apps).toEqual(["Klaviyo"]);
   });
 
+  it("reads tags in linear time on hostile pages", () => {
+    const hostile = "<script ".repeat(50_000) + "<a href ".repeat(50_000);
+    const started = performance.now();
+    detectStore(hostile);
+    sampleLinks(hostile, "https://example.com");
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
   it("says no for a site that is not Shopify", () => {
     expect(detectStore("<html><body>Hello</body></html>")).toEqual({ isShopify: false, shopDomain: null, theme: null, apps: [] });
   });

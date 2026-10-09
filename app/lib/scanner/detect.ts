@@ -68,6 +68,28 @@ const APP_HINTS: [string, RegExp][] = [
   ["TikTok Pixel", /analytics\.tiktok\.com/i],
 ];
 
+// One attribute's value from every opening tag of a kind. A plain scan
+// with indexOf, so the work stays linear in the page size whatever the
+// markup: no regex runs over more than one tag.
+export function attrValues(html: string, tag: string, attr: string): string[] {
+  const out: string[] = [];
+  const lower = html.toLowerCase();
+  const open = `<${tag}`;
+  const attrRe = new RegExp(`\\s${attr}\\s*=\\s*["']([^"']*)["']`, "i");
+  let pos = lower.indexOf(open);
+  while (pos !== -1) {
+    const next = lower[pos + open.length];
+    const end = lower.indexOf(">", pos);
+    if (end === -1) break;
+    if (next === undefined || /[\s/>]/.test(next)) {
+      const v = attrRe.exec(html.slice(pos, end + 1))?.[1];
+      if (v) out.push(v);
+    }
+    pos = lower.indexOf(open, end + 1);
+  }
+  return out;
+}
+
 export function detectStore(html: string): StoreFacts {
   const isShopify =
     /cdn\.shopify\.com|\/cdn\/shop\/|Shopify\.theme\s*=|shopify-features|window\.Shopify\s*=|Shopify\.shop\s*=/.test(html);
@@ -82,7 +104,7 @@ export function detectStore(html: string): StoreFacts {
         role: (t.role as string) ?? null,
       }
     : null;
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
+  const scripts = attrValues(html, "script", "src");
   const haystack = scripts.join(" ") + " " + (html.match(/<link\b[^>]*>/gi) ?? []).join(" ");
   const apps = APP_HINTS.filter(([, re]) => re.test(haystack)).map(([name]) => name);
   return { isShopify, shopDomain, theme, apps };
@@ -90,7 +112,7 @@ export function detectStore(html: string): StoreFacts {
 
 // Links to a collection and a product on the same site, for page sampling.
 export function sampleLinks(html: string, origin: string): { collection: string | null; product: string | null } {
-  const hrefs = [...html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#]+)["']/gi)].map((m) => m[1]);
+  const hrefs = attrValues(html, "a", "href").map((h) => h.split("#")[0]).filter(Boolean);
   const local = hrefs
     .map((h) => {
       try {
