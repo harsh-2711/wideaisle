@@ -1,14 +1,18 @@
 # Spike A: theme write path and delivery adapters
 
-Task T-030, decision D-09. Written 2026-10-08. Nothing here touched a live
-store, bought anything or used credentials.
+Task T-030, decision D-09. Written 2026-10-08, revised 2026-10-09 after the
+review of PR #41. Nothing here touched a live store, bought anything or used
+credentials.
 
 ## Findings first
 
 1. All three delivery routes from D-09 are built behind one interface
-   (preview, apply, revert) and pass 52 offline tests against hand-written
-   recorded responses. Every route refuses a patch whose `before` differs
-   from the store, and every revert restores the original bytes.
+   (preview, apply, revert) and pass 80 offline tests. Those run against
+   hand-written recorded responses and, for failure paths, a small fake
+   store. Every route refuses a patch whose `before` differs from the store.
+   Every revert restores the original bytes, or refuses and writes nothing
+   when it cannot be sure the file is still ours. None of this has run
+   against a real store yet (Q-03).
 2. The Admin API 2026-10 schema marks every theme write as needing
    `write_themes` plus an exemption from Shopify: `themeDuplicate`,
    `themeCreate`, `themeFilesUpsert`, `themeFilesDelete`, `themeDelete`.
@@ -36,10 +40,11 @@ All code is in `app/lib/delivery/`. Nothing calls it from a route yet.
 | `limits.ts` | Shopify's per-file size limits and batch sizes |
 | `errors.ts` | `PatchConflictError`, `InvalidPatchError`, `DeliveryApiError`, `PartialApplyError` |
 | `http.ts` | The fetch shape the clients take, backoff with jitter, `Retry-After` parsing |
-| `shopify-admin.ts` | Admin GraphQL client: HTTP 429 and 5xx retry, THROTTLED wait from the cost block, ACCESS_DENIED mapping |
+| `shopify-admin.ts` | Admin GraphQL client: HTTP 429 retry, 5xx retry for idempotent calls only, THROTTLED wait from the cost block, ACCESS_DENIED mapping |
 | `admin-api.ts` | Route A adapter |
 | `github.ts` | Route B adapter |
 | `theme-file.ts` | Route C adapter |
+| `zip.ts` | Strict zip reader for route C |
 
 ### The patch shape
 
@@ -54,30 +59,57 @@ theme files only; `splitPatch` sends alt text to the Admin API route.
 
 ### Route A: Admin API
 
-- **Preview** finds the live theme (`themes(roles: [MAIN])`), checks every
-  `before`, duplicates the theme with `themeDuplicate` as an unpublished
-  theme named "Wide Aisle preview <id>", waits while `processing` is true,
-  checks the copy again, writes the patch with `themeFilesUpsert`, polls the
-  returned `Job`, and reads the files back to compare bytes. It returns a
-  preview URL (`https://<shop>/?preview_theme_id=<id>`). If any step fails it
-  deletes the copy. `discardPreview` deletes a preview theme and refuses any
-  theme that is live or not named as ours.
+- **Preview** starts from the live theme (`themes(roles: [MAIN])`), or from
+  the theme passed as `themeId`. It checks every `before`, refuses when a
+  theme named "Wide Aisle preview <id>" already exists, then duplicates the
+  source with `themeDuplicate` as an unpublished theme of that name. It waits
+  while `processing` is true, checks the copy again, writes the patch with
+  `themeFilesUpsert`, polls the returned `Job`, and reads the files back to
+  compare bytes. It returns a preview URL
+  (`https://<shop>/?preview_theme_id=<id>`). If any step fails it deletes the
+  copy. `discardPreview` deletes a preview theme and refuses any theme that
+  is live or not named as ours.
 - **Apply** writes to the live theme (or a chosen theme) in batches of 50,
   polls each job, and reads every file back to compare bytes. Alt text goes
   through `fileUpdate` in batches of 25 and is checked in the response. If a
   write fails after any write was sent, it throws `PartialApplyError` with a
   receipt of everything it may have written, so revert can undo it.
-- **Revert** reads each file. A file that still holds `after` is restored to
-  `before` (created files are deleted with `themeFilesDelete`); a file that
-  already holds `before` is skipped; anything else is a conflict, and
-  nothing is written. It then reads the files back and compares bytes.
-- Reads handle all three body types (text, base64, short-lived URL).
+- **The receipt** records, per file, the checksum that `themeFilesUpsert`
+  returned for our own write (`upsertedThemeFiles.checksumMd5`). It never
+  records a checksum read back later, since someone else may have written
+  the file by then. It also lists write jobs that were still running when
+  apply gave up.
+- **Revert** first waits for those jobs. If one is still running, it stops
+  with `JOB_PENDING` and writes nothing, since the job would land after the
+  revert and put the patch back. It then reads each file. A file is ours if
+  it holds `after`, or the checksum our write returned (Shopify may rewrite
+  bytes on write, for example trimming a JSON template). Ours is restored to
+  `before` (created files are deleted with `themeFilesDelete`). A file that
+  already holds `before` is skipped. Anything else is a conflict, and
+  nothing is written. Product images deleted since apply are skipped and
+  listed in `skippedMedia`. It then reads the files back and compares bytes.
+- Reads handle all three body types (text, base64, short-lived https URL).
+  Each read checks the bytes against Shopify's `checksumMd5` and stops with
+  `CHECKSUM_MISMATCH` when they differ. A file that is not UTF-8, served as a
+  Text body, fails that check: we refuse rather than compare or restore it
+  inexactly. How Shopify serves such files needs the dev store (Q-03).
   `NOT_FOUND` in `theme.files` userErrors means the file is missing; other
   codes stop the run.
-- Retries: HTTP 429 waits for `Retry-After`, 5xx backs off, a top-level
-  THROTTLED error waits until the bucket holds the requested cost, and the
-  `THROTTLED`, `FILE_LOCKED`, `MEDIA_CANNOT_BE_MODIFIED` and
+- Retries: HTTP 429 waits for `Retry-After`. A 5xx is retried only for
+  queries and for writes that set a fixed value (`themeFilesUpsert`,
+  `themeFilesDelete`, `themeDelete`, `fileUpdate`); after a 5xx the call may
+  have run. `themeDuplicate` is never resent; after a 5xx the adapter looks
+  for the copy by name. A top-level THROTTLED error waits until the bucket
+  holds the requested cost. The `THROTTLED`, `FILE_LOCKED` and
   `NON_READY_STATE` userError codes back off and retry.
+  `MEDIA_CANNOT_BE_MODIFIED` stops: another operation is changing that
+  image.
+- **No compare-and-swap.** `themeFilesUpsert` overwrites whatever is there;
+  the Admin API offers no "write only if the file still holds X". We check
+  every `before` just ahead of the write and read every file back after it,
+  but an edit that lands between our check and our write is overwritten.
+  The read-back catches an edit that lands after our write, and revert then
+  refuses rather than overwrite it.
 
 ### Route B: GitHub pull request
 
@@ -86,16 +118,29 @@ theme files only; `splitPatch` sends alt text to the Admin API route.
   content is downloaded and nothing is written.
 - **Apply** uploads one blob per file and checks the ID GitHub returns
   against our own hash, then creates a tree on the base tree, a commit, a
-  branch `wide-aisle/<id>` and a pull request. If the pull request fails, it
-  deletes the branch.
-- **Revert** closes the pull request and deletes its branch when it is still
-  open; the theme never changed. After a merge, it opens a revert pull
-  request whose tree points each file at its original blob ID (or deletes
-  files the patch created), so the bytes are exactly the ones the scan saw.
+  branch `wide-aisle/<id>-<suffix>` and a pull request. The suffix is six
+  random hex characters, stored in the receipt, so two applies of one patch
+  never share a branch. If the pull request fails, it deletes the branch.
+- **Revert** acts only on a receipt for the adapter's own owner, repository
+  and connected branch, whose head branch is one this adapter names. It
+  checks that before any call. After reading the pull request it also
+  checks that the head is the receipt's branch and the base is the
+  connected branch. It closes the pull request and deletes its branch when
+  the pull request is still open; the theme never changed. After a merge,
+  it opens a revert pull request whose tree points each file at its
+  original blob ID (or deletes files the patch created), so the bytes are
+  exactly the ones the scan saw. A second revert reuses an open revert pull
+  request, and a stale revert branch of ours is moved to the new commit.
   It refuses when the merchant edited a file after the merge.
 - Retries: 429, and 403 with `x-ratelimit-remaining: 0` or `retry-after`,
-  wait as the headers say; 5xx backs off. A reset further away than 30
-  seconds stops with `RATE_LIMITED` instead of waiting.
+  wait as the headers say. A 5xx backs off, except on creating a branch or
+  a pull request: those are not resent, because a second call after one
+  that worked would fail and the cleanup would close the new pull request.
+  After a 5xx on the pull request, the adapter looks for the one it may
+  have made. A reset further away than 30 seconds stops with `RATE_LIMITED`
+  instead of waiting.
+- The token sits in a private field, so it never shows up in JSON or logs,
+  and the API URL must be `https://api.github.com`.
 - SHA-256 repositories are handled by blob ID length.
 
 ### Route C: patched theme file
@@ -105,8 +150,17 @@ theme files only; `splitPatch` sends alt text to the Admin API route.
   `before`, and writes a new zip with fflate 0.8.2 (pinned; Node has no
   built-in zip format). Unchanged files, binary ones included, keep their
   bytes.
+- Reading uses our own strict reader (`zip.ts`), not fflate. It reads the
+  central directory itself and, before unpacking anything, caps the sum of
+  max(compressed, declared) sizes. It refuses duplicate names, names with
+  `..`, a leading `/`, a drive letter or `\`, symbolic links, encryption,
+  ZIP64, and entries that share or overlap bytes. It unpacks each entry no
+  further than its declared size and checks the real size and the CRC.
 - Revert returns the original zip, checked against its SHA-256.
 - Refuses zips over 50 MB and archives that unpack past 300 MB.
+- The output keeps every file's bytes but not zip metadata: timestamps (all
+  set to the apply time), permissions, comments and extra fields are lost.
+  Symbolic links are refused rather than turned into plain files.
 - Works fully offline.
 
 ## What each route needs from the merchant
@@ -201,7 +255,13 @@ it either way.
 8. Route B with Shopify's GitHub app connected: a merged pull request syncs
    to the theme, and a revert pull request syncs back.
 9. Route C: Shopify accepts the zip fflate writes, and the layout of
-   Shopify's own theme export zip.
+   Shopify's own theme export zip. Our strict reader must accept that zip
+   (for example, no ZIP64 and no symbolic links in it).
+10. That `checksumMd5` is the MD5 of the stored bytes (every read depends on
+    it), and that `upsertedThemeFiles` carries it even when the write runs
+    as a job. Without it, revert falls back to comparing bytes.
+11. How Shopify serves and stores files that are not UTF-8: as a Text body
+    (which we refuse after the checksum check) or as Base64.
 
 ## Limits the code enforces
 
@@ -241,8 +301,9 @@ Byte limits use decimal units so we refuse early rather than late.
 The Shopify Dev MCP server was not loaded in this session, and shopify.dev
 was blocked. Instead, every document in `ADMIN_QUERIES` was validated with
 graphql-js 16 (`buildClientSchema`, then `validate`) against the same
-2026-10 schema file the Dev MCP package ships. All 10 passed; a deliberately
-wrong document failed as expected. Rerun it with the Dev MCP tools once
+2026-10 schema file the Dev MCP package ships. All 11 passed (rechecked on
+2026-10-09 after `WaThemesByName` was added); a deliberately wrong document
+failed as expected. Rerun it with the Dev MCP tools once
 they are available.
 
 ## How to verify
@@ -251,6 +312,9 @@ they are available.
 npx vitest run tests/unit/delivery
 ```
 
-Offline, no credentials. 52 tests: 10 shared, 8 zip route, 20 Admin API,
-14 GitHub. Each adapter has a test that refuses a `before` mismatch and
-writes nothing.
+Offline, no credentials. 80 tests: 10 shared, 16 zip route (7 with
+hostile zips built by hand), 24 Admin API against recorded responses, 8
+Admin API failure paths against a fake store (`fake-shopify.ts`), and 22
+GitHub. Each adapter has a test that refuses a `before` mismatch and writes
+nothing. Each item from the review of PR #41 has a regression test that
+failed before its fix.

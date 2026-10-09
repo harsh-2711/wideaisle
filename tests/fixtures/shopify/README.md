@@ -9,11 +9,16 @@ we could not open shopify.dev from here. Replace these with real captures
 once a dev store exists (Q-03).
 
 File contents match `tests/unit/delivery/theme-data.ts`. Checksums are the
-MD5 of those strings.
+MD5 of those strings; the adapter checks every body against its checksum.
+
+Failure paths that a fixed list of responses cannot show (a job that lands
+later, a file someone edits right after our write) run against the fake
+store in `tests/unit/delivery/fake-shopify.ts` instead.
 
 | File | Operation | What it shows |
 |---|---|---|
 | themes-main.json | WaMainTheme | The live theme |
+| themes-by-name-none.json, themes-by-name-found.json | WaThemesByName | No preview theme yet; the copy found after a 5xx on themeDuplicate |
 | theme-files-live.json | WaThemeFiles | Live files: a text body, a base64 body, one file NOT_FOUND |
 | theme-files-merchant-edited.json | WaThemeFiles | The merchant changed the header after the scan |
 | theme-files-applied.json | WaThemeFiles | Files after the patch |

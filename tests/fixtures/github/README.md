@@ -13,7 +13,8 @@ Blob SHAs are the real git object IDs of the strings in
 Commit and tree SHAs are placeholders.
 
 Repository `acme-agency/acme-dawn-theme`, branch `main` connected to the
-live theme.
+live theme. Our branches carry the test suffix `abc123`
+(`wide-aisle/p-001-abc123`, `wide-aisle/revert-p-001-abc123`).
 
 | File | Request | What it shows |
 |---|---|---|
@@ -22,6 +23,7 @@ live theme.
 | create-blob-*.json | POST git/blobs | One blob per changed file |
 | create-tree.json, create-commit.json, create-ref.json | POST | The patch commit on `wide-aisle/p-001` |
 | create-pull.json | POST pulls, GET pulls/42 | Pull request #42, open |
+| list-pulls-none.json, list-pulls-revert-open.json | GET pulls (state open, by head) | No open revert pull request; one already open |
 | update-pull-closed.json | PATCH pulls/42 | Closed without merging |
 | get-pull-merged.json | GET pulls/42 | Merged |
 | get-ref-merged.json, get-commit-merged.json, get-tree-merged.json | GET | The branch after the merge |

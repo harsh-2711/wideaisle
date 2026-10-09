@@ -56,6 +56,11 @@ describe("validatePatch", () => {
     expect(themePathProblem("sections/../config/settings_data.json")).toMatch(/plain relative/);
     expect(themePathProblem("node_modules/x.js")).toMatch(/theme folder/);
     expect(themePathProblem("sections")).toMatch(/plain relative/);
+    // Review of PR #41, item 11: leading slash, backslash and ".." anywhere.
+    expect(themePathProblem("/sections/header.liquid")).not.toBeNull();
+    expect(themePathProblem("sections\\header.liquid")).not.toBeNull();
+    expect(themePathProblem("sections/a\\b.liquid")).toMatch(/character/);
+    expect(themePathProblem("sections/a/../../x.liquid")).toMatch(/plain relative/);
   });
 });
 
