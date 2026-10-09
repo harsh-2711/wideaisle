@@ -75,7 +75,7 @@ export async function waitForBatch(
     const c = batch.request_counts;
     log(`${batchId}: ${batch.processing_status}, ${c.processing} processing; next check in ${Math.round(delay / 1000)} s`);
     if (now() - started + delay > timeout) {
-      throw new Error(`${batchId} has not ended after ${Math.round((now() - started) / 60_000)} min; run again to resume`);
+      throw new Error(`${batchId} has not ended after ${Math.round((now() - started) / 60_000)} min; run again with the same --run to resume`);
     }
     await sleep(delay);
     delay = Math.min(delay * factor, maxDelay);

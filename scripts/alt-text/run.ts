@@ -59,6 +59,9 @@ can go above its hard ceiling:
 Needs ANTHROPIC_API_KEY for a real run (owner queue Q-04). Model: ALT_TEXT_MODEL,
 default ${altTextModel({})}.`;
 
+// The run being worked on, so every error says how to resume it safely.
+let currentRun: string | null = null;
+
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
@@ -147,9 +150,13 @@ async function main() {
   }
 
   if (!rows && !values.run) fail(`Pass --input for a new run or --run to resume.\n\n${HELP}`);
+  // A real run needs a name: repeating a command then resumes the same run
+  // and its spending caps, instead of starting a new folder and paying again.
+  if (values.yes && !values.run) fail("A real run needs --run <name>, so a repeated command resumes it instead of sending again.");
   const runName = values.run ?? `run-${new Date().toISOString().replace(/[-:]/g, "").replace(/\..*$/, "").replace("T", "-")}`;
   if (!/^[\w.-]+$/.test(runName)) fail("--run may use letters, digits, dot, dash and underscore only");
   const dir = path.join(process.cwd(), "data", "alt-text", runName);
+  currentRun = runName;
   const resuming = fs.existsSync(path.join(dir, STATE_FILE));
   if (!rows && !resuming) fail(`No saved run at ${dir}. Pass --input to start one.`);
   // The image and request caps count the whole run folder, so the runner
@@ -202,5 +209,6 @@ async function main() {
 
 main().catch((err: unknown) => {
   console.error(err instanceof Error ? err.message : err);
+  if (currentRun) console.error(`To resume this run without sending anything twice: npm run alt-text -- --run ${currentRun} --yes`);
   process.exit(1);
 });

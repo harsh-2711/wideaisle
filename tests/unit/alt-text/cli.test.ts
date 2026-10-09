@@ -44,6 +44,13 @@ describe("alt-text CLI", () => {
     expect(r.stderr).toContain("missing productId");
   }, 60_000);
 
+  it("needs a run name for a real run, so a repeated command cannot pay twice", () => {
+    const r = run(["--input", input, "--yes"], { ANTHROPIC_API_KEY: "test-key-not-real" });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("A real run needs --run <name>");
+    expect(fs.existsSync(path.join(cwd, "data"))).toBe(false);
+  }, 60_000);
+
   it("needs --yes before it sends anything", () => {
     const r = run(["--input", input, "--run", "t2"], { ANTHROPIC_API_KEY: "test-key-not-real" });
     expect(r.status).toBe(1);

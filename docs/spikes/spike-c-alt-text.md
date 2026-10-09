@@ -129,7 +129,7 @@ A draft is kept but marked `needsReview` with a reason when:
 | `succeeded` but not valid JSON, or cut off at `max_tokens` | resent once (billed), then `retry.jsonl` |
 | `succeeded` with `stop_reason: refusal` | `failed.jsonl` (billed), not retried |
 
-`retry.jsonl` lines are valid input, so `npm run alt-text -- --input retry.jsonl` resends them later. `--max-attempts` raises the limit on a resume, up to its ceiling of 3.
+To retry within the same run, resume it with a higher `--max-attempts` (ceiling 3); the run's image and request caps still apply. `retry.jsonl` lines are valid input, but `--input retry.jsonl` with a new `--run` starts a new run with new caps, so do that only on purpose. Every real run needs `--run <name>`, so repeating a command resumes it instead of sending again.
 
 ### Resume and paying once
 
