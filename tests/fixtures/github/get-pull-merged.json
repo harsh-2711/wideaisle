@@ -15,7 +15,7 @@
   "merged_at": "2026-10-08T15:00:00Z",
   "merge_commit_sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
   "draft": false,
-  "head": { "label": "acme-agency:wide-aisle/p-001", "ref": "wide-aisle/p-001", "sha": "7638417db6d59f3c431d3e1f261cc637155684cd" },
+  "head": { "label": "acme-agency:wide-aisle/p-001-abc123", "ref": "wide-aisle/p-001-abc123", "sha": "7638417db6d59f3c431d3e1f261cc637155684cd" },
   "base": { "label": "acme-agency:main", "ref": "main", "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e" },
   "merged": true,
   "mergeable": null,

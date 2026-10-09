@@ -18,8 +18,8 @@
   "merge_commit_sha": null,
   "draft": false,
   "head": {
-    "label": "acme-agency:wide-aisle/p-001",
-    "ref": "wide-aisle/p-001",
+    "label": "acme-agency:wide-aisle/p-001-abc123",
+    "ref": "wide-aisle/p-001-abc123",
     "sha": "7638417db6d59f3c431d3e1f261cc637155684cd"
   },
   "base": {

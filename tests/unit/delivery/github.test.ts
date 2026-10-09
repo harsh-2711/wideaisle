@@ -24,6 +24,9 @@ const readMerged = (tree = "get-tree-merged"): Exchange[] => [
   { op: `GET ${R}/git/trees/${MERGED_TREE}?recursive=1`, body: f(tree) },
 ];
 
+const REVERT_LOOKUP = `GET ${R}/pulls?state=open&head=acme-agency%3Awide-aisle%2Frevert-p-001-abc123`;
+const NO_OPEN_REVERT: Exchange = { op: REVERT_LOOKUP, body: f("list-pulls-none") };
+
 const blob = (text: string, name: string): Exchange => ({
   op: `POST ${R}/git/blobs`,
   status: 201,
@@ -45,6 +48,7 @@ function setup(exchanges: Exchange[], opts: Partial<GitHubAdapterOptions> = {}) 
     },
     random: () => 1,
     now: FIXED_NOW,
+    suffix: () => "abc123",
     ...opts,
   });
   return { ...r, sleeps, adapter };
@@ -62,7 +66,8 @@ function receipt(): GitHubReceipt {
     repo: "acme-dawn-theme",
     baseBranch: "main",
     baseSha: BASE,
-    headBranch: "wide-aisle/p-001",
+    headBranch: "wide-aisle/p-001-abc123",
+    branchSuffix: "abc123",
     commitSha: "7638417db6d59f3c431d3e1f261cc637155684cd",
     pullNumber: 42,
     pullUrl: "https://github.com/acme-agency/acme-dawn-theme/pull/42",
@@ -125,13 +130,13 @@ describe("GitHubPrAdapter", () => {
         op: `POST ${R}/git/refs`,
         status: 201,
         body: f("create-ref"),
-        check: (b) => expect(b).toEqual({ ref: "refs/heads/wide-aisle/p-001", sha: "7638417db6d59f3c431d3e1f261cc637155684cd" }),
+        check: (b) => expect(b).toEqual({ ref: "refs/heads/wide-aisle/p-001-abc123", sha: "7638417db6d59f3c431d3e1f261cc637155684cd" }),
       },
       {
         op: `POST ${R}/pulls`,
         status: 201,
         body: f("create-pull"),
-        check: (b) => expect(b).toMatchObject({ title: patch.title, head: "wide-aisle/p-001", base: "main", body: expect.stringContaining(SNIPPET) }),
+        check: (b) => expect(b).toMatchObject({ title: patch.title, head: "wide-aisle/p-001-abc123", base: "main", body: expect.stringContaining(SNIPPET) }),
       },
     ]);
     const r = await t.adapter.apply(patch);
@@ -164,7 +169,7 @@ describe("GitHubPrAdapter", () => {
       { op: `POST ${R}/git/commits`, status: 201, body: f("create-commit") },
       { op: `POST ${R}/git/refs`, status: 201, body: f("create-ref") },
       { op: `POST ${R}/pulls`, status: 422, body: f("pull-exists") },
-      { op: `DELETE ${R}/git/refs/heads/wide-aisle/p-001`, status: 204 },
+      { op: `DELETE ${R}/git/refs/heads/wide-aisle/p-001-abc123`, status: 204 },
     ]);
     await expect(t.adapter.apply(samplePatch())).rejects.toMatchObject({ code: "HTTP_422", message: /Validation Failed/ });
     expect(t.left()).toEqual([]);
@@ -188,7 +193,7 @@ describe("GitHubPrAdapter", () => {
     const t = setup([
       { op: `GET ${R}/pulls/42`, body: f("create-pull") },
       { op: `PATCH ${R}/pulls/42`, body: f("update-pull-closed"), check: (b) => expect(b).toEqual({ state: "closed" }) },
-      { op: `DELETE ${R}/git/refs/heads/wide-aisle/p-001`, status: 204 },
+      { op: `DELETE ${R}/git/refs/heads/wide-aisle/p-001-abc123`, status: 204 },
     ]);
     const r = await t.adapter.revert(receipt());
     expect(r).toMatchObject({ action: "closed-pull-request", pullNumber: 42 });
@@ -198,6 +203,7 @@ describe("GitHubPrAdapter", () => {
   it("reverts a merged pull request by pointing each file back at its original blob", async () => {
     const t = setup([
       { op: `GET ${R}/pulls/42`, body: f("get-pull-merged") },
+      NO_OPEN_REVERT,
       ...readMerged(),
       {
         op: `POST ${R}/git/trees`,
@@ -220,7 +226,7 @@ describe("GitHubPrAdapter", () => {
         op: `POST ${R}/git/refs`,
         status: 201,
         body: f("create-ref-revert"),
-        check: (b) => expect(b).toMatchObject({ ref: "refs/heads/wide-aisle/revert-p-001" }),
+        check: (b) => expect(b).toMatchObject({ ref: "refs/heads/wide-aisle/revert-p-001-abc123" }),
       },
       {
         op: `POST ${R}/pulls`,
@@ -235,7 +241,7 @@ describe("GitHubPrAdapter", () => {
   });
 
   it("refuses to revert a merged patch the merchant edited afterwards", async () => {
-    const t = setup([{ op: `GET ${R}/pulls/42`, body: f("get-pull-merged") }, ...readMerged("get-tree-merchant-edited")]);
+    const t = setup([{ op: `GET ${R}/pulls/42`, body: f("get-pull-merged") }, NO_OPEN_REVERT, ...readMerged("get-tree-merchant-edited")]);
     const err = await t.adapter.revert(receipt()).catch((e) => e);
     expect(err).toBeInstanceOf(PatchConflictError);
     expect(err.conflicts).toEqual([{ file: "sections/header.liquid", reason: "changed" }]);
@@ -266,6 +272,90 @@ describe("GitHubPrAdapter", () => {
     ]);
     await expect(t.adapter.preview(samplePatch())).rejects.toMatchObject({ code: "RATE_LIMITED" });
     expect(t.sleeps).toEqual([]);
+  });
+
+  // Regression tests from the review of PR #41.
+  it("refuses a receipt from another repository or branch, with no calls (item 4)", async () => {
+    for (const other of [{ owner: "other" }, { repo: "site" }, { baseBranch: "live" }]) {
+      const t = setup([]);
+      await expect(t.adapter.revert({ ...receipt(), ...other }), JSON.stringify(other)).rejects.toMatchObject({ code: "RECEIPT_MISMATCH" });
+      expect(t.calls).toEqual([]);
+    }
+  });
+
+  it("refuses a head branch that is not ours, with no calls (item 4)", async () => {
+    const t = setup([]);
+    await expect(t.adapter.revert({ ...receipt(), headBranch: "release" })).rejects.toMatchObject({ code: "RECEIPT_MISMATCH" });
+    expect(t.calls).toEqual([]);
+  });
+
+  it("refuses when the pull request's head is not the receipt's branch (item 4)", async () => {
+    const t = setup([{ op: `GET ${R}/pulls/42`, body: { ...(f("create-pull") as object), head: { ref: "release" } } }]);
+    await expect(t.adapter.revert(receipt())).rejects.toMatchObject({ code: "RECEIPT_MISMATCH" });
+    expect(writes(t.calls)).toEqual([]);
+  });
+
+  it("names branches with a unique suffix (item 8)", async () => {
+    const r = replay([]);
+    const a = new GitHubPrAdapter({ owner: "acme-agency", repo: "acme-dawn-theme", branch: "main", token: "t", fetch: r.fetch });
+    const b = new GitHubPrAdapter({ owner: "acme-agency", repo: "acme-dawn-theme", branch: "main", token: "t", fetch: r.fetch });
+    // The default suffix is random, so two adapters pick different names.
+    const names = [a, b].map((x) => (x as unknown as { newSuffix(): string }).newSuffix());
+    expect(names[0]).toMatch(/^[0-9a-f]{6}$/);
+    expect(names[0]).not.toBe(names[1]);
+  });
+
+  it("reuses an open revert pull request instead of failing (item 8)", async () => {
+    const t = setup([
+      { op: `GET ${R}/pulls/42`, body: f("get-pull-merged") },
+      { op: REVERT_LOOKUP, body: f("list-pulls-revert-open") },
+    ]);
+    const r = await t.adapter.revert(receipt());
+    expect(r).toMatchObject({ action: "revert-pull-request-open", pullNumber: 43 });
+    expect(writes(t.calls)).toEqual([]);
+  });
+
+  it("moves a stale revert branch of ours instead of failing (item 8)", async () => {
+    const t = setup([
+      { op: `GET ${R}/pulls/42`, body: f("get-pull-merged") },
+      NO_OPEN_REVERT,
+      ...readMerged(),
+      { op: `POST ${R}/git/trees`, status: 201, body: f("create-tree-revert") },
+      { op: `POST ${R}/git/commits`, status: 201, body: f("create-commit-revert") },
+      { op: `POST ${R}/git/refs`, status: 422, body: f("ref-exists") },
+      {
+        op: `PATCH ${R}/git/refs/heads/wide-aisle/revert-p-001-abc123`,
+        body: f("create-ref-revert"),
+        check: (b) => expect(b).toEqual({ sha: "5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809", force: true }),
+      },
+      { op: `POST ${R}/pulls`, status: 201, body: f("create-pull-revert") },
+    ]);
+    await expect(t.adapter.revert(receipt())).resolves.toMatchObject({ action: "opened-revert-pull-request", pullNumber: 43 });
+    expect(t.left()).toEqual([]);
+  });
+
+  it("does not resend a pull request after a 5xx; it finds the one that was made", async () => {
+    const t = setup([
+      ...readBase,
+      blob(HEADER_AFTER, "create-blob-header"),
+      blob(CSS_AFTER, "create-blob-css"),
+      blob(NEW_SNIPPET, "create-blob-snippet"),
+      { op: `POST ${R}/git/trees`, status: 201, body: f("create-tree") },
+      { op: `POST ${R}/git/commits`, status: 201, body: f("create-commit") },
+      { op: `POST ${R}/git/refs`, status: 201, body: f("create-ref") },
+      { op: `POST ${R}/pulls`, status: 502, body: "" },
+      { op: `GET ${R}/pulls?state=open&head=acme-agency%3Awide-aisle%2Fp-001-abc123`, body: [f("create-pull")] },
+    ]);
+    await expect(t.adapter.apply(samplePatch())).resolves.toMatchObject({ pullNumber: 42 });
+    expect(t.calls.filter((c) => c.op === `POST ${R}/pulls`)).toHaveLength(1);
+    expect(t.calls.some((c) => c.init.method === "DELETE")).toBe(false);
+  });
+
+  it("keeps the token private and talks only to api.github.com (item 12)", () => {
+    const t = setup([], { token: "ghs_SECRET" });
+    expect(JSON.stringify(t.adapter)).not.toContain("ghs_SECRET");
+    expect(() => setup([], { apiUrl: "https://evil.example.com" })).toThrow(/api.github.com/);
+    expect(() => setup([], { apiUrl: "http://api.github.com" })).toThrow(/api.github.com/);
   });
 
   it("refuses alt text and bad repository names", async () => {

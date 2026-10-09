@@ -6,13 +6,16 @@
 //   revert   closes the pull request if it is still open; if it was merged,
 //            opens a revert pull request that points each file back at its
 //            original blob, so the bytes match exactly
-import { createHash } from "node:crypto";
+// Revert acts only on a receipt for this adapter's repository and branch,
+// and only on a pull request whose head is a branch this adapter made.
+import { createHash, randomBytes } from "node:crypto";
 import { DeliveryApiError, PatchConflictError, type Conflict } from "./errors";
 import { DEFAULT_RETRY, backoffMs, parseJson, realSleep, retryAfterMs, type FetchLike, type RetryPolicy, type Sleep } from "./http";
 import { plansFor, requireNoAltText, utf8, validatePatch } from "./patch";
 import type { DeliveryAdapter, DeliveryPatch, DeliveryPreview, DeliveryReceipt, RevertResult, ThemeFileChange } from "./types";
 
 export const GITHUB_API_VERSION = "2022-11-28";
+export const GITHUB_API_URL = "https://api.github.com";
 
 export interface GitHubAdapterOptions {
   owner: string;
@@ -21,8 +24,11 @@ export interface GitHubAdapterOptions {
   branch: string;
   token: string;
   fetch: FetchLike;
+  // Only https://api.github.com is accepted, so the token never goes elsewhere.
   apiUrl?: string;
   branchPrefix?: string;
+  // Makes branch names unique per apply. Default: 6 random hex characters.
+  suffix?: () => string;
   sleep?: Sleep;
   retry?: Partial<RetryPolicy>;
   random?: () => number;
@@ -49,6 +55,8 @@ export interface GitHubReceipt extends DeliveryReceipt {
   baseBranch: string;
   baseSha: string;
   headBranch: string;
+  // Part of headBranch and of the revert branch name.
+  branchSuffix: string;
   commitSha: string;
   pullNumber: number;
   pullUrl: string;
@@ -57,7 +65,7 @@ export interface GitHubReceipt extends DeliveryReceipt {
 
 export interface GitHubRevert extends RevertResult {
   route: "github-pr";
-  action: "closed-pull-request" | "opened-revert-pull-request" | "already-closed" | "already-reverted";
+  action: "closed-pull-request" | "opened-revert-pull-request" | "revert-pull-request-open" | "already-closed" | "already-reverted";
   pullNumber: number;
   pullUrl: string;
 }
@@ -80,9 +88,12 @@ interface PullRequest {
   html_url: string;
   state: "open" | "closed";
   merged?: boolean;
+  head?: { ref?: string };
+  base?: { ref?: string };
 }
 
 const NAME = /^[A-Za-z0-9_.-]+$/;
+const SUFFIX = /^[a-z0-9]{1,12}$/;
 const FILE_MODES = new Set(["100644", "100755"]);
 
 // Git's object ID for a blob. SHA-256 repositories use 64-character IDs.
@@ -98,11 +109,18 @@ function refPath(branch: string): string {
   return branch.split("/").map(encodeURIComponent).join("/");
 }
 
+const mismatch = (why: string) => new DeliveryApiError(`Refusing to revert: ${why}`, "RECEIPT_MISMATCH");
+
 export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubReceipt, GitHubRevert> {
   readonly route = "github-pr" as const;
-  private readonly o: GitHubAdapterOptions;
-  private readonly apiUrl: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+  // A true private field, so the token never shows up in JSON or logs.
+  readonly #token: string;
+  private readonly fetch: FetchLike;
   private readonly prefix: string;
+  private readonly suffix: () => string;
   private readonly sleep: Sleep;
   private readonly policy: RetryPolicy;
   private readonly random: () => number;
@@ -111,9 +129,16 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
   constructor(opts: GitHubAdapterOptions) {
     if (!NAME.test(opts.owner) || !NAME.test(opts.repo)) throw new DeliveryApiError("Owner and repo must be plain GitHub names", "INVALID_REPO");
     if (!opts.branch || opts.branch.includes("..")) throw new DeliveryApiError("A branch name is required", "INVALID_REPO");
-    this.o = opts;
-    this.apiUrl = (opts.apiUrl ?? "https://api.github.com").replace(/\/$/, "");
+    if ((opts.apiUrl ?? GITHUB_API_URL).replace(/\/$/, "") !== GITHUB_API_URL) {
+      throw new DeliveryApiError(`The GitHub API URL must be ${GITHUB_API_URL} (api.github.com)`, "INVALID_API_URL");
+    }
+    this.owner = opts.owner;
+    this.repo = opts.repo;
+    this.branch = opts.branch;
+    this.#token = opts.token;
+    this.fetch = opts.fetch;
     this.prefix = opts.branchPrefix ?? "wide-aisle/";
+    this.suffix = opts.suffix ?? (() => randomBytes(3).toString("hex"));
     this.sleep = opts.sleep ?? realSleep;
     this.policy = { ...DEFAULT_RETRY, ...opts.retry };
     this.random = opts.random ?? Math.random;
@@ -126,7 +151,7 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
     const base = await this.readBase();
     const conflicts = this.conflicts(base, patch.files, "before");
     if (conflicts.length) throw new PatchConflictError("preview", conflicts);
-    return { route: this.route, patchId: patch.id, baseBranch: this.o.branch, baseSha: base.sha, files: plansFor(patch.files), altText: [] };
+    return { route: this.route, patchId: patch.id, baseBranch: this.branch, baseSha: base.sha, files: plansFor(patch.files), altText: [] };
   }
 
   async apply(patch: DeliveryPatch): Promise<GitHubReceipt> {
@@ -140,6 +165,8 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
     const tree: { path: string; mode: string; type: "blob"; sha: string }[] = [];
     for (const c of patch.files) {
       const entry = base.entries.get(c.file);
+      // A blob call per file, rather than inline content in the tree call,
+      // so we can check the ID GitHub computes against our own hash.
       const sha = await this.createBlob(c.after, entry?.sha.length === 64 ? "sha256" : "sha1");
       const mode = entry?.mode ?? "100644";
       tree.push({ path: c.file, mode, type: "blob", sha });
@@ -147,18 +174,20 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
     }
     const message = `${patch.title}\n\nWide Aisle patch ${patch.id}. To undo before merging, close this pull request.`;
     const commitSha = await this.commit(base, tree, message);
-    const headBranch = `${this.prefix}${patch.id}`;
-    const pull = await this.openPull(headBranch, commitSha, patch.title, this.pullBody(patch.files, patch.id));
+    const branchSuffix = this.newSuffix();
+    const headBranch = `${this.prefix}${patch.id}-${branchSuffix}`;
+    const pull = await this.openPull(headBranch, commitSha, patch.title, this.pullBody(patch.files, patch.id), false);
     return {
       route: this.route,
       patchId: patch.id,
       title: patch.title,
       appliedAt: this.now().toISOString(),
-      owner: this.o.owner,
-      repo: this.o.repo,
-      baseBranch: this.o.branch,
+      owner: this.owner,
+      repo: this.repo,
+      baseBranch: this.branch,
       baseSha: base.sha,
       headBranch,
+      branchSuffix,
       commitSha,
       pullNumber: pull.number,
       pullUrl: pull.html_url,
@@ -168,6 +197,15 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
   }
 
   async revert(receipt: GitHubReceipt): Promise<GitHubRevert> {
+    // Check the receipt before any call: a receipt from another repository,
+    // branch or route must never close or delete anything here.
+    if (receipt.owner !== this.owner || receipt.repo !== this.repo || receipt.baseBranch !== this.branch) {
+      throw mismatch(`the receipt is for ${receipt.owner}/${receipt.repo}@${receipt.baseBranch}, this adapter for ${this.owner}/${this.repo}@${this.branch}`);
+    }
+    if (!SUFFIX.test(receipt.branchSuffix ?? "") || receipt.headBranch !== `${this.prefix}${receipt.patchId}-${receipt.branchSuffix}`) {
+      throw mismatch(`"${receipt.headBranch}" is not a branch Wide Aisle made`);
+    }
+
     const result = (action: GitHubRevert["action"], pull: PullRequest, files: string[]): GitHubRevert => ({
       route: this.route,
       patchId: receipt.patchId,
@@ -179,6 +217,9 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
       pullUrl: pull.html_url,
     });
     const pull = (await this.call<PullRequest>("GET", `${this.repoPath()}/pulls/${receipt.pullNumber}`)).data;
+    if (pull.head?.ref !== receipt.headBranch || pull.base?.ref !== this.branch) {
+      throw mismatch(`pull request #${receipt.pullNumber} is ${pull.head?.ref} into ${pull.base?.ref}, not ${receipt.headBranch} into ${this.branch}`);
+    }
     if (pull.state === "open") {
       // Never merged, so the theme never changed. Closing is the whole revert.
       await this.call("PATCH", `${this.repoPath()}/pulls/${receipt.pullNumber}`, { state: "closed" });
@@ -186,6 +227,11 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
       return result("closed-pull-request", pull, receipt.files.map((f) => f.file));
     }
     if (!pull.merged) return result("already-closed", pull, []);
+
+    // A revert pull request may already be waiting from an earlier call.
+    const revertBranch = `${this.prefix}revert-${receipt.patchId}-${receipt.branchSuffix}`;
+    const waiting = await this.openPullFrom(revertBranch);
+    if (waiting) return result("revert-pull-request-open", waiting, receipt.files.map((f) => f.file));
 
     const base = await this.readBase();
     const restore: GitHubFileRecord[] = [];
@@ -205,16 +251,23 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
     const title = `Revert: ${receipt.title}`;
     const commitSha = await this.commit(base, tree, `${title}\n\nUndoes Wide Aisle patch ${receipt.patchId} (pull request #${receipt.pullNumber}).`);
     const revertPull = await this.openPull(
-      `${this.prefix}revert-${receipt.patchId}`,
+      revertBranch,
       commitSha,
       title,
       `Undoes #${receipt.pullNumber}. Each file goes back to the exact bytes it had before.\n\n${restore.map((f) => `- \`${f.file}\``).join("\n")}`,
+      true,
     );
     return result("opened-revert-pull-request", revertPull, restore.map((f) => f.file));
   }
 
+  private newSuffix(): string {
+    const s = this.suffix();
+    if (!SUFFIX.test(s)) throw new DeliveryApiError(`Branch suffix "${s}" must be 1 to 12 lower case letters or digits`, "INVALID_SUFFIX");
+    return s;
+  }
+
   private repoPath(): string {
-    return `/repos/${this.o.owner}/${this.o.repo}`;
+    return `/repos/${this.owner}/${this.repo}`;
   }
 
   private pullBody(files: ThemeFileChange[], id: string): string {
@@ -223,7 +276,7 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
   }
 
   private async readBase(): Promise<Base> {
-    const ref = (await this.call<{ object: { sha: string } }>("GET", `${this.repoPath()}/git/ref/heads/${refPath(this.o.branch)}`)).data;
+    const ref = (await this.call<{ object: { sha: string } }>("GET", `${this.repoPath()}/git/ref/heads/${refPath(this.branch)}`)).data;
     const commit = (await this.call<{ tree: { sha: string } }>("GET", `${this.repoPath()}/git/commits/${ref.object.sha}`)).data;
     const tree = (await this.call<{ truncated: boolean; tree: TreeEntry[] }>("GET", `${this.repoPath()}/git/trees/${commit.tree.sha}?recursive=1`)).data;
     if (tree.truncated) throw new DeliveryApiError("The repository tree is too large to read in one call", "TREE_TRUNCATED");
@@ -256,31 +309,57 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
     return commit.sha;
   }
 
-  private async openPull(headBranch: string, commitSha: string, title: string, body: string): Promise<PullRequest> {
-    await this.call("POST", `${this.repoPath()}/git/refs`, { ref: `refs/heads/${headBranch}`, sha: commitSha });
+  // Creates the branch and opens the pull request. With moveStale, a branch
+  // of ours left from an earlier attempt (no open pull request) is moved to
+  // the new commit instead of failing.
+  private async openPull(headBranch: string, commitSha: string, title: string, body: string, moveStale: boolean): Promise<PullRequest> {
     try {
-      return (await this.call<PullRequest>("POST", `${this.repoPath()}/pulls`, { title, head: headBranch, base: this.o.branch, body })).data;
+      await this.call("POST", `${this.repoPath()}/git/refs`, { ref: `refs/heads/${headBranch}`, sha: commitSha }, { resendAfter5xx: false });
     } catch (e) {
+      if (!(moveStale && headBranch.startsWith(this.prefix) && e instanceof DeliveryApiError && e.code === "HTTP_422")) throw e;
+      await this.call("PATCH", `${this.repoPath()}/git/refs/heads/${refPath(headBranch)}`, { sha: commitSha, force: true });
+    }
+    try {
+      // Not resent after a 5xx: if the first call worked, a second one fails
+      // with 422 and the cleanup below would close the new pull request.
+      return (await this.call<PullRequest>("POST", `${this.repoPath()}/pulls`, { title, head: headBranch, base: this.branch, body }, { resendAfter5xx: false }))
+        .data;
+    } catch (e) {
+      if (e instanceof DeliveryApiError && e.code.startsWith("HTTP_5")) {
+        const made = await this.openPullFrom(headBranch);
+        if (made) return made;
+      }
       // Leave no stray branch behind.
       await this.deleteBranch(headBranch);
       throw e;
     }
   }
 
+  private async openPullFrom(headBranch: string): Promise<PullRequest | undefined> {
+    const query = new URLSearchParams({ state: "open", head: `${this.owner}:${headBranch}` });
+    const open = (await this.call<PullRequest[]>("GET", `${this.repoPath()}/pulls?${query}`)).data;
+    return Array.isArray(open) ? open.find((p) => p.head?.ref === headBranch) : undefined;
+  }
+
   private async deleteBranch(branch: string): Promise<void> {
+    // Only ever our own branches.
+    if (!branch.startsWith(this.prefix)) throw mismatch(`"${branch}" is not a branch Wide Aisle made`);
     // Already gone (404) or protected (422) is not worth failing a revert over.
     await this.call("DELETE", `${this.repoPath()}/git/refs/heads/${refPath(branch)}`).catch((e) => {
       if (!(e instanceof DeliveryApiError && (e.code === "HTTP_404" || e.code === "HTTP_422"))) throw e;
     });
   }
 
-  private async call<T = unknown>(method: string, path: string, body?: unknown): Promise<{ status: number; data: T }> {
+  // Rate limits mean GitHub did nothing, so those are always waited out. A
+  // 5xx may come after the call worked; pass resendAfter5xx: false for calls
+  // that must not run twice.
+  private async call<T = unknown>(method: string, path: string, body?: unknown, opts: { resendAfter5xx?: boolean } = {}): Promise<{ status: number; data: T }> {
     for (let attempt = 0; ; attempt++) {
-      const res = await this.o.fetch(`${this.apiUrl}${path}`, {
+      const res = await this.fetch(`${GITHUB_API_URL}${path}`, {
         method,
         headers: {
           Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${this.o.token}`,
+          Authorization: `Bearer ${this.#token}`,
           "X-GitHub-Api-Version": GITHUB_API_VERSION,
           "User-Agent": "wide-aisle",
           ...(body === undefined ? {} : { "Content-Type": "application/json" }),
@@ -292,6 +371,9 @@ export class GitHubPrAdapter implements DeliveryAdapter<GitHubPreview, GitHubRec
 
       const remaining = res.headers.get("x-ratelimit-remaining");
       const limited = res.status === 429 || (res.status === 403 && (remaining === "0" || res.headers.get("retry-after") !== null));
+      if (!limited && res.status >= 500 && opts.resendAfter5xx === false) {
+        throw new DeliveryApiError(`GitHub ${method} ${path}: HTTP ${res.status}; the call may have run, so it was not resent`, `HTTP_${res.status}`, data);
+      }
       if (limited || res.status >= 500) {
         const reset = Number(res.headers.get("x-ratelimit-reset"));
         const wait =

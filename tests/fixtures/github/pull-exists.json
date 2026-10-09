@@ -4,7 +4,7 @@
     {
       "resource": "PullRequest",
       "code": "custom",
-      "message": "A pull request already exists for acme-agency:wide-aisle/p-001."
+      "message": "A pull request already exists for acme-agency:wide-aisle/p-001-abc123."
     }
   ],
   "documentation_url": "https://docs.github.com/rest/pulls/pulls#create-a-pull-request",

@@ -1,7 +1,7 @@
 {
-  "ref": "refs/heads/wide-aisle/revert-p-001",
+  "ref": "refs/heads/wide-aisle/revert-p-001-abc123",
   "node_id": "MDM6UmVmcmVmcy9oZWFkcy93aWRlLWFpc2xlL3JldmVydC1wLTAwMQ==",
-  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/refs/heads/wide-aisle/revert-p-001",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/refs/heads/wide-aisle/revert-p-001-abc123",
   "object": {
     "type": "commit",
     "sha": "5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809",

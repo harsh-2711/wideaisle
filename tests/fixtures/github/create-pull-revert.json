@@ -17,7 +17,7 @@
   "merged_at": null,
   "merge_commit_sha": null,
   "draft": false,
-  "head": { "label": "acme-agency:wide-aisle/revert-p-001", "ref": "wide-aisle/revert-p-001", "sha": "5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809" },
+  "head": { "label": "acme-agency:wide-aisle/revert-p-001-abc123", "ref": "wide-aisle/revert-p-001-abc123", "sha": "5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809" },
   "base": { "label": "acme-agency:main", "ref": "main", "sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6" },
   "merged": false,
   "mergeable": null,
