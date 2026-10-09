@@ -4,30 +4,35 @@ Update after every step, before compaction, before stopping and before handing o
 
 ## Goal and exit criteria
 
-See TASK.md. The written policy behind D-06 with allowed and banned sentences.
+See TASK.md. A written claims policy for D-06: words we never use, what we may say, and the evidence behind each claim.
 
 ## Status
 
-Queued. Last updated 2026-10-08.
+The policy merged in harsh-2711/wideaisle#36. The wider CI claims check is in review in harsh-2711/wideaisle#40. The owner's approval (Q-23) is the last exit criterion. Last updated 2026-10-08.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Claims policy draft | 2f267f9 |
+| Policy merged | c566b10 |
+| Reviewer fixes: describes the existing CI claims check and its gaps, "audit" banned, "failures automated tools can detect" wording, items pending lawyer questions 4 and 11, D-06 scope and hype-word source corrected | docs(research): fix review findings in the briefs, quiz and claims policy |
+| CI claims check widened to the policy word list, scare copy and required text | (pull request #40) |
 
 ## Current step
 
-Not started.
+Merge the claims check pull request (#40) once it is reviewed and green.
 
 ## Next three steps
 
-1. Read TASK.md and the decisions it uses.
-2. (fill in)
-3. (fill in)
+1. Merge #40, then set the state to Blocked on you with needs Q-23.
+2. The owner approves the policy, including the "How we enforce it" changes from #40 (Q-23).
+3. Add new banned phrases to scripts/ci/checks.mjs and its tests whenever the policy's word list changes.
 
 ## Blockers and open questions
 
-- None yet.
+- Q-23: the owner's approval is an exit criterion.
+- The cloud environment blocks most sites (Q-01). Sources marked "via search, not opened" were read through search results only.
 
 ## Decisions used
 
@@ -35,12 +40,12 @@ D-06
 
 ## Files touched
 
-- None yet.
+- docs/policy/claims-policy.md
 
 ## How to verify
 
-- (commands that prove the exit criteria)
+- node scripts/ci/checks.mjs claims --base origin/main
 
 ## Lessons and gotchas
 
-- None yet.
+- Mark every source as opened or via search, with the date checked.
