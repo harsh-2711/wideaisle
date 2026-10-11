@@ -26,7 +26,8 @@ In review: PR #46 (https://github.com/harsh-2711/wideaisle/pull/46). The review 
 | 7. Merged origin/main 8f1ee9e (Q-34 opened; the reviewer approved PR #41 at 72c6364) | 893e4ee |
 | 8. Proofread: ADRs 0002 and 0004 cut to about two pages; wording fixes in 0004 and 0005. All checks pass | 460c33f |
 | 9. Opened PR #46 to main; board set to In review | b11c30c |
-| 10. Review fixes (items 1 to 17): 0002 states plainly that route C and merged route B do not meet D-09, adds intent rows before the first write, zips in object storage, four revert outcomes, D-12 billing, corrected Q-03 count and impacts. Owner queue gains Q-35 (revert cases) and Q-36 (pilot billing) with the lead's approval, and Q-28 is reworded. Dates set to 2026-10-11. Server-size row dropped from 0005. Citations fixed in 0001 and 0004. 0004 Context points to Spike C | (this commit) |
+| 10. Review fixes (items 1 to 17): 0002 states plainly that route C and merged route B do not meet D-09, adds intent rows before the first write, zips in object storage, four revert outcomes, D-12 billing, corrected Q-03 count and impacts. Owner queue gains Q-35 (revert cases) and Q-36 (pilot billing) with the lead's approval, and Q-28 is reworded. Dates set to 2026-10-11. Server-size row dropped from 0005. Citations fixed in 0001 and 0004. 0004 Context points to Spike C | 5a2bf30 |
+| 11. Re-review fixes: retry recovery reads alt-text values too, so alt-text-only patches are covered; route B stores its branch suffix and a retry looks for its open pull request first | (this commit) |
 
 ## Current step
 

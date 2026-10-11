@@ -36,14 +36,16 @@ Spike A (T-030) built all three behind one interface. Sources: `docs/spikes/spik
 
 ### Records: an intent before the first write, a receipt after
 
-- **Intent.** Before the first write to a store or repository, the worker stores an intent row: patch id, route, store, theme or repository, and every file's `before` and `after` and every alt-text change. The same pattern guards alt-text batch submits (ADR 0004).
+- **Intent.** Before the first write to a store or repository, the worker stores an intent row: patch id, route, store, theme or repository, and every file's `before` and `after` and every alt-text change. For route B it also stores the branch suffix, passed to the adapter's `suffix` option, so a retry knows the branch name. The same pattern guards alt-text batch submits (ADR 0004).
 - **Receipt.** When apply returns, or throws `PartialApplyError` (which carries a receipt of everything it may have written), the worker completes that row with the route's receipt in the same transaction that marks the fix applied. Route A's receipt holds, per file, the checksum our own write returned, plus any write jobs still running. Route B's holds the repository, branches and pull request.
 - **Route C zips.** Both zips, the merchant's and ours, go to object storage, up to 50 MB each. The Postgres row keeps their storage keys and SHA-256 hashes, not the bytes (ADR 0001, ADR 0005).
-- **A retry finds an open intent.** If the worker dies mid-apply, pg-boss retries the job. Apply would refuse, since files already at `after` count as changed, so a retry never calls apply first. It waits a set time for write jobs the dead worker may have started (their IDs are lost; Q-03 job timings set the wait), then reads the files:
-  - all at `after`: complete the row;
-  - all at `before`: apply;
-  - a mix: revert from the intent, comparing bytes since no checksums were saved, then apply;
-  - anything else: stop and flag the store for a person.
+- **A retry finds an open intent.** If the worker dies mid-apply, pg-boss retries the job. Apply would refuse, since files already at `after` count as changed, so a retry never calls apply first.
+  - Route B: look for an open pull request from the stored branch. If one exists, complete the row with it. If the branch exists without one, delete our branch, then apply. Otherwise apply.
+  - Route A: wait a set time for write jobs the dead worker may have started (their IDs are lost; Q-03 job timings set the wait). Then read every file and every alt-text value in the intent. An alt-text-only patch has no files, so its alt-text values decide:
+    - all at `after`: complete the row;
+    - all at `before`: apply;
+    - a mix: revert from the intent, comparing bytes since no checksums were saved, then apply;
+    - anything else: stop and flag the store for a person.
 - Rows are never edited after they complete; a revert adds its own row. The remediation log and the evidence pack read them. The tables are a data model change, so the owner approves them with the M4 contracts.
 
 ### Revert
