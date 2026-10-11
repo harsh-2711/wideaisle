@@ -49,12 +49,20 @@ describe("bench fixtures", () => {
       expect(() => new vm.Script(f.body, { filename: f.file })).not.toThrow();
     }
     const home = store.files.find((f) => f.file === "home.html")!.body;
-    const origin = `http://${storeHost(0)}`;
-    const links = sampleLinks(home, origin);
-    expect(links.collection).toMatch(/^\/collections\/[a-z0-9-]+$/);
-    expect(links.product).toMatch(/^\/products\/[a-z0-9-]+$/);
     expect(home).toMatch(/Shopify\.theme = \{/);
-    expect(home).not.toContain("—");
+    // Every home page links to a collection and a product, so each store
+    // gives the census all four pages.
+    for (let i = 0; i < 60; i++) {
+      const page = generateStore(1, i).files.find(
+        (f) => f.file === "home.html",
+      )!.body;
+      const links = sampleLinks(page, `http://${storeHost(i)}`);
+      expect(links.collection, `store ${i}`).toMatch(
+        /^\/collections\/[a-z0-9-]+$/,
+      );
+      expect(links.product, `store ${i}`).toMatch(/^\/products\/[a-z0-9-]+$/);
+    }
+    expect(home).not.toContain(String.fromCharCode(0x2014));
   });
 });
 

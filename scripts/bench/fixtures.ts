@@ -16,7 +16,7 @@ import http from "node:http";
 import path from "node:path";
 
 // Bump when the output changes, so cached fixtures are rebuilt.
-export const FIXTURE_VERSION = 2;
+export const FIXTURE_VERSION = 3;
 
 export const PAGE_KINDS = ["home", "collection", "product", "cart"] as const;
 export type PageKind = (typeof PAGE_KINDS)[number];
@@ -675,7 +675,9 @@ function homeMain(g: Gen, s: StoreSpec): string {
     `<div id="shopify-section-template--home__slideshow" class="shopify-section section"><slideshow-component class="slider-mobile-gutter page-width mobile-text-below" role="region" aria-roledescription="Carousel" aria-label="Slideshow about our collections"><div class="slideshow__controls slider-buttons">${sliderButton("prev", "Previous slide")}${sliderButton("next", "Next slide")}</div><div class="slideshow banner banner--large grid grid--1-col slider slider--everywhere" id="Slider-home" aria-live="polite" aria-atomic="true">${slides}</div></slideshow-component></div>`,
   ];
   for (let i = 0; i < s.sizes.homeSections; i++) {
-    const kind = g.int(0, 3);
+    // The first section is always a product grid, as on Dawn's default home
+    // page, so the census finds a product link to follow.
+    const kind = i === 0 ? 0 : g.int(0, 3);
     if (kind <= 1) {
       sections.push(
         `<div id="shopify-section-template--home__featured_collection_${i}" class="shopify-section section"><div class="color-scheme-1 isolate gradient"><div class="collection section-template--home__featured_collection_${i}-padding"><div class="collection__title title-wrapper title-wrapper--no-top-margin page-width"><h2 class="title inline-richtext h2 scroll-trigger animate--slide-in">${esc(g.words(2))}</h2></div><slider-component class="slider-mobile-gutter page-width page-width-desktop scroll-trigger animate--slide-in">${cardGrid(g, s, s.sizes.cardsPerSection, i * 7)}<div class="slider-buttons">${sliderButton("prev", "Slide left")}<div class="slider-counter caption"><span class="slider-counter--current">1</span><span aria-hidden="true"> / </span><span class="visually-hidden">of</span><span class="slider-counter--total">${s.sizes.cardsPerSection}</span></div>${sliderButton("next", "Slide right")}</div></slider-component><div class="center collection__view-all scroll-trigger animate--slide-in"><a href="/collections/${s.collections[i % s.collections.length]}" class="button" aria-label="View all products in this collection">View all</a></div></div></div></div>`,

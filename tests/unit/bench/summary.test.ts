@@ -167,7 +167,7 @@ describe("summary", () => {
     expect(md).toContain("| 10,000 | 10.0 | $5.00 | $0.500 |");
     expect(md).toContain("| 100,000 | 100.0 | $13.10 | $0.131 |");
     expect(md).toContain("not a quote");
-    expect(md).not.toContain("—");
+    expect(md).not.toContain(String.fromCharCode(0x2014));
   });
 
   it("takes server prices as inputs", () => {
