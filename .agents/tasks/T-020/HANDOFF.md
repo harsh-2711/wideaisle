@@ -18,6 +18,7 @@ Blocked on you. Merged in PR #34, with fixes in PR #43 (script navigation race, 
 | Public addresses only, checked on every redirect hop | 31b59a5 |
 | Connections pinned to vetted addresses; egress proxy for the browser | 46f2e52 |
 | Review fixes: WebRTC off, robots and spacing on every hop, Crawl-delay on scans, retries | fdcc80d |
+| PR #43 fixes: navigation race, same-origin Referer, linear tag reading | d9fa41a |
 
 ## Current step
 
