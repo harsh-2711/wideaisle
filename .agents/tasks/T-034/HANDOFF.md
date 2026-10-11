@@ -11,7 +11,7 @@ See TASK.md. Records for the architecture, fix delivery and AI use, ready for G1
 
 ## Status
 
-Running. ADRs 0001 and 0002 written; 0003 to 0005 next. Last updated 2026-10-11.
+Running. ADRs 0001 to 0003 written; 0004 and 0005 next. Last updated 2026-10-11.
 
 ## Done so far
 
@@ -19,17 +19,18 @@ Running. ADRs 0001 and 0002 written; 0003 to 0005 next. Last updated 2026-10-11.
 |---|---|
 | 1. Read inputs: AGENTS.md, D-05, D-08 to D-11, docs/adr/README.md, roadmap M3 and Architecture, Spike A at 72c6364 (PR #41), Spike B, Spike C, scanner and census code. Branch fast-forwarded to main 096a1e1 | (no commit) |
 | 2. ADR 0001 system architecture at PoC; TASK.md out of scope filled in | 58eee73 |
-| 3. ADR 0002 fix delivery path (D-09) | (this commit) |
+| 3. ADR 0002 fix delivery path (D-09) | da88976 |
+| 4. ADR 0003 theme fix library (Spike B) | (this commit) |
 
 ## Current step
 
-Writing ADR 0003, the theme fix library (Spike B).
+Writing ADR 0004, AI in the product (D-11).
 
 ## Next three steps
 
-1. ADR 0003 theme fix library, from docs/spikes/spike-b-fixers.md and app/lib/fixers/.
-2. ADR 0004 AI in the product (D-11), from docs/spikes/spike-c-alt-text.md; model pending Q-33.
-3. ADR 0005 PoC hosting (D-10) from planning figures, each marked "estimate, Spike D replaces it". Then run the checks, push, open the PR and set the board to In review.
+1. ADR 0004 AI in the product (D-11), from docs/spikes/spike-c-alt-text.md and app/lib/alt-text/; model pending Q-33.
+2. ADR 0005 PoC hosting (D-10) from the roadmap's planning figures.
+3. Run the checks, push, open the PR and set the board to In review.
 
 ## Blockers and open questions
 
@@ -43,6 +44,7 @@ D-09, D-10, D-11. The ADRs also cite D-02, D-04, D-05, D-06 and D-08.
 
 - docs/adr/0001-system-architecture-at-poc.md
 - docs/adr/0002-fix-delivery-path.md
+- docs/adr/0003-theme-fix-library.md
 - .agents/tasks/T-034/TASK.md, HANDOFF.md, status.json
 
 ## How to verify
