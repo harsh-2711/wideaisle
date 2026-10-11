@@ -4,10 +4,10 @@
   "lane": "architect",
   "agent": "architect",
   "state": "In review",
-  "step": "Review fixes for PR #46",
+  "step": "PR re-review (#46)",
   "branch": "claude/docs-adr-m3",
   "issue": 30,
   "needs": [],
-  "updated": "2026-10-11T15:01:25Z",
+  "updated": "2026-10-11T15:04:55Z",
   "id": "T-034"
 }
