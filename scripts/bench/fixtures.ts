@@ -16,7 +16,7 @@ import http from "node:http";
 import path from "node:path";
 
 // Bump when the output changes, so cached fixtures are rebuilt.
-export const FIXTURE_VERSION = 1;
+export const FIXTURE_VERSION = 2;
 
 export const PAGE_KINDS = ["home", "collection", "product", "cart"] as const;
 export type PageKind = (typeof PAGE_KINDS)[number];
@@ -73,10 +73,74 @@ const LOREM =
   "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum soft cotton linen washed relaxed fit everyday made small batches recycled materials ships free returns".split(
     " ",
   );
-const ADJ = ["Linen", "Cotton", "Wool", "Classic", "Everyday", "Organic", "Vintage", "Coastal", "Urban", "Alpine", "Soft", "Bold", "Daily", "Weekend", "Studio", "Field", "Harbor", "Canyon", "Meadow", "Summit"];
-const NOUN = ["Shirt", "Tee", "Hoodie", "Jacket", "Tote", "Mug", "Candle", "Notebook", "Cap", "Scarf", "Sneaker", "Backpack", "Bottle", "Blanket", "Planter", "Apron", "Wallet", "Belt", "Sock", "Lamp"];
-const STORE_NOUN = ["Goods", "Supply", "Studio", "Market", "Outfitters", "House", "Collective", "Works", "Trading", "Mercantile"];
-const COLORS = ["Black", "White", "Navy", "Olive", "Sand", "Rust", "Stone", "Sky", "Forest", "Clay"];
+const ADJ = [
+  "Linen",
+  "Cotton",
+  "Wool",
+  "Classic",
+  "Everyday",
+  "Organic",
+  "Vintage",
+  "Coastal",
+  "Urban",
+  "Alpine",
+  "Soft",
+  "Bold",
+  "Daily",
+  "Weekend",
+  "Studio",
+  "Field",
+  "Harbor",
+  "Canyon",
+  "Meadow",
+  "Summit",
+];
+const NOUN = [
+  "Shirt",
+  "Tee",
+  "Hoodie",
+  "Jacket",
+  "Tote",
+  "Mug",
+  "Candle",
+  "Notebook",
+  "Cap",
+  "Scarf",
+  "Sneaker",
+  "Backpack",
+  "Bottle",
+  "Blanket",
+  "Planter",
+  "Apron",
+  "Wallet",
+  "Belt",
+  "Sock",
+  "Lamp",
+];
+const STORE_NOUN = [
+  "Goods",
+  "Supply",
+  "Studio",
+  "Market",
+  "Outfitters",
+  "House",
+  "Collective",
+  "Works",
+  "Trading",
+  "Mercantile",
+];
+const COLORS = [
+  "Black",
+  "White",
+  "Navy",
+  "Olive",
+  "Sand",
+  "Rust",
+  "Stone",
+  "Sky",
+  "Forest",
+  "Clay",
+];
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const THEMES: [string, number, string][] = [
   ["Dawn", 887, "15.2.0"],
@@ -87,8 +151,17 @@ const THEMES: [string, number, string][] = [
   ["Impulse", 857, "7.6.1"],
 ];
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const esc = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 // ---------- store model ----------
 
@@ -164,7 +237,10 @@ export function storeSpec(seed: number, index: number): StoreSpec {
     storefrontJsKb: g.int(40, 110),
     appJsKb: g.int(20, 90),
   };
-  const collections = Array.from({ length: g.int(6, 14) }, () => slug(`${g.pick(ADJ)} ${g.pick(NOUN)}s`) + "-" + g.int(1, 99));
+  const collections = Array.from(
+    { length: g.int(6, 14) },
+    () => slug(`${g.pick(ADJ)} ${g.pick(NOUN)}s`) + "-" + g.int(1, 99),
+  );
   const vendor = `${g.pick(ADJ)} ${g.pick(STORE_NOUN)}`;
   const products: Product[] = Array.from({ length: 60 }, (_, i) => {
     const title = `${g.pick(ADJ)} ${g.pick(COLORS)} ${g.pick(NOUN)}`;
@@ -184,7 +260,12 @@ export function storeSpec(seed: number, index: number): StoreSpec {
     name: vendor,
     theme: { name: themeName, id: themeId, version: themeVersion },
     lang: !g.chance(0.04),
-    apps: { reviews: g.chance(0.6), chat: g.chance(0.4), popup: g.chance(0.5), upsell: g.chance(0.35) },
+    apps: {
+      reviews: g.chance(0.6),
+      chat: g.chance(0.4),
+      popup: g.chance(0.5),
+      upsell: g.chance(0.35),
+    },
     faults: {
       lowContrastPrices: g.chance(0.55),
       lowContrastBadges: g.chance(0.5),
@@ -219,7 +300,10 @@ function icon(g: Gen, name: string, segments = 12): string {
 }
 
 function paymentIcon(g: Gen, name: string): string {
-  const paths = Array.from({ length: g.int(2, 5) }, () => `<path fill="#${g.hex(6)}" d="${svgPath(g, g.int(10, 40))}"/>`).join("");
+  const paths = Array.from(
+    { length: g.int(2, 5) },
+    () => `<path fill="#${g.hex(6)}" d="${svgPath(g, g.int(10, 40))}"/>`,
+  ).join("");
   return `<li class="list-payment__item"><svg class="icon icon--full-color" viewBox="0 0 38 24" xmlns="http://www.w3.org/2000/svg" role="img" width="38" height="24" aria-labelledby="pi-${name}"><title id="pi-${name}">${name}</title><path opacity=".07" d="M35 0H3C1.3 0 0 1.3 0 3v18c0 1.7 1.4 3 3 3h32c1.7 0 3-1.3 3-3V3c0-1.7-1.4-3-3-3z"/>${paths}</svg></li>`;
 }
 
@@ -227,7 +311,9 @@ function paymentIcon(g: Gen, name: string): string {
 
 function themeCss(g: Gen, s: StoreSpec): string {
   const fg = "18, 18, 18";
-  const priceColor = s.faults.lowContrastPrices ? "rgba(18, 18, 18, 0.45)" : "rgba(18, 18, 18, 0.85)";
+  const priceColor = s.faults.lowContrastPrices
+    ? "rgba(18, 18, 18, 0.45)"
+    : "rgba(18, 18, 18, 0.85)";
   const badgeBg = s.faults.lowContrastBadges ? "#f28b82" : "#b3261e";
   const head = `/* ${s.theme.name} ${s.theme.version} base.css (benchmark fixture) */
 :root{--color-foreground:${fg};--color-background:255, 255, 255;--color-button:18, 18, 18;--color-button-text:255, 255, 255;--color-link:${fg};--color-badge-foreground:${fg};--page-width:120rem;--spacing-sections-desktop:0px;--spacing-sections-mobile:0px;--grid-desktop-vertical-spacing:8px;--grid-desktop-horizontal-spacing:8px;--grid-mobile-vertical-spacing:4px;--grid-mobile-horizontal-spacing:4px;--font-body-family:Assistant, sans-serif;--font-heading-family:Assistant, sans-serif;--font-body-scale:1;--font-heading-scale:1;--duration-short:100ms;--duration-default:200ms;--duration-long:500ms;--buttons-radius:0px;--inputs-radius:0px;--card-corner-radius:0rem;--media-padding:0px}
@@ -351,8 +437,12 @@ function jsFunction(g: Gen, i: number): { code: string; kind: FnKind } {
       };
     case 6: {
       const table: Record<string, string> = {};
-      for (let k = 0; k < g.int(8, 30); k++) table[`${g.pick(LOREM)}_${g.pick(LOREM)}_${k}`] = g.sentence(3, 10);
-      return { kind: "other", code: `M.s${i}=${JSON.stringify(table)};M.f${i}=function(k){return M.s${i}[k]||k;};` };
+      for (let k = 0; k < g.int(8, 30); k++)
+        table[`${g.pick(LOREM)}_${g.pick(LOREM)}_${k}`] = g.sentence(3, 10);
+      return {
+        kind: "other",
+        code: `M.s${i}=${JSON.stringify(table)};M.f${i}=function(k){return M.s${i}[k]||k;};`,
+      };
     }
     default:
       return {
@@ -372,8 +462,12 @@ function jsBundle(g: Gen, name: string, kb: number, init: string): string {
     fns.push(f);
     size += f.code.length + 1;
   }
-  const idx = (kind: FnKind) => fns.map((f, i) => (f.kind === kind ? i : -1)).filter((i) => i >= 0);
-  const sample = (xs: number[], n: number) => xs.filter((_, i) => i % Math.max(1, Math.floor(xs.length / n)) === 0).slice(0, n);
+  const idx = (kind: FnKind) =>
+    fns.map((f, i) => (f.kind === kind ? i : -1)).filter((i) => i >= 0);
+  const sample = (xs: number[], n: number) =>
+    xs
+      .filter((_, i) => i % Math.max(1, Math.floor(xs.length / n)) === 0)
+      .slice(0, n);
   const calls = `var H=${JSON.stringify(sample(idx("hash"), 30))},P=${JSON.stringify(sample(idx("money"), 20))},A=${JSON.stringify(sample(idx("array"), 20))},D=${JSON.stringify(sample(idx("dom"), 8))},O=${JSON.stringify(sample(idx("object"), 10))};
 var texts=[].map.call(document.querySelectorAll("h1,h2,h3,a"),function(e){return e.textContent;}).slice(0,400);
 H.forEach(function(i){texts.forEach(function(t){M["f"+i](t);});});
@@ -404,10 +498,18 @@ var pj=document.getElementById("ProductJson");if(pj){try{var prod=JSON.parse(pj.
 var slides=document.querySelectorAll(".slideshow__slide");if(slides.length>1){var cur=0;setInterval(function(){slides[cur].setAttribute("aria-hidden","true");cur=(cur+1)%slides.length;slides[cur].setAttribute("aria-hidden","false");},5000);}
 `;
 
-function appInit(app: "reviews" | "chat" | "popup" | "upsell", s: StoreSpec, g: Gen): string {
+function appInit(
+  app: "reviews" | "chat" | "popup" | "upsell",
+  s: StoreSpec,
+  g: Gen,
+): string {
   switch (app) {
     case "reviews": {
-      const reviews = Array.from({ length: s.sizes.reviews }, () => ({ a: g.pick(ADJ) + " " + g.pick(LOREM), r: g.int(1, 5), t: g.sentence(8, 40) }));
+      const reviews = Array.from({ length: s.sizes.reviews }, () => ({
+        a: g.pick(ADJ) + " " + g.pick(LOREM),
+        r: g.int(1, 5),
+        t: g.sentence(8, 40),
+      }));
       return `var R=${JSON.stringify(reviews)};
 var host=document.getElementById("judgeme_product_reviews");
 if(host){var h='<div class="jdgm-rev-widg"><h2 class="jdgm-rev-widg__title">Customer reviews</h2><div class="jdgm-rev-widg__body">';R.forEach(function(r,i){h+='<div class="jdgm-rev" data-review-id="'+i+'"><div class="jdgm-rev__header"><span class="jdgm-rev__rating" data-score="'+r.r+'"><span class="jdgm-star jdgm--on"></span><span class="jdgm-star jdgm--on"></span><span class="jdgm-star jdgm--off"></span></span><span class="jdgm-rev__author">'+r.a+'</span></div><div class="jdgm-rev__body"><p>'+r.t+'</p></div><div class="jdgm-rev__actions"><button class="jdgm-rev__thumb-btn" type="button">Helpful</button></div></div>';});host.innerHTML=h+'</div></div>';}
@@ -416,7 +518,7 @@ if(host){var h='<div class="jdgm-rev-widg"><h2 class="jdgm-rev-widg__title">Cust
     case "chat":
       return `var w=document.createElement("div");w.id="tidio-chat";w.innerHTML='<div class="tidio-launcher" style="position:fixed;right:20px;bottom:20px"><button type="button" class="tidio-launcher__button" style="width:60px;height:60px;border-radius:30px;background:#0566ff;color:#fff;border:0"${s.faults.chatButtonUnnamed ? "" : ' aria-label="Open chat"'}><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.5 2 2 6 2 11c0 2.4 1 4.6 2.8 6.2L4 22l4.6-2.3c1.1.3 2.2.5 3.4.5 5.5 0 10-4 10-9S17.5 2 12 2z"/></svg></button></div>';document.body.appendChild(w);`;
     case "popup":
-      return `var p=document.createElement("div");p.className="klaviyo-form klaviyo-form-${g.hex(6)}";p.innerHTML='<form class="kl-private-reset-css" style="padding:16px;background:#fff8f0"><p style="color:#c9b8a8;font-size:12px">Join our list for 10% off your first order. Unsubscribe any time.</p>${s.faults.newsletterUnlabelled ? '<input type="email" name="email" placeholder="Email address" class="kl-input">' : '<label for="kl-email">Email</label><input id="kl-email" type="email" name="email" class="kl-input">'}<button type="submit" style="background:#222;color:#fff">Subscribe</button></form>';document.body.appendChild(p);`;
+      return `var p=document.createElement("div");p.className="klaviyo-form klaviyo-form-${g.hex(6)}";p.innerHTML='<form class="kl-private-reset-css" style="padding:16px;background:#fff8f0"><p style="color:#c9b8a8;font-size:12px">Join our list for 10% off your first order. Unsubscribe any time.</p>${s.faults.newsletterUnlabelled ? '<input type="email" name="email" class="kl-input">' : '<label for="kl-email">Email</label><input id="kl-email" type="email" name="email" class="kl-input">'}<button type="submit" style="background:#222;color:#fff">Subscribe</button></form>';document.body.appendChild(p);`;
     case "upsell":
       return `var u=document.querySelector("main");if(u){var box=document.createElement("div");box.className="rebuy-widget rebuy-recommended-products";var h='<h2 class="rebuy-widget__title">You might also like</h2><ul class="rebuy-product-grid">';for(var i=0;i<6;i++){h+='<li class="rebuy-product-block"><a class="rebuy-product-media" href="/products/item-'+i+'"><img src="/cdn/shop/files/upsell-'+i+'.jpg" width="200" height="200"></a><a class="rebuy-product-title" href="/products/item-'+i+'">Item '+i+'</a><div class="rebuy-money" style="color:#bbbbbb">$'+(10+i)+'.00</div><button class="rebuy-button" type="button">Add</button></li>';}box.innerHTML=h+'</ul>';u.appendChild(box);}`;
   }
@@ -426,7 +528,10 @@ if(host){var h='<div class="jdgm-rev-widg"><h2 class="jdgm-rev-widg__title">Cust
 
 function imgSrcset(handle: string, k: number): string {
   return [165, 360, 533, 720, 940, 1066, 1600]
-    .map((w) => `/cdn/shop/files/${handle}-${k}.jpg?v=1712345678&amp;width=${w} ${w}w`)
+    .map(
+      (w) =>
+        `/cdn/shop/files/${handle}-${k}.jpg?v=1712345678&amp;width=${w} ${w}w`,
+    )
     .join(", ");
 }
 
@@ -473,7 +578,9 @@ ${wishlist}
 }
 
 function cardGrid(g: Gen, s: StoreSpec, count: number, offset: number): string {
-  const items = Array.from({ length: count }, (_, i) => card(g, s, s.products[(offset + i) % s.products.length], offset + i)).join("\n");
+  const items = Array.from({ length: count }, (_, i) =>
+    card(g, s, s.products[(offset + i) % s.products.length], offset + i),
+  ).join("\n");
   return `<ul class="grid product-grid contains-card contains-card--product grid--4-col-desktop grid--2-col-tablet-down" role="list">\n${items}\n</ul>`;
 }
 
@@ -486,7 +593,10 @@ function header(g: Gen, s: StoreSpec): string {
     }).join("");
     return `<li><header-menu><details id="Details-HeaderMenu-${i}" class="mega-menu"><summary id="HeaderMenu-${i}" class="header__menu-item list-menu__item link focus-inset"><span>${esc(title)}</span>${icon(g, "caret", 4)}</summary><div id="MegaMenu-Content-${i}" class="mega-menu__content color-scheme-1 gradient motion-reduce global-settings-popup" tabindex="-1"><ul class="mega-menu__list page-width" role="list">${subs}</ul></div></details></header-menu></li>`;
   }).join("\n");
-  const named = (label: string) => (s.faults.iconLinksUnnamed ? "" : `<span class="visually-hidden">${label}</span>`);
+  const named = (label: string) =>
+    s.faults.iconLinksUnnamed
+      ? ""
+      : `<span class="visually-hidden">${label}</span>`;
   return `<div id="shopify-section-announcement-bar" class="shopify-section"><div class="announcement-bar color-scheme-1 gradient" role="region" aria-label="Announcement"><div class="page-width"><p class="announcement-bar__message h5"><span>Free shipping on orders over $75</span></p></div></div></div>
 <div id="shopify-section-header" class="shopify-section shopify-section-group-header-group section-header"><link rel="stylesheet" href="/cdn/shop/t/1/assets/component-list-menu.css?v=151968516119678728991712345678" media="print" onload="this.media='all'">
 <sticky-header data-sticky-type="on-scroll-up" class="header-wrapper color-scheme-1 gradient header-wrapper--border-bottom"><header class="header header--middle-left header--mobile-center page-width header--has-menu header--has-social header--has-account">
@@ -504,18 +614,36 @@ ${menu}
 
 function footer(g: Gen, s: StoreSpec): string {
   const cols = Array.from({ length: s.sizes.footerColumns }, () => {
-    const links = Array.from({ length: g.int(5, 10) }, () => `<li><a href="/pages/${slug(g.words(2))}" class="link link--text list-menu__item list-menu__item--link">${esc(g.words(g.int(1, 3)))}</a></li>`).join("");
+    const links = Array.from(
+      { length: g.int(5, 10) },
+      () =>
+        `<li><a href="/pages/${slug(g.words(2))}" class="link link--text list-menu__item list-menu__item--link">${esc(g.words(g.int(1, 3)))}</a></li>`,
+    ).join("");
     return `<div class="footer-block grid__item footer-block--menu scroll-trigger animate--slide-in"><h2 class="footer-block__heading inline-richtext">${esc(g.words(2))}</h2><ul class="footer-block__details-content list-unstyled">${links}</ul></div>`;
   }).join("\n");
   const social = ["Facebook", "Instagram", "TikTok", "Pinterest", "YouTube"]
-    .map((n) => `<li class="list-social__item"><a href="https://${n.toLowerCase()}.example/${slug(s.name)}" class="link list-social__link">${icon(g, n.toLowerCase(), 14)}${s.faults.socialLinksUnnamed ? "" : `<span class="visually-hidden">${n}</span>`}</a></li>`)
+    .map(
+      (n) =>
+        `<li class="list-social__item"><a href="https://${n.toLowerCase()}.example/${slug(s.name)}" class="link list-social__link">${icon(g, n.toLowerCase(), 14)}${s.faults.socialLinksUnnamed ? "" : `<span class="visually-hidden">${n}</span>`}</a></li>`,
+    )
     .join("");
-  const payments = ["American Express", "Apple Pay", "Diners Club", "Discover", "Google Pay", "Mastercard", "PayPal", "Shop Pay", "Venmo", "Visa"]
+  const payments = [
+    "American Express",
+    "Apple Pay",
+    "Diners Club",
+    "Discover",
+    "Google Pay",
+    "Mastercard",
+    "PayPal",
+    "Shop Pay",
+    "Venmo",
+    "Visa",
+  ]
     .slice(0, g.int(5, 10))
     .map((n) => paymentIcon(g, n))
     .join("");
   const email = s.faults.newsletterUnlabelled
-    ? `<input id="NewsletterForm--footer" type="email" name="contact[email]" class="field__input" value="" aria-required="true" autocorrect="off" autocapitalize="off" autocomplete="email" placeholder="Email" required>`
+    ? `<input id="NewsletterForm--footer" type="email" name="contact[email]" class="field__input" value="" aria-required="true" autocorrect="off" autocapitalize="off" autocomplete="email" required>`
     : `<input id="NewsletterForm--footer" type="email" name="contact[email]" class="field__input" value="" aria-required="true" autocorrect="off" autocapitalize="off" autocomplete="email" placeholder="Email" required><label class="field__label" for="NewsletterForm--footer">Email</label>`;
   return `<footer class="footer color-scheme-1 gradient section-sections--footer-padding"><div class="footer__content-top page-width"><div class="footer__blocks-wrapper grid grid--1-col grid--2-col grid--4-col-tablet scroll-trigger animate--slide-in">
 ${cols}
@@ -528,11 +656,19 @@ ${cols}
 }
 
 function richText(g: Gen, n: number): string {
-  return Array.from({ length: n }, () => `<p>${esc(Array.from({ length: g.int(2, 5) }, () => g.sentence()).join(" "))}</p>`).join("\n");
+  return Array.from(
+    { length: n },
+    () =>
+      `<p>${esc(Array.from({ length: g.int(2, 5) }, () => g.sentence()).join(" "))}</p>`,
+  ).join("\n");
 }
 
 function homeMain(g: Gen, s: StoreSpec): string {
-  const slides = Array.from({ length: g.int(2, 4) }, (_, i) => `<div class="slideshow__slide grid__item grid--1-col slider__slide" id="Slide-template--home__slideshow-${i + 1}" role="group" aria-roledescription="Slide" aria-label="${i + 1} of 3" tabindex="-1"><div class="slideshow__media banner__media media"><img src="/cdn/shop/files/hero-${i}.jpg?v=1712345678&amp;width=3840" alt="" srcset="${imgSrcset("hero", i)}" width="3840" height="1600" sizes="100vw" fetchpriority="${i === 0 ? "high" : "auto"}"></div><div class="slideshow__text-wrapper banner__content page-width"><div class="slideshow__text banner__box content-container"><h2 class="banner__heading inline-richtext h1">${esc(g.words(3))}</h2><div class="banner__text rte"><p>${esc(g.sentence())}</p></div><div class="banner__buttons"><a href="/collections/${s.collections[i % s.collections.length]}" class="button button--primary">Shop now</a></div></div></div></div>`).join("\n");
+  const slides = Array.from(
+    { length: g.int(2, 4) },
+    (_, i) =>
+      `<div class="slideshow__slide grid__item grid--1-col slider__slide" id="Slide-template--home__slideshow-${i + 1}" role="group" aria-roledescription="Slide" aria-label="${i + 1} of 3" tabindex="-1"><div class="slideshow__media banner__media media"><img src="/cdn/shop/files/hero-${i}.jpg?v=1712345678&amp;width=3840" alt="" srcset="${imgSrcset("hero", i)}" width="3840" height="1600" sizes="100vw" fetchpriority="${i === 0 ? "high" : "auto"}"></div><div class="slideshow__text-wrapper banner__content page-width"><div class="slideshow__text banner__box content-container"><h2 class="banner__heading inline-richtext h1">${esc(g.words(3))}</h2><div class="banner__text rte"><p>${esc(g.sentence())}</p></div><div class="banner__buttons"><a href="/collections/${s.collections[i % s.collections.length]}" class="button button--primary">Shop now</a></div></div></div></div>`,
+  ).join("\n");
   const sliderButton = (dir: string, label: string) =>
     `<button type="button" class="slider-button slider-button--${dir}" name="${dir}"${s.faults.sliderButtonsUnnamed ? "" : ` aria-label="${label}"`} aria-controls="Slider-home">${icon(g, "caret", 4)}</button>`;
   const sections = [
@@ -541,12 +677,22 @@ function homeMain(g: Gen, s: StoreSpec): string {
   for (let i = 0; i < s.sizes.homeSections; i++) {
     const kind = g.int(0, 3);
     if (kind <= 1) {
-      sections.push(`<div id="shopify-section-template--home__featured_collection_${i}" class="shopify-section section"><div class="color-scheme-1 isolate gradient"><div class="collection section-template--home__featured_collection_${i}-padding"><div class="collection__title title-wrapper title-wrapper--no-top-margin page-width"><h2 class="title inline-richtext h2 scroll-trigger animate--slide-in">${esc(g.words(2))}</h2></div><slider-component class="slider-mobile-gutter page-width page-width-desktop scroll-trigger animate--slide-in">${cardGrid(g, s, s.sizes.cardsPerSection, i * 7)}<div class="slider-buttons">${sliderButton("prev", "Slide left")}<div class="slider-counter caption"><span class="slider-counter--current">1</span><span aria-hidden="true"> / </span><span class="visually-hidden">of</span><span class="slider-counter--total">${s.sizes.cardsPerSection}</span></div>${sliderButton("next", "Slide right")}</div></slider-component><div class="center collection__view-all scroll-trigger animate--slide-in"><a href="/collections/${s.collections[i % s.collections.length]}" class="button" aria-label="View all products in this collection">View all</a></div></div></div></div>`);
+      sections.push(
+        `<div id="shopify-section-template--home__featured_collection_${i}" class="shopify-section section"><div class="color-scheme-1 isolate gradient"><div class="collection section-template--home__featured_collection_${i}-padding"><div class="collection__title title-wrapper title-wrapper--no-top-margin page-width"><h2 class="title inline-richtext h2 scroll-trigger animate--slide-in">${esc(g.words(2))}</h2></div><slider-component class="slider-mobile-gutter page-width page-width-desktop scroll-trigger animate--slide-in">${cardGrid(g, s, s.sizes.cardsPerSection, i * 7)}<div class="slider-buttons">${sliderButton("prev", "Slide left")}<div class="slider-counter caption"><span class="slider-counter--current">1</span><span aria-hidden="true"> / </span><span class="visually-hidden">of</span><span class="slider-counter--total">${s.sizes.cardsPerSection}</span></div>${sliderButton("next", "Slide right")}</div></slider-component><div class="center collection__view-all scroll-trigger animate--slide-in"><a href="/collections/${s.collections[i % s.collections.length]}" class="button" aria-label="View all products in this collection">View all</a></div></div></div></div>`,
+      );
     } else if (kind === 2) {
-      sections.push(`<div id="shopify-section-template--home__image_with_text_${i}" class="shopify-section section"><div class="image-with-text image-with-text--no-overlap page-width isolate"><div class="image-with-text__grid grid grid--gapless grid--1-col grid--2-col-tablet"><div class="image-with-text__media-item grid__item"><div class="image-with-text__media media--transparent gradient color-scheme-2 global-media-settings media--adapt"><img src="/cdn/shop/files/story-${i}.jpg?v=1712345678&amp;width=1500" alt="${esc(g.words(4))}" srcset="${imgSrcset("story", i)}" width="1500" height="1000" loading="lazy" sizes="(min-width: 1200px) 550px, (min-width: 750px) calc((100vw - 130px) / 2), calc((100vw - 50px) / 2)"></div></div><div class="image-with-text__text-item grid__item"><div class="image-with-text__content image-with-text__content--middle image-with-text__content--desktop-left content-container gradient color-scheme-2"><h2 class="image-with-text__heading inline-richtext h2">${esc(g.words(3))}</h2><div class="image-with-text__text rte body">${richText(g, 2)}</div><a href="/pages/about" class="button button--primary">Our story</a></div></div></div></div></div>`);
+      sections.push(
+        `<div id="shopify-section-template--home__image_with_text_${i}" class="shopify-section section"><div class="image-with-text image-with-text--no-overlap page-width isolate"><div class="image-with-text__grid grid grid--gapless grid--1-col grid--2-col-tablet"><div class="image-with-text__media-item grid__item"><div class="image-with-text__media media--transparent gradient color-scheme-2 global-media-settings media--adapt"><img src="/cdn/shop/files/story-${i}.jpg?v=1712345678&amp;width=1500" alt="${esc(g.words(4))}" srcset="${imgSrcset("story", i)}" width="1500" height="1000" loading="lazy" sizes="(min-width: 1200px) 550px, (min-width: 750px) calc((100vw - 130px) / 2), calc((100vw - 50px) / 2)"></div></div><div class="image-with-text__text-item grid__item"><div class="image-with-text__content image-with-text__content--middle image-with-text__content--desktop-left content-container gradient color-scheme-2"><h2 class="image-with-text__heading inline-richtext h2">${esc(g.words(3))}</h2><div class="image-with-text__text rte body">${richText(g, 2)}</div><a href="/pages/about" class="button button--primary">Our story</a></div></div></div></div></div>`,
+      );
     } else {
-      const cols = Array.from({ length: g.int(3, 6) }, (_, k) => `<li class="multicolumn-list__item grid__item scroll-trigger animate--slide-in"><div class="multicolumn-card content-container"><div class="multicolumn-card__image-wrapper multicolumn-card__image-wrapper--third-width"><div class="media media--transparent media--square"><img src="/cdn/shop/files/icon-${k}.png?v=1712345678&amp;width=750" alt="" width="200" height="200" loading="lazy" class="multicolumn-card__image"></div></div><div class="multicolumn-card__info"><h3 class="inline-richtext">${esc(g.words(2))}</h3><div class="rte"><p>${esc(g.sentence())}</p></div></div></div></li>`).join("");
-      sections.push(`<div id="shopify-section-template--home__multicolumn_${i}" class="shopify-section section"><div class="multicolumn color-scheme-1 gradient background-primary"><div class="page-width section-template--home__multicolumn_${i}-padding isolate"><div class="title-wrapper-with-link title-wrapper--self-padded-mobile title-wrapper--no-top-margin multicolumn__title"><h2 class="title inline-richtext h1">${esc(g.words(3))}</h2></div><slider-component class="slider-mobile-gutter"><ul class="multicolumn-list contains-content-container grid grid--1-col-tablet-down grid--3-col-desktop" role="list">${cols}</ul></slider-component></div></div></div>`);
+      const cols = Array.from(
+        { length: g.int(3, 6) },
+        (_, k) =>
+          `<li class="multicolumn-list__item grid__item scroll-trigger animate--slide-in"><div class="multicolumn-card content-container"><div class="multicolumn-card__image-wrapper multicolumn-card__image-wrapper--third-width"><div class="media media--transparent media--square"><img src="/cdn/shop/files/icon-${k}.png?v=1712345678&amp;width=750" alt="" width="200" height="200" loading="lazy" class="multicolumn-card__image"></div></div><div class="multicolumn-card__info"><h3 class="inline-richtext">${esc(g.words(2))}</h3><div class="rte"><p>${esc(g.sentence())}</p></div></div></div></li>`,
+      ).join("");
+      sections.push(
+        `<div id="shopify-section-template--home__multicolumn_${i}" class="shopify-section section"><div class="multicolumn color-scheme-1 gradient background-primary"><div class="page-width section-template--home__multicolumn_${i}-padding isolate"><div class="title-wrapper-with-link title-wrapper--self-padded-mobile title-wrapper--no-top-margin multicolumn__title"><h2 class="title inline-richtext h1">${esc(g.words(3))}</h2></div><slider-component class="slider-mobile-gutter"><ul class="multicolumn-list contains-content-container grid grid--1-col-tablet-down grid--3-col-desktop" role="list">${cols}</ul></slider-component></div></div></div>`,
+      );
     }
   }
   return sections.join("\n");
@@ -562,7 +708,11 @@ function collectionMain(g: Gen, s: StoreSpec): string {
     return `<details id="Details-${i}-template--collection" class="disclosure-has-popup facets__disclosure js-filter" data-index="${i}"><summary class="facets__summary caption-large focus-offset" aria-label="${esc(g.pick(["Color", "Size", "Material", "Product type", "Price", "Availability", "Brand"]))}"><div><span>${esc(g.words(1))}</span>${icon(g, "caret", 4)}</div></summary><div id="Facet-${i}-template--collection" class="facets__display"><fieldset class="facets-wrap parent-wrap"><legend class="visually-hidden">${esc(g.words(1))}</legend><ul class="facets-layout facets-layout-list facets__list list-unstyled" role="list">${values}</ul></fieldset></div></details>`;
   }).join("\n");
   const sort = `<div class="facet-filters sorting caption"><div class="facet-filters__field"><h2 class="facet-filters__label caption-large text-body"><label for="SortBy">Sort by:</label></h2><div class="select"><select name="sort_by" class="facet-filters__sort select__select caption-large" id="SortBy">${["Featured", "Best selling", "Alphabetically, A-Z", "Alphabetically, Z-A", "Price, low to high", "Price, high to low", "Date, old to new", "Date, new to old"].map((o) => `<option value="${slug(o)}">${o}</option>`).join("")}</select></div></div></div>`;
-  const pages = Array.from({ length: g.int(3, 9) }, (_, i) => `<li><a href="?page=${i + 1}" class="pagination__item link" aria-label="Page ${i + 1}">${i + 1}</a></li>`).join("");
+  const pages = Array.from(
+    { length: g.int(3, 9) },
+    (_, i) =>
+      `<li><a href="?page=${i + 1}" class="pagination__item link" aria-label="Page ${i + 1}">${i + 1}</a></li>`,
+  ).join("");
   return `<div id="shopify-section-template--collection__banner" class="shopify-section section"><div class="collection-hero color-scheme-1 gradient"><div class="collection-hero__inner page-width scroll-trigger animate--fade-in"><div class="collection-hero__text-wrapper"><h1 class="collection-hero__title"><span class="visually-hidden">Collection: </span>${esc(g.words(2))}</h1><div class="collection-hero__description rte">${richText(g, 1)}</div></div></div></div></div>
 <div id="shopify-section-template--collection__product-grid" class="shopify-section section"><div class="section-template--collection__product-grid-padding gradient color-scheme-1"><div class="facets-container facets-container-drawer scroll-trigger animate--slide-in"><aside aria-labelledby="verticalTitle" class="facets-wrapper page-width" id="main-collection-filters" data-id="template--collection__product-grid"><facet-filters-form class="facets small-hide"><form id="FacetFiltersForm" class="facets__form"><div class="facets__wrapper"><h2 class="facets__heading caption-large text-body" id="verticalTitle" tabindex="-1">Filter:</h2>
 ${groups}
@@ -573,7 +723,10 @@ ${cardGrid(g, s, s.sizes.collectionCards, 3)}
 }
 
 function productJson(g: Gen, s: StoreSpec, p: Product): string {
-  const colors = COLORS.slice(0, Math.max(1, Math.ceil(s.sizes.variants / SIZES.length)));
+  const colors = COLORS.slice(
+    0,
+    Math.max(1, Math.ceil(s.sizes.variants / SIZES.length)),
+  );
   const variants = Array.from({ length: s.sizes.variants }, (_, i) => {
     const color = colors[i % colors.length];
     const size = SIZES[Math.floor(i / colors.length) % SIZES.length];
@@ -618,19 +771,45 @@ function productJson(g: Gen, s: StoreSpec, p: Product): string {
     price_varies: false,
     compare_at_price: p.compareAt,
     variants,
-    images: Array.from({ length: s.sizes.productMedia }, (_, i) => `//${s.host}/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678`),
+    images: Array.from(
+      { length: s.sizes.productMedia },
+      (_, i) => `//${s.host}/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678`,
+    ),
     options: ["Color", "Size"],
-    media: Array.from({ length: s.sizes.productMedia }, (_, i) => ({ alt: null, id: p.id * 100 + i, position: i + 1, aspect_ratio: 0.8, height: 2000, media_type: "image", width: 1600 })),
+    media: Array.from({ length: s.sizes.productMedia }, (_, i) => ({
+      alt: null,
+      id: p.id * 100 + i,
+      position: i + 1,
+      aspect_ratio: 0.8,
+      height: 2000,
+      media_type: "image",
+      width: 1600,
+    })),
   });
 }
 
 function productMain(g: Gen, s: StoreSpec, p: Product): string {
-  const media = Array.from({ length: s.sizes.productMedia }, (_, i) => `<li id="Slide-template--product__main-${p.id * 100 + i}" class="product__media-item grid__item slider__slide${i === 0 ? " is-active" : ""} product__media-item--variant" data-media-id="template--product__main-${p.id * 100 + i}"><div class="product-media-container media-type-image media-fit-contain global-media-settings gradient constrain-height" style="--ratio: 0.8; --preview-ratio: 0.8;"><modal-opener class="product__modal-opener product__modal-opener--image no-js-hidden" data-modal="#ProductModal-template--product__main"><span class="product__media-icon motion-reduce quick-add-hidden product__media-icon--lightbox" aria-hidden="true">${icon(g, "zoom", 6)}</span><div class="product__media media media--transparent"><img src="/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678&amp;width=1946" srcset="${imgSrcset(p.handle, i)}"${i > 0 && g.chance(s.faults.cardAltMissing) ? "" : ` alt="${esc(p.title)}"`} width="1946" height="2432" loading="${i === 0 ? "eager" : "lazy"}" sizes="(min-width: 1200px) 715px, (min-width: 990px) calc(65.0vw - 10rem), (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw / 1 - 4rem)"></div><button class="product__media-toggle quick-add-hidden product__media-zoom-lightbox" type="button" aria-haspopup="dialog" data-media-id="${p.id * 100 + i}"><span class="visually-hidden">Open media ${i + 1} in modal</span></button></modal-opener></div></li>`).join("\n");
-  const thumbs = Array.from({ length: s.sizes.productMedia }, (_, i) => `<li id="Slide-Thumbnails-${i}" class="thumbnail-list__item slider__slide" data-target="template--product__main-${p.id * 100 + i}"><button class="thumbnail global-media-settings global-media-settings--no-shadow"${s.faults.sliderButtonsUnnamed ? "" : ` aria-label="Load image ${i + 1} in gallery view"`}${i === 0 ? ' aria-current="true"' : ""}><img src="/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678&amp;width=416" srcset="${imgSrcset(p.handle, i)}" alt="" height="208" width="208" loading="lazy"></button></li>`).join("");
-  const colors = COLORS.slice(0, Math.max(1, Math.ceil(s.sizes.variants / SIZES.length)));
+  const media = Array.from(
+    { length: s.sizes.productMedia },
+    (_, i) =>
+      `<li id="Slide-template--product__main-${p.id * 100 + i}" class="product__media-item grid__item slider__slide${i === 0 ? " is-active" : ""} product__media-item--variant" data-media-id="template--product__main-${p.id * 100 + i}"><div class="product-media-container media-type-image media-fit-contain global-media-settings gradient constrain-height" style="--ratio: 0.8; --preview-ratio: 0.8;"><modal-opener class="product__modal-opener product__modal-opener--image no-js-hidden" data-modal="#ProductModal-template--product__main"><span class="product__media-icon motion-reduce quick-add-hidden product__media-icon--lightbox" aria-hidden="true">${icon(g, "zoom", 6)}</span><div class="product__media media media--transparent"><img src="/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678&amp;width=1946" srcset="${imgSrcset(p.handle, i)}"${i > 0 && g.chance(s.faults.cardAltMissing) ? "" : ` alt="${esc(p.title)}"`} width="1946" height="2432" loading="${i === 0 ? "eager" : "lazy"}" sizes="(min-width: 1200px) 715px, (min-width: 990px) calc(65.0vw - 10rem), (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw / 1 - 4rem)"></div><button class="product__media-toggle quick-add-hidden product__media-zoom-lightbox" type="button" aria-haspopup="dialog" data-media-id="${p.id * 100 + i}"><span class="visually-hidden">Open media ${i + 1} in modal</span></button></modal-opener></div></li>`,
+  ).join("\n");
+  const thumbs = Array.from(
+    { length: s.sizes.productMedia },
+    (_, i) =>
+      `<li id="Slide-Thumbnails-${i}" class="thumbnail-list__item slider__slide" data-target="template--product__main-${p.id * 100 + i}"><button class="thumbnail global-media-settings global-media-settings--no-shadow"${s.faults.sliderButtonsUnnamed ? "" : ` aria-label="Load image ${i + 1} in gallery view"`}${i === 0 ? ' aria-current="true"' : ""}><img src="/cdn/shop/files/${p.handle}-${i}.jpg?v=1712345678&amp;width=416" srcset="${imgSrcset(p.handle, i)}" alt="" height="208" width="208" loading="lazy"></button></li>`,
+  ).join("");
+  const colors = COLORS.slice(
+    0,
+    Math.max(1, Math.ceil(s.sizes.variants / SIZES.length)),
+  );
   const fieldset = (name: string, values: string[], k: number) =>
     `<fieldset class="js product-form__input product-form__input--pill"><legend class="form__label">${name}</legend>${values.map((v, j) => `<input type="radio" id="template--product__main-${k}-${j}" name="${name}" value="${esc(v)}" form="product-form-template--product__main"${j === 0 ? " checked" : ""}><label for="template--product__main-${k}-${j}">${esc(v)}<span class="visually-hidden label-unavailable">Sold out</span></label>`).join("")}</fieldset>`;
-  const accordions = Array.from({ length: g.int(2, 5) }, (_, i) => `<div class="product__accordion accordion quick-add-hidden"><details id="Details-collapsible-row-${i}"><summary><div class="summary__title">${icon(g, "accordion", 8)}<h2 class="h4 accordion__title inline-richtext">${esc(g.words(2))}</h2></div>${icon(g, "caret", 4)}</summary><div class="accordion__content rte" id="ProductAccordion-collapsible-row-${i}">${richText(g, g.int(1, 3))}</div></details></div>`).join("\n");
+  const accordions = Array.from(
+    { length: g.int(2, 5) },
+    (_, i) =>
+      `<div class="product__accordion accordion quick-add-hidden"><details id="Details-collapsible-row-${i}"><summary><div class="summary__title">${icon(g, "accordion", 8)}<h2 class="h4 accordion__title inline-richtext">${esc(g.words(2))}</h2></div>${icon(g, "caret", 4)}</summary><div class="accordion__content rte" id="ProductAccordion-collapsible-row-${i}">${richText(g, g.int(1, 3))}</div></details></div>`,
+  ).join("\n");
   const recs = cardGrid(g, s, g.pick([4, 4, 8]), 11);
   return `<section id="MainProduct-template--product__main" class="page-width section-template--product__main-padding" data-section="template--product__main"><div class="product product--large product--left product--thumbnail_slider product--mobile-hide grid grid--1-col grid--2-col-tablet">
 <div class="grid__item product__media-wrapper"><media-gallery id="MediaGallery-template--product__main" role="region" class="product__column-sticky" aria-label="Gallery Viewer" data-desktop-layout="thumbnail_slider"><div id="GalleryStatus-template--product__main" class="visually-hidden" role="status"></div><slider-component id="GalleryViewer-template--product__main" class="slider-mobile-gutter"><a class="skip-to-content-link button visually-hidden quick-add-hidden" href="#ProductInfo-template--product__main">Skip to product information</a><ul id="Slider-Gallery-template--product__main" class="product__media-list contains-media grid grid--peek list-unstyled slider slider--mobile" role="list">
@@ -663,7 +842,7 @@ function cartMain(g: Gen, s: StoreSpec): string {
 <td class="cart-item__totals right small-hide"><div class="cart-item__price-wrapper"><span class="price price--end">${money(p.price * qty)}</span></div></td></tr>`;
   }).join("\n");
   const note = s.faults.newsletterUnlabelled
-    ? `<textarea class="text-area field__input" name="note" form="cart" id="Cart-note" placeholder="Order special instructions"></textarea>`
+    ? `<textarea class="text-area field__input" name="note" form="cart" id="Cart-note"></textarea>`
     : `<label for="Cart-note">Order special instructions</label><textarea class="text-area field__input" name="note" form="cart" id="Cart-note" placeholder="Order special instructions"></textarea>`;
   return `<div id="shopify-section-template--cart__items" class="shopify-section"><cart-items class="gradient color-scheme-1 isolate section-template--cart__items-padding"><div class="page-width"><div class="title-wrapper-with-link"><h1 class="title title--primary">Your cart</h1><a href="/collections/all" class="underlined-link">Continue shopping</a></div>
 <form action="/cart" class="cart__contents critical-hidden" method="post" id="cart"><div class="cart__items" id="main-cart-items" data-id="template--cart__items"><div class="js-contents"><table class="cart-items"><caption class="visually-hidden">Your cart</caption><thead><tr><th class="caption-with-letter-spacing" colspan="2" scope="col">Product</th><th class="medium-hide large-up-hide right caption-with-letter-spacing" colspan="1">Total</th><th class="cart-items__heading--wide cart-items__heading--quantity small-hide caption-with-letter-spacing" colspan="1">Quantity</th><th class="small-hide right caption-with-letter-spacing" colspan="1">Total</th></tr></thead><tbody>
@@ -703,13 +882,52 @@ export interface StoreFixture {
 
 const ASSET = "/cdn/shop/t/1/assets/";
 
-function page(g: Gen, s: StoreSpec, kind: PageKind, title: string, main: string, css: string[], js: string[], apps: string[]): string {
+function page(
+  g: Gen,
+  s: StoreSpec,
+  kind: PageKind,
+  title: string,
+  main: string,
+  css: string[],
+  js: string[],
+  apps: string[],
+): string {
   const meta = {
-    page: { pageType: kind, resourceType: kind === "product" ? "product" : kind === "collection" ? "collection" : null, resourceId: s.products[0].id },
+    page: {
+      pageType: kind,
+      resourceType:
+        kind === "product"
+          ? "product"
+          : kind === "collection"
+            ? "collection"
+            : null,
+      resourceId: s.products[0].id,
+    },
     currency: "USD",
-    products: s.products.slice(0, kind === "collection" ? 24 : 6).map((p) => ({ id: p.id, gid: `gid://shopify/Product/${p.id}`, vendor: p.vendor, type: "", variants: [{ id: p.id * 10, price: p.price, name: p.title, public_title: null, sku: "" }] })),
+    products: s.products.slice(0, kind === "collection" ? 24 : 6).map((p) => ({
+      id: p.id,
+      gid: `gid://shopify/Product/${p.id}`,
+      vendor: p.vendor,
+      type: "",
+      variants: [
+        {
+          id: p.id * 10,
+          price: p.price,
+          name: p.title,
+          public_title: null,
+          sku: "",
+        },
+      ],
+    })),
   };
-  const themeJson = JSON.stringify({ name: s.theme.name, id: 140000000000 + s.index, schema_name: s.theme.name, schema_version: s.theme.version, theme_store_id: s.theme.id, role: "main" });
+  const themeJson = JSON.stringify({
+    name: s.theme.name,
+    id: 140000000000 + s.index,
+    schema_name: s.theme.name,
+    schema_version: s.theme.version,
+    theme_store_id: s.theme.id,
+    role: "main",
+  });
   return `<!doctype html>
 <html class="js"${s.lang ? ' lang="en"' : ""}>
 <head>
@@ -749,41 +967,153 @@ export function generateStore(seed: number, index: number): StoreFixture {
   const g = new Gen(mulberry32((seed ^ 0x9e3779b9) + index * 7919));
   const assets: FixtureFile[] = [
     { url: `${ASSET}base.css`, file: "base.css", body: themeCss(g, s) },
-    { url: `${ASSET}component-list-menu.css`, file: "component-list-menu.css", body: sectionCss(g, "list-menu", 4) },
-    { url: `${ASSET}section-collection.css`, file: "section-collection.css", body: sectionCss(g, "collection", g.int(10, 35)) },
-    { url: `${ASSET}section-product.css`, file: "section-product.css", body: sectionCss(g, "product", g.int(10, 35)) },
-    { url: `${ASSET}section-cart.css`, file: "section-cart.css", body: sectionCss(g, "cart", g.int(6, 20)) },
-    { url: `${ASSET}constants.js`, file: "constants.js", body: jsBundle(g, "constants", 2, "") },
-    { url: `${ASSET}global.js`, file: "global.js", body: jsBundle(g, "global", s.sizes.themeJsKb, THEME_INIT) },
-    { url: `${ASSET}vendor.js`, file: "vendor.js", body: jsBundle(g, "vendor", s.sizes.vendorJsKb, "") },
-    { url: `${ASSET}facets.js`, file: "facets.js", body: jsBundle(g, "facets", g.int(10, 30), "") },
-    { url: `${ASSET}product-info.js`, file: "product-info.js", body: jsBundle(g, "productInfo", g.int(15, 45), "") },
-    { url: `${ASSET}cart.js`, file: "cart.js", body: jsBundle(g, "cart", g.int(8, 25), "") },
-    { url: "/cdn/shopifycloud/storefront.js", file: "storefront.js", body: jsBundle(g, "storefront", s.sizes.storefrontJsKb, "") },
+    {
+      url: `${ASSET}component-list-menu.css`,
+      file: "component-list-menu.css",
+      body: sectionCss(g, "list-menu", 4),
+    },
+    {
+      url: `${ASSET}section-collection.css`,
+      file: "section-collection.css",
+      body: sectionCss(g, "collection", g.int(10, 35)),
+    },
+    {
+      url: `${ASSET}section-product.css`,
+      file: "section-product.css",
+      body: sectionCss(g, "product", g.int(10, 35)),
+    },
+    {
+      url: `${ASSET}section-cart.css`,
+      file: "section-cart.css",
+      body: sectionCss(g, "cart", g.int(6, 20)),
+    },
+    {
+      url: `${ASSET}constants.js`,
+      file: "constants.js",
+      body: jsBundle(g, "constants", 2, ""),
+    },
+    {
+      url: `${ASSET}global.js`,
+      file: "global.js",
+      body: jsBundle(g, "global", s.sizes.themeJsKb, THEME_INIT),
+    },
+    {
+      url: `${ASSET}vendor.js`,
+      file: "vendor.js",
+      body: jsBundle(g, "vendor", s.sizes.vendorJsKb, ""),
+    },
+    {
+      url: `${ASSET}facets.js`,
+      file: "facets.js",
+      body: jsBundle(g, "facets", g.int(10, 30), ""),
+    },
+    {
+      url: `${ASSET}product-info.js`,
+      file: "product-info.js",
+      body: jsBundle(g, "productInfo", g.int(15, 45), ""),
+    },
+    {
+      url: `${ASSET}cart.js`,
+      file: "cart.js",
+      body: jsBundle(g, "cart", g.int(8, 25), ""),
+    },
+    {
+      url: "/cdn/shopifycloud/storefront.js",
+      file: "storefront.js",
+      body: jsBundle(g, "storefront", s.sizes.storefrontJsKb, ""),
+    },
   ];
-  const apps = (Object.keys(s.apps) as (keyof StoreSpec["apps"])[]).filter((a) => s.apps[a]);
-  for (const a of apps) assets.push({ url: `/apps/${a}.js`, file: `app-${a}.js`, body: jsBundle(g, `app_${a}`, s.sizes.appJsKb, appInit(a, s, g)) });
+  const apps = (Object.keys(s.apps) as (keyof StoreSpec["apps"])[]).filter(
+    (a) => s.apps[a],
+  );
+  for (const a of apps)
+    assets.push({
+      url: `/apps/${a}.js`,
+      file: `app-${a}.js`,
+      body: jsBundle(g, `app_${a}`, s.sizes.appJsKb, appInit(a, s, g)),
+    });
 
   const product = s.products[0];
-  const defs: { kind: PageKind; url: string; title: string; main: () => string; css: string[]; js: string[] }[] = [
-    { kind: "home", url: "/", title: s.name, main: () => homeMain(g, s), css: ["section-collection.css"], js: [] },
-    { kind: "collection", url: `/collections/${s.collections[0]}`, title: "Collection", main: () => collectionMain(g, s), css: ["section-collection.css"], js: ["facets.js"] },
-    { kind: "product", url: `/products/${product.handle}`, title: product.title, main: () => productMain(g, s, product), css: ["section-product.css", "section-collection.css"], js: ["product-info.js"] },
-    { kind: "cart", url: "/cart", title: "Your Shopping Cart", main: () => cartMain(g, s), css: ["section-cart.css"], js: ["cart.js"] },
+  const defs: {
+    kind: PageKind;
+    url: string;
+    title: string;
+    main: () => string;
+    css: string[];
+    js: string[];
+  }[] = [
+    {
+      kind: "home",
+      url: "/",
+      title: s.name,
+      main: () => homeMain(g, s),
+      css: ["section-collection.css"],
+      js: [],
+    },
+    {
+      kind: "collection",
+      url: `/collections/${s.collections[0]}`,
+      title: "Collection",
+      main: () => collectionMain(g, s),
+      css: ["section-collection.css"],
+      js: ["facets.js"],
+    },
+    {
+      kind: "product",
+      url: `/products/${product.handle}`,
+      title: product.title,
+      main: () => productMain(g, s, product),
+      css: ["section-product.css", "section-collection.css"],
+      js: ["product-info.js"],
+    },
+    {
+      kind: "cart",
+      url: "/cart",
+      title: "Your Shopping Cart",
+      main: () => cartMain(g, s),
+      css: ["section-cart.css"],
+      js: ["cart.js"],
+    },
   ];
-  const size = (f: string) => Buffer.byteLength(assets.find((a) => a.file === f)?.body ?? "");
-  const shared = ["base.css", "component-list-menu.css", "constants.js", "global.js", "vendor.js", "storefront.js", ...apps.map((a) => `app-${a}.js`)];
+  const size = (f: string) =>
+    Buffer.byteLength(assets.find((a) => a.file === f)?.body ?? "");
+  const shared = [
+    "base.css",
+    "component-list-menu.css",
+    "constants.js",
+    "global.js",
+    "vendor.js",
+    "storefront.js",
+    ...apps.map((a) => `app-${a}.js`),
+  ];
   const files: FixtureFile[] = [...assets];
   const pages: PageInfo[] = [];
   for (const d of defs) {
-    const pageApps = apps.filter((a) => a !== "upsell" || d.kind === "cart" || d.kind === "product");
+    const pageApps = apps.filter(
+      (a) => a !== "upsell" || d.kind === "cart" || d.kind === "product",
+    );
     const body = page(g, s, d.kind, d.title, d.main(), d.css, d.js, pageApps);
     const file = `${d.kind}.html`;
     files.push({ url: d.url, file, body });
     const htmlBytes = Buffer.byteLength(body);
-    const loaded = [...shared.filter((f) => !f.startsWith("app-") || pageApps.includes(f.slice(4, -3) as keyof StoreSpec["apps"])), ...d.css, ...d.js];
+    const loaded = [
+      ...shared.filter(
+        (f) =>
+          !f.startsWith("app-") ||
+          pageApps.includes(f.slice(4, -3) as keyof StoreSpec["apps"]),
+      ),
+      ...d.css,
+      ...d.js,
+    ];
     const assetBytes = loaded.reduce((n, f) => n + size(f), 0);
-    pages.push({ kind: d.kind, url: d.url, file, htmlBytes, assetBytes, totalBytes: htmlBytes + assetBytes });
+    pages.push({
+      kind: d.kind,
+      url: d.url,
+      file,
+      htmlBytes,
+      assetBytes,
+      totalBytes: htmlBytes + assetBytes,
+    });
   }
   return { spec: s, files, pages };
 }
@@ -793,7 +1123,12 @@ export function generateStore(seed: number, index: number): StoreFixture {
 export interface FixtureManifest {
   version: number;
   seed: number;
-  stores: { index: number; host: string; pages: PageInfo[]; routes: Record<string, string> }[];
+  stores: {
+    index: number;
+    host: string;
+    pages: PageInfo[];
+    routes: Record<string, string>;
+  }[];
 }
 
 export const ROBOTS_TXT = `# Shopify-style robots.txt for the benchmark. /cart is allowed so all four page types are scanned.
@@ -808,18 +1143,33 @@ Disallow: /*?*oseid=*
 
 // Writes `count` stores under `dir`, or reuses them when a manifest for the
 // same version and seed already lists at least that many.
-export function writeFixtures(dir: string, seed: number, count: number): FixtureManifest {
+export function writeFixtures(
+  dir: string,
+  seed: number,
+  count: number,
+): FixtureManifest {
   const manifestFile = path.join(dir, "manifest.json");
   if (fs.existsSync(manifestFile)) {
     try {
-      const m = JSON.parse(fs.readFileSync(manifestFile, "utf8")) as FixtureManifest;
-      if (m.version === FIXTURE_VERSION && m.seed === seed && m.stores.length >= count) return { ...m, stores: m.stores.slice(0, count) };
+      const m = JSON.parse(
+        fs.readFileSync(manifestFile, "utf8"),
+      ) as FixtureManifest;
+      if (
+        m.version === FIXTURE_VERSION &&
+        m.seed === seed &&
+        m.stores.length >= count
+      )
+        return { ...m, stores: m.stores.slice(0, count) };
     } catch {
       // rebuild below
     }
   }
   fs.mkdirSync(dir, { recursive: true });
-  const manifest: FixtureManifest = { version: FIXTURE_VERSION, seed, stores: [] };
+  const manifest: FixtureManifest = {
+    version: FIXTURE_VERSION,
+    seed,
+    stores: [],
+  };
   for (let i = 0; i < count; i++) {
     const store = generateStore(seed, i);
     const sdir = path.join(dir, `s${i}`);
@@ -829,13 +1179,22 @@ export function writeFixtures(dir: string, seed: number, count: number): Fixture
       fs.writeFileSync(path.join(sdir, f.file), f.body);
       routes[f.url] = f.file;
     }
-    manifest.stores.push({ index: i, host: store.spec.host, pages: store.pages, routes });
+    manifest.stores.push({
+      index: i,
+      host: store.spec.host,
+      pages: store.pages,
+      routes,
+    });
   }
   fs.writeFileSync(manifestFile, JSON.stringify(manifest));
   return manifest;
 }
 
-const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "application/javascript" };
+const TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css",
+  ".js": "application/javascript",
+};
 
 export interface FixtureServer {
   port: number;
@@ -846,7 +1205,10 @@ export interface FixtureServer {
 // Serves the stores in `manifest` from `dir`, choosing the store by the Host
 // header. Any collection or product handle gets that store's one collection
 // or product page, as the census follows whatever links the home page has.
-export async function serveFixtures(dir: string, manifest: FixtureManifest): Promise<FixtureServer> {
+export async function serveFixtures(
+  dir: string,
+  manifest: FixtureManifest,
+): Promise<FixtureServer> {
   const byHost = new Map(manifest.stores.map((s) => [s.host, s]));
   const state = { requests: 0 };
   const server = http.createServer((req, res) => {
@@ -855,11 +1217,18 @@ export async function serveFixtures(dir: string, manifest: FixtureManifest): Pro
     const store = byHost.get(host);
     const urlPath = (req.url ?? "/").split("?")[0];
     if (!store) return void res.writeHead(404).end("no such store");
-    if (urlPath === "/robots.txt") return void res.writeHead(200, { "content-type": "text/plain" }).end(ROBOTS_TXT);
+    if (urlPath === "/robots.txt")
+      return void res
+        .writeHead(200, { "content-type": "text/plain" })
+        .end(ROBOTS_TXT);
     let file = store.routes[urlPath];
-    if (!file && /^\/collections\/[^/]+\/?$/.test(urlPath)) file = "collection.html";
+    if (!file && /^\/collections\/[^/]+\/?$/.test(urlPath))
+      file = "collection.html";
     if (!file && /^\/products\/[^/]+\/?$/.test(urlPath)) file = "product.html";
-    if (!file) return void res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+    if (!file)
+      return void res
+        .writeHead(404, { "content-type": "text/plain" })
+        .end("not found");
     const full = path.join(dir, `s${store.index}`, file);
     const ext = path.extname(file);
     fs.stat(full, (err, st) => {
@@ -867,7 +1236,8 @@ export async function serveFixtures(dir: string, manifest: FixtureManifest): Pro
       res.writeHead(200, {
         "content-type": TYPES[ext] ?? "application/octet-stream",
         "content-length": st.size,
-        "cache-control": ext === ".html" ? "private, no-store" : "public, max-age=31536000",
+        "cache-control":
+          ext === ".html" ? "private, no-store" : "public, max-age=31536000",
       });
       fs.createReadStream(full).pipe(res);
     });

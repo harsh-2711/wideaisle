@@ -34,7 +34,8 @@
     "typecheck": "react-router typegen && tsc --noEmit",
     "vite": "vite",
     "test:integration": "vitest run tests/integration",
-    "census": "tsx scripts/census/census.ts"
+    "census": "tsx scripts/census/census.ts",
+    "bench:scan": "tsx scripts/bench/scan-bench.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.132.1",

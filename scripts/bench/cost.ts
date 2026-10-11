@@ -25,7 +25,8 @@ export const BROWSER_RUN_PLAN: BrowserRunPricing = {
   planUsdPerMonth: 5,
   includedBrowserHours: 10,
   usdPerBrowserHour: 0.09,
-  source: "docs/plan/roadmap.md and D-10, citing https://developers.cloudflare.com/browser-run/pricing/ (not re-opened for T-033)",
+  source:
+    "docs/plan/roadmap.md and D-10, citing https://developers.cloudflare.com/browser-run/pricing/ (not re-opened for T-033)",
   asOf: "2026-10-07",
 };
 
@@ -43,24 +44,34 @@ export const SERVER_PRICE_EXAMPLES: ServerPrice[] = [5, 10, 15].map((usd) => ({
 }));
 
 function positive(name: string, n: number) {
-  if (!Number.isFinite(n) || n <= 0) throw new RangeError(`${name} must be a number above 0`);
+  if (!Number.isFinite(n) || n <= 0)
+    throw new RangeError(`${name} must be a number above 0`);
 }
 
 function nonNegative(name: string, n: number) {
-  if (!Number.isFinite(n) || n < 0) throw new RangeError(`${name} must be a number of 0 or more`);
+  if (!Number.isFinite(n) || n < 0)
+    throw new RangeError(`${name} must be a number of 0 or more`);
 }
 
 // A server billed by the month, busy for `utilisation` of the time at the
 // measured rate. At 1.0 this is the floor; idle hours raise it.
-export function serverCostPer1000(pagesPerHour: number, usdPerMonth: number, utilisation = 1): number {
+export function serverCostPer1000(
+  pagesPerHour: number,
+  usdPerMonth: number,
+  utilisation = 1,
+): number {
   positive("pagesPerHour", pagesPerHour);
   nonNegative("usdPerMonth", usdPerMonth);
-  if (!(utilisation > 0 && utilisation <= 1)) throw new RangeError("utilisation must be above 0 and at most 1");
+  if (!(utilisation > 0 && utilisation <= 1))
+    throw new RangeError("utilisation must be above 0 and at most 1");
   return (usdPerMonth / (HOURS_PER_MONTH * utilisation * pagesPerHour)) * 1000;
 }
 
 // Pages a month one server can scan at the measured rate.
-export function serverPagesPerMonth(pagesPerHour: number, utilisation = 1): number {
+export function serverPagesPerMonth(
+  pagesPerHour: number,
+  utilisation = 1,
+): number {
   positive("pagesPerHour", pagesPerHour);
   return pagesPerHour * HOURS_PER_MONTH * utilisation;
 }
@@ -69,10 +80,15 @@ export function serverPagesPerMonth(pagesPerHour: number, utilisation = 1): numb
 // measured here. `efficiency` covers what does not scale with cores (the
 // browser process, Node, waits). Shared vCPUs on small plans may be slower
 // than the measured CPU, so treat the result as an upper bound.
-export function pagesPerHourFromCpu(vcpus: number, cpuSecondsPerPage: number, efficiency = 0.8): number {
+export function pagesPerHourFromCpu(
+  vcpus: number,
+  cpuSecondsPerPage: number,
+  efficiency = 0.8,
+): number {
   positive("vcpus", vcpus);
   positive("cpuSecondsPerPage", cpuSecondsPerPage);
-  if (!(efficiency > 0 && efficiency <= 1)) throw new RangeError("efficiency must be above 0 and at most 1");
+  if (!(efficiency > 0 && efficiency <= 1))
+    throw new RangeError("efficiency must be above 0 and at most 1");
   return (vcpus * 3600 * efficiency) / cpuSecondsPerPage;
 }
 
@@ -84,7 +100,11 @@ export interface SessionOptions {
 }
 
 // Browser-hours that `pages` scans keep a remote browser open.
-export function browserHoursFor(pages: number, secondsPerPage: number, opts: SessionOptions = {}): number {
+export function browserHoursFor(
+  pages: number,
+  secondsPerPage: number,
+  opts: SessionOptions = {},
+): number {
   nonNegative("pages", pages);
   positive("secondsPerPage", secondsPerPage);
   const overhead = opts.sessionOverheadSeconds ?? 0;
@@ -106,7 +126,12 @@ export interface BrowserRunMonth {
 }
 
 // One month on the plan: the fixed fee, then hours past the included ones.
-export function browserRunMonth(pagesPerMonth: number, secondsPerPage: number, pricing: BrowserRunPricing = BROWSER_RUN_PLAN, opts: SessionOptions = {}): BrowserRunMonth {
+export function browserRunMonth(
+  pagesPerMonth: number,
+  secondsPerPage: number,
+  pricing: BrowserRunPricing = BROWSER_RUN_PLAN,
+  opts: SessionOptions = {},
+): BrowserRunMonth {
   const hours = browserHoursFor(pagesPerMonth, secondsPerPage, opts);
   const billable = Math.max(0, hours - pricing.includedBrowserHours);
   const usage = billable * pricing.usdPerBrowserHour;
@@ -122,12 +147,27 @@ export function browserRunMonth(pagesPerMonth: number, secondsPerPage: number, p
 }
 
 // What 1,000 more pages cost once the included hours are used up.
-export function browserRunMarginalPer1000(secondsPerPage: number, pricing: BrowserRunPricing = BROWSER_RUN_PLAN, opts: SessionOptions = {}): number {
-  return browserHoursFor(1000, secondsPerPage, opts) * pricing.usdPerBrowserHour;
+export function browserRunMarginalPer1000(
+  secondsPerPage: number,
+  pricing: BrowserRunPricing = BROWSER_RUN_PLAN,
+  opts: SessionOptions = {},
+): number {
+  return (
+    browserHoursFor(1000, secondsPerPage, opts) * pricing.usdPerBrowserHour
+  );
 }
 
 // Pages the included hours cover each month.
-export function pagesInIncludedHours(secondsPerPage: number, pricing: BrowserRunPricing = BROWSER_RUN_PLAN, opts: SessionOptions = {}): number {
-  const hoursPerPage = browserHoursFor(1000, secondsPerPage, opts) / 1000;
-  return Math.floor(pricing.includedBrowserHours / hoursPerPage);
+export function pagesInIncludedHours(
+  secondsPerPage: number,
+  pricing: BrowserRunPricing = BROWSER_RUN_PLAN,
+  opts: SessionOptions = {},
+): number {
+  positive("secondsPerPage", secondsPerPage);
+  const perSession = opts.pagesPerSession ?? 4;
+  positive("pagesPerSession", perSession);
+  const seconds =
+    secondsPerPage + (opts.sessionOverheadSeconds ?? 0) / perSession;
+  // The epsilon keeps 9,999.999... from losing a whole page to rounding.
+  return Math.floor((pricing.includedBrowserHours * 3600) / seconds + 1e-9);
 }
