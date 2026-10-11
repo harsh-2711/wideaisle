@@ -8,7 +8,7 @@ See TASK.md. Find about 2,000 live Shopify stores from public top-site lists, re
 
 ## Status
 
-Blocked on you. Merged in PR #34. Fix PR #43 (script navigation race, linear tag reading) is in review. The run waits on Q-01 and Q-02.
+Blocked on you. Merged in PR #34, with fixes in PR #43 (script navigation race, same-origin Referer check, linear tag reading). The run waits on Q-01 and Q-02.
 
 ## Done so far
 
@@ -21,7 +21,7 @@ Blocked on you. Merged in PR #34. Fix PR #43 (script navigation race, linear tag
 
 ## Current step
 
-Merge PR #43, then wait for Q-01 and Q-02.
+Waiting for Q-01 and Q-02.
 
 ## Next three steps
 
