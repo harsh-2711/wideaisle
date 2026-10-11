@@ -12,7 +12,7 @@ See TASK.md. Draft alt text for 200 product images through the Batch API; cost p
 
 ## Status
 
-In review (PR #39). Review findings are fixed. The real run is blocked on Q-04 (API key) and Q-33 (model approval), the ratings on Q-26. Last updated 2026-10-08.
+Blocked on you. Merged in PR #39. The real run waits on the API key (Q-04) and the model pick (Q-33); ratings wait on Q-26.
 
 ## Done so far
 
@@ -30,7 +30,7 @@ In review (PR #39). Review findings are fixed. The real run is blocked on Q-04 (
 
 ## Current step
 
-Waiting for the coordinator to merge PR #39, then for Q-04 and Q-33.
+Waiting for Q-04 and Q-33.
 
 ## Next three steps
 

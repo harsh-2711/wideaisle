@@ -3,11 +3,11 @@
   "milestone": "M0",
   "lane": "ledger",
   "agent": "planner",
-  "state": "In review",
-  "step": "done; lead to decide on lint-handoff --all findings",
+  "state": "Done",
+  "step": "Merged in PR #38",
   "branch": "claude/test-handoff-resume",
   "issue": 14,
   "needs": [],
-  "updated": "2026-10-08T07:01:24Z",
+  "updated": "2026-10-09T05:57:35Z",
   "id": "T-008"
 }

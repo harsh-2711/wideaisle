@@ -8,7 +8,7 @@ See TASK.md. A written claims policy for D-06: words we never use, what we may s
 
 ## Status
 
-The policy merged in harsh-2711/wideaisle#36. The wider CI claims check is in review in harsh-2711/wideaisle#40. The owner's approval (Q-23) is the last exit criterion. Last updated 2026-10-08.
+Blocked on you. Merged in PRs #36 and #40. Waits on Q-23.
 
 ## Done so far
 
@@ -21,13 +21,12 @@ The policy merged in harsh-2711/wideaisle#36. The wider CI claims check is in re
 
 ## Current step
 
-Merge the claims check pull request (#40) once it is reviewed and green.
+Waiting for the owner to approve the policy (Q-23).
 
 ## Next three steps
 
-1. Merge #40, then set the state to Blocked on you with needs Q-23.
-2. The owner approves the policy, including the "How we enforce it" changes from #40 (Q-23).
-3. Add new banned phrases to scripts/ci/checks.mjs and its tests whenever the policy's word list changes.
+1. The owner approves the policy, including the "How we enforce it" changes from #40 (Q-23).
+2. Add new banned phrases to scripts/ci/checks.mjs and its tests whenever the policy's word list changes.
 
 ## Blockers and open questions
 

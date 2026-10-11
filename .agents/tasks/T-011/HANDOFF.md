@@ -8,7 +8,7 @@ See TASK.md. A brief on US suits, the EAA, overlays and the FTC order, and ADA T
 
 ## Status
 
-In review in the M1 research pull request. Last updated 2026-10-08.
+Done. Merged in PR #36.
 
 ## Done so far
 
@@ -19,13 +19,12 @@ In review in the M1 research pull request. Last updated 2026-10-08.
 
 ## Current step
 
-Pull request re-review after the reviewer fixes, then merge.
+None. The owner reads the brief (Q-20).
 
 ## Next three steps
 
-1. After merge, set the state to Done.
-2. The owner reads it (Q-20).
-3. Open the FTC's final order and the NFB case docket (D. Md., 1:26-cv-02007) when Q-01 allows; the brief cites both through search.
+1. The owner reads it (Q-20).
+2. Opening the FTC order and the NFB docket moved to T-015, which waits on Q-01.
 
 ## Blockers and open questions
 

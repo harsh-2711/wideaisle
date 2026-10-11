@@ -3,11 +3,15 @@
   "milestone": "M3",
   "lane": "fixers",
   "agent": "builder",
-  "state": "In review",
-  "step": "review fixes done; real run waits on Q-04 and Q-33, ratings on Q-26",
+  "state": "Blocked on you",
+  "step": "Merged in PR #39; real run waits on key and model pick",
   "branch": "claude/feat-alt-text",
   "issue": 28,
-  "needs": [],
-  "updated": "2026-10-08T17:38:16Z",
+  "needs": [
+    "owner:Q-04",
+    "owner:Q-33",
+    "owner:Q-26"
+  ],
+  "updated": "2026-10-09T05:57:36Z",
   "id": "T-032"
 }
