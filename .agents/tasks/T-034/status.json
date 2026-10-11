@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "architect",
   "agent": "architect",
-  "state": "Running",
-  "step": "Drafting ADRs",
+  "state": "In review",
+  "step": "PR review (#46)",
   "branch": "claude/docs-adr-m3",
   "issue": 30,
   "needs": [],
-  "updated": "2026-10-09T06:07:46Z",
+  "updated": "2026-10-11T14:50:53Z",
   "id": "T-034"
 }

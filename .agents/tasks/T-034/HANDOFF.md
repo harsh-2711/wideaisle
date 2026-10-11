@@ -11,7 +11,7 @@ See TASK.md. Records for the architecture, fix delivery and AI use, ready for G1
 
 ## Status
 
-Running. All five ADRs written (0001 to 0005). Checks, pull request and board next. Last updated 2026-10-11.
+In review: PR #46 (https://github.com/harsh-2711/wideaisle/pull/46). All five ADRs written (0001 to 0005), all checks pass. Waiting for review, then owner approval (Q-28). Last updated 2026-10-11.
 
 ## Done so far
 
@@ -24,15 +24,16 @@ Running. All five ADRs written (0001 to 0005). Checks, pull request and board ne
 | 5. ADR 0004 AI in the product (D-11) | e98d574 |
 | 6. ADR 0005 PoC hosting (D-10), every number marked "Estimate, Spike D replaces it" | 18da1c0 |
 | 7. Merged origin/main 8f1ee9e (Q-34 opened; the reviewer approved PR #41 at 72c6364) | 893e4ee |
-| 8. Proofread: ADRs 0002 and 0004 cut to about two pages; wording fixes in 0004 and 0005. Writing, claims, handoff, decisions and lint-handoff checks pass; the D-06 claims rules also pass on copies of the ADRs | (this commit) |
+| 8. Proofread: ADRs 0002 and 0004 cut to about two pages; wording fixes in 0004 and 0005. Writing, claims, handoff, decisions and lint-handoff checks pass; the D-06 claims rules also pass on copies of the ADRs | 460c33f |
+| 9. Opened PR #46 to main; board set to In review | (this commit) |
 
 ## Current step
 
-Opening the pull request, then setting the board to In review.
+PR #46 in review. Do not merge: the owner approves the ADRs (Q-28) and merges, since they propose new tables and route A writes to live stores.
 
 ## Next three steps
 
-1. Run the checks under "How to verify", push, and open the pull request to main with .github/pull_request_template.md. Set the board to In review and report to the coordinator. Do not merge: the owner approves the ADRs (Q-28).
+1. Answer review comments on PR #46. After each fix, rerun the checks under "How to verify" and push.
 2. When Spike D's pull request (T-033, `claude/feat-scan-benchmark`) merges, update the numbers in docs/adr/0005-poc-hosting.md: replace every row marked "Estimate, Spike D replaces it" with the measured value and its source, and recheck the cost lines in ADR 0001.
 3. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-33 is answered, name the chosen model in ADR 0004.
 
