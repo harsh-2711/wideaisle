@@ -27,6 +27,9 @@ Status: Open, Done or Dropped. Times are estimates.
 | Q-30 | Pick for D-13: B (expert every release) or D (AI checks every release, expert at G2, G3, then quarterly). Agents recommend D. D costs about the same as B or more for the first 12 releases ($1,650 to $6,150 against $1,200 to $3,600) but covers all five themes; see decisions/D-13.md | 10 min | M4 test harness lane, G2 | Open |
 | Q-33 | Approve the alt-text model for Spike C: the latest Haiku (claude-haiku-5-5, batch about a tenth of Haiku 4.5's price) in place of the Haiku 4.5 that D-11 names. No API key is needed to decide, so this is open before Q-04. Haiku 4.5 (claude-haiku-4-5-20251001) retires not sooner than October 15, 2026; Haiku 5.5 not sooner than October 7, 2027 (Anthropic deprecations page, read 2026-10-08). | 5 min | M3 Spike C real run | Open |
 | Q-34 | Merge pull request harsh-2711/wideaisle#41 (Spike A delivery adapters). The reviewer agent approved it at 72c6364; its verdict is the last comment on the PR. Under AGENTS.md the owner merges anything that writes to a live store. The adapters are not called from the app yet. | 15 min | M3 Spike A, T-034 ADRs | Open |
+| Q-35 | Decide revert for two delivery cases ([ADR 0002](../docs/adr/0002-fix-delivery-path.md), "Revert"). D-09 and the M4 exit ask for one-click revert on every route. Two cases do not meet that as written. Route C (patched theme file): the merchant republishes the old theme or uploads the original zip we return. A merged route B pull request: someone must merge our revert pull request. Choose: (a) accept a one-step merchant revert for these two cases, or (b) require more work before they ship, which agents then scope. Until you decide, ADR 0002 does not change D-09. | 10 min | Accepting ADR 0002 (Q-28), M4 delivery lane | Open |
+| Q-36 | Decide how pilots pay under D-12. D-12 says billing goes through the Shopify Billing API only. Pilots may run on a custom-distribution app (ADR 0002). One community reply, not verified, says custom apps cannot use the Billing API. Agents can test this on the dev store once Q-03 is done, if you want that first. | 10 min | M5 pilot billing | Open |
+| Q-28 | Approve the architecture and delivery-path ADRs in docs/adr/, 0001 to 0005 (D-09, D-10, D-11). Agents merge them as Status Proposed after review; your approval moves them to Accepted. Settle Q-35 first for ADR 0002. | 30 min | M3 exit, G1 | Open |
 
 ## Queued for later milestones
 
@@ -37,7 +40,6 @@ These need you once agents finish their part. Agents will move each one to Open 
 | Q-25 | Approve each outreach and recruiting batch (D-16) | 15 min a batch | Interview recruiting | Drafts ready |
 | Q-26 | Rate 50 AI alt texts in the rating sheet | 30 min | M3 Spike C | After Q-04 |
 | Q-27 | File the theme exemption request if Spike A shows it is needed (D-09) | 20 min | M3 Spike A | After Q-03 |
-| Q-28 | Approve the architecture and delivery-path ADRs (D-09, D-10, D-11) | 30 min | M3 exit, G1 | ADRs merged |
 | Q-29 | Gate G1 review | 30 min | M4 and M5 | M1 to M3 exits |
 
 ## Domains the agents need (for Q-01)
