@@ -41,7 +41,7 @@ In review. Last updated 2026-10-11. Local benchmark done and measured; spike doc
 
 ## Current step
 
-PR open to main; waiting for review. Do not merge from this task's builder.
+PR #47 (https://github.com/harsh-2711/wideaisle/pull/47) open to main; waiting for review. Do not merge from this task's builder.
 
 ## Next three steps
 
