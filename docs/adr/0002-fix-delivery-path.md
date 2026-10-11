@@ -40,7 +40,7 @@ Spike A (T-030) built all three behind one interface. Sources: `docs/spikes/spik
 - **Receipt.** When apply returns, or throws `PartialApplyError` (which carries a receipt of everything it may have written), the worker completes that row with the route's receipt in the same transaction that marks the fix applied. Route A's receipt holds, per file, the checksum our own write returned, plus any write jobs still running. Route B's holds the repository, branches and pull request.
 - **Route C zips.** Both zips, the merchant's and ours, go to object storage, up to 50 MB each. The Postgres row keeps their storage keys and SHA-256 hashes, not the bytes (ADR 0001, ADR 0005).
 - **A retry finds an open intent.** If the worker dies mid-apply, pg-boss retries the job. Apply would refuse, since files already at `after` count as changed, so a retry never calls apply first.
-  - Route B: look for an open pull request from the stored branch. If one exists, complete the row with it. If the branch exists without one, delete our branch, then apply. Otherwise apply.
+  - Route B: look for an open or merged pull request from the stored branch. If one exists, complete the row with it. If the branch exists without one, delete our branch, then apply. Otherwise apply.
   - Route A: wait a set time for write jobs the dead worker may have started (their IDs are lost; Q-03 job timings set the wait). Then read every file and every alt-text value in the intent. An alt-text-only patch has no files, so its alt-text values decide:
     - all at `after`: complete the row;
     - all at `before`: apply;
