@@ -8,7 +8,7 @@ See TASK.md. Time and cost 1,000 page scans on a small server versus Cloudflare 
 
 ## Status
 
-Running. Last updated 2026-10-11. Benchmark, cost model and tests done; main 096a1e1 (with PR #43) merged in. Real run next.
+Running. Last updated 2026-10-11. Real runs in progress on fixture version 3 (default, then `--full`).
 
 ## Done so far
 
@@ -19,10 +19,12 @@ Running. Last updated 2026-10-11. Benchmark, cost model and tests done; main 096
 | Merged origin/main 607f7c8 (fixers, alt text), `npm ci` for the new lockfile | 429ea9d |
 | `npm run bench:scan`, `/proc` sampler, summary, vitest tests (28), Playwright smoke test | 1b37877 |
 | Merged origin/main 096a1e1 (PR #43 census nav fix, #42, #44); smoke test passes on it | cdeb0a9 |
+| Requests per page in the summary (shows CSS and JS refetched on every page) | 1a33719 |
+| First default run (fixture v2): 1,353 / 2,148 / 2,815 pages an hour at 1 / 2 / 4; one page a level lost to a fixture with no product link. Fixed in v3; v2 results kept in `data/bench/v2-trial/` only | 5a06376 |
 
 ## Current step
 
-Real run: `npm run bench:scan` (200 pages at 1, 2, 4), then `--full` (1,000 pages at each).
+Real runs on v3 fixtures, started 2026-10-11 about 15:20 UTC: `data/bench/run-default.log`, then `data/bench/run-full.log`. Each writes `data/bench/scan-bench-<time>.json` and `.md`.
 
 ## Next three steps
 
