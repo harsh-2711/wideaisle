@@ -4,13 +4,13 @@
   "lane": "data",
   "agent": "",
   "state": "Blocked on you",
-  "step": "Merged in PR #34; fix PR #43 open; run waits on web access and contact",
+  "step": "Merged in PRs #34 and #43; run waits on web access and contact",
   "branch": "claude/feat-census-crawler",
   "issue": 21,
   "needs": [
     "owner:Q-01",
     "owner:Q-02"
   ],
-  "updated": "2026-10-09T05:57:35Z",
+  "updated": "2026-10-11T14:42:17Z",
   "id": "T-020"
 }
