@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "scanner",
   "agent": "builder",
-  "state": "Running",
-  "step": "read context, plan benchmark",
+  "state": "In review",
+  "step": "PR open; local benchmark measured, Browser Run waits on Q-05",
   "branch": "claude/feat-scan-benchmark",
   "issue": 29,
   "needs": [],
-  "updated": "2026-10-08T11:52:25Z",
+  "updated": "2026-10-11T17:00:49Z",
   "id": "T-033"
 }

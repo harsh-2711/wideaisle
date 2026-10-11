@@ -18,9 +18,11 @@ Time and cost 1,000 page scans on a small server versus Cloudflare Browser Run.
 
 Each one is a test or a check someone can run.
 
-- [ ] Local benchmark with measured pages per hour
+- [x] Local benchmark with measured pages per hour (`npm run bench:scan`; results in `docs/spikes/spike-d-scan-benchmark.md`)
 - [ ] Browser Run comparison (needs Q-05)
 
 ## Out of scope
 
-- (fill in)
+- A Cloudflare client or any Browser Run sign-up (D-04, Q-05).
+- Scans of live stores (Q-01).
+- Editing `docs/adr/0005-poc-hosting.md`; T-034 does that after this merges.
