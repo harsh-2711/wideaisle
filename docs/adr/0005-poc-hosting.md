@@ -1,7 +1,7 @@
 # 0005. PoC hosting
 
 Status: Proposed
-Date: 2026-10-09
+Date: 2026-10-11
 Decisions used: D-02, D-04, D-10
 
 ## Context
@@ -20,7 +20,6 @@ Spike D has not reported. Every number below is a planning figure from D-10, the
 |---|---|---|---|
 | Server | About $5 to $15 a month | D-10 | Estimate, Spike D replaces it |
 | Server and object storage, M4 to M6 | About $10 to $25 a month | Roadmap budget | Estimate, Spike D replaces it |
-| Server size | 2 vCPU, 4 GB memory | This ADR | Estimate, Spike D replaces it |
 | Time per page scan | 5 to 10 seconds | Roadmap | Estimate, Spike D replaces it |
 | Pages per browser-hour | 360 to 720 | Roadmap | Estimate, Spike D replaces it |
 | PoC scan load: 20 stores, 4 key pages, daily rescans | 80 pages, about 7 to 13 browser-minutes a day | Derived from the rows above | Estimate, Spike D replaces it |
@@ -33,9 +32,9 @@ Spike D has not reported. Every number below is a planning figure from D-10, the
 - **One server, one image, three containers.** Postgres 16 with a data volume, plus the web and worker processes from ADR 0001. Both processes run the same image.
 - **Base image.** The image moves from `node:22-alpine` to a Debian-based Node 22 image with Playwright's Chromium and its system libraries. Versions are pinned. M4 makes the change, and Spike D's server run confirms it.
 - **Scanning.** The worker runs one Chromium and scans a few pages at a time. Spike D sets the number from measured memory per page. Product scans stay on the server at PoC; Browser Run is for census bursts only.
-- **Backups.** A nightly `pg_dump` goes to object storage and is kept for 14 days. We test a restore once before the first pilot. Receipts live in Postgres (ADR 0002), so this is what keeps revert possible after a lost server.
+- **Backups.** A nightly `pg_dump` goes to object storage and is kept for 14 days. We test a restore once before the first pilot. Delivery records live in Postgres and route C zips in object storage (ADR 0002), so backups keep revert possible after a lost server.
 - **Census bursts.** These go to Browser Run once the owner approves Workers Paid (Q-05). Until then the census runs on the owner's machine, or here once outbound web access is allowed (Q-01).
-- **Provider.** This ADR does not pick one. Before M4 needs a server, a decision memo goes to the owner with options, monthly cost, risk and a pick (AGENTS.md, D-04).
+- **Providers.** This ADR does not pick them. Before M4 needs a server, a decision memo goes to the owner covering both the server and object storage, with options, monthly cost, risk and a pick. Both are paid sign-ups, and backups need object storage from day one (AGENTS.md, D-04).
 - **When to move.**
   - The worker moves to its own server when scan jobs wait more than an agreed limit. We propose 15 minutes, to be checked against pilot data.
   - Postgres moves to a managed service at launch (D-10). The launch stage is up to 200 stores at about $40 to $100 a month (roadmap, estimate).
@@ -47,5 +46,5 @@ Spike D has not reported. Every number below is a planning figure from D-10, the
 - **Harder.** We run Postgres, updates and backups ourselves until launch.
 - **Risk: an outage.** It delays scans, previews and the reverts we run. It does not break storefronts, because fixes live in the theme. On routes B and C the merchant or agency can revert without us: close or revert the pull request in GitHub, or republish the old theme.
 - **Risk: one host.** Postgres shares the host with the scanner. The scanner's egress guard must stay on for every scan, so a page cannot reach the database port (ADR 0001).
-- **Risk: wrong size.** If Spike D measures much more memory per page than planned, the server size or the scan concurrency changes. The design does not.
+- **Server size.** Spike D's measured memory and CPU per page set the server size and the scan concurrency. The design does not depend on them.
 - **Follow-up.** When Spike D's pull request (T-033) merges, replace every row marked "Estimate, Spike D replaces it" with the measured value, and note where it came from. T-035, the cost per merchant estimate, uses the same inputs.

@@ -18,8 +18,8 @@ Records for the architecture, fix delivery and AI use, ready for G1.
 
 Each one is a test or a check someone can run.
 
-- [ ] ADRs merged
-- [ ] Owner approves (Q-28)
+- [ ] ADRs merged as Status Proposed after review. The agent merges them, since records are not a one-way door.
+- [ ] Owner moves them to Accepted (Q-28)
 
 ## Out of scope
 

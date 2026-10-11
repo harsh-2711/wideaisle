@@ -1,7 +1,7 @@
 # 0003. Theme fix library
 
 Status: Proposed
-Date: 2026-10-09
+Date: 2026-10-11
 Decisions used: D-08, D-11
 
 ## Context
@@ -45,7 +45,7 @@ Spike B (T-031, merged in PR #35) built six rule fixers. Sources: `docs/spikes/s
 - Each fixer id gains a version, for example `empty-link/aria-label@1`. The version goes up when the fixer's output changes for any input in its tests.
 - The library carries one version. At PoC that is the commit it was built from; later it becomes the package version, when the library ships as its own package (roadmap scale step 4).
 - Every patch records the fixer id and version, the library version, and the theme name and version. The remediation log and the evidence pack show them.
-- Revert never re-runs a fixer. It uses the stored receipt (ADR 0002), so a new fixer version cannot change what a revert does.
+- Revert never re-runs a fixer. It uses the stored delivery record (ADR 0002), so a new fixer version cannot change what a revert does.
 - After a theme update, the rescan runs the current fixers on the new files. Files we already fixed give no patch, because fixers are idempotent. Files the update changed get new patches through the normal preview.
 
 ### Tests a fixer or profile must pass to merge
