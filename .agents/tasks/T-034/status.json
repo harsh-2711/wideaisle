@@ -3,11 +3,14 @@
   "milestone": "M3",
   "lane": "architect",
   "agent": "architect",
-  "state": "In review",
-  "step": "PR re-review (#46)",
+  "state": "Blocked on you",
+  "step": "PR #46 merged as Proposed; owner approval (Q-28) and revert pick (Q-35)",
   "branch": "claude/docs-adr-m3",
   "issue": 30,
-  "needs": [],
-  "updated": "2026-10-11T15:04:55Z",
+  "needs": [
+    "owner:Q-28",
+    "owner:Q-35"
+  ],
+  "updated": "2026-10-11T15:09:04Z",
   "id": "T-034"
 }

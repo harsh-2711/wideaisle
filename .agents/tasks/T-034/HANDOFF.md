@@ -11,7 +11,7 @@ See TASK.md. Records for the architecture, fix delivery and AI use, ready for G1
 
 ## Status
 
-In review: PR #46 (https://github.com/harsh-2711/wideaisle/pull/46). The review at b11c30c asked for changes (17 items); all are fixed on this branch and the checks pass. Waiting for re-review. Last updated 2026-10-11.
+Blocked on you. PR #46 merges the five ADRs as Status Proposed after three review rounds. The owner moves them to Accepted (Q-28) and picks the revert cases (Q-35). Last updated 2026-10-11.
 
 ## Done so far
 
@@ -27,17 +27,17 @@ In review: PR #46 (https://github.com/harsh-2711/wideaisle/pull/46). The review 
 | 8. Proofread: ADRs 0002 and 0004 cut to about two pages; wording fixes in 0004 and 0005. All checks pass | 460c33f |
 | 9. Opened PR #46 to main; board set to In review | b11c30c |
 | 10. Review fixes (items 1 to 17): 0002 states plainly that route C and merged route B do not meet D-09, adds intent rows before the first write, zips in object storage, four revert outcomes, D-12 billing, corrected Q-03 count and impacts. Owner queue gains Q-35 (revert cases) and Q-36 (pilot billing) with the lead's approval, and Q-28 is reworded. Dates set to 2026-10-11. Server-size row dropped from 0005. Citations fixed in 0001 and 0004. 0004 Context points to Spike C | 5a2bf30 |
-| 11. Re-review fixes: retry recovery reads alt-text values too, so alt-text-only patches are covered; route B stores its branch suffix and a retry looks for its open pull request first | (this commit) |
+| 11. Re-review fixes: retry recovery reads alt-text values too, so alt-text-only patches are covered; route B stores its branch suffix and a retry looks for its open pull request first | 49d6f98 |
+| 12. Route B retry also finds a merged pull request (599b8de); board set to Blocked on you and Q-28 opened for the merge | (this commit) |
 
 ## Current step
 
-PR #46 waits for re-review. After it passes, the agent merges PR #46 with a merge commit and the ADRs stay at Status Proposed. This is not a one-way door. The owner then moves them to Accepted under Q-28; the coordinator moves Q-28 to Open after the merge.
+Waiting for the owner: Q-28 (move the ADRs to Accepted) and Q-35 (revert cases in ADR 0002).
 
 ## Next three steps
 
-1. Answer any new review comments on PR #46. After each fix, rerun the checks under "How to verify" and push. Merge only after the coordinator's review passes.
-2. When Spike D's pull request (T-033, `claude/feat-scan-benchmark`) merges, update the numbers in docs/adr/0005-poc-hosting.md: replace every row marked "Estimate, Spike D replaces it" with the measured value and its source, and recheck the cost lines in ADR 0001.
-3. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-33 is answered, name the chosen model in ADR 0004. When Q-35 is answered, update ADR 0002's "Revert" section.
+1. When Spike D's pull request (T-033, `claude/feat-scan-benchmark`) merges, update the numbers in docs/adr/0005-poc-hosting.md: replace every row marked "Estimate, Spike D replaces it" with the measured value and its source, and recheck the cost lines in ADR 0001.
+2. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-33 is answered, name the chosen model in ADR 0004. When Q-35 is answered, update ADR 0002's "Revert" section.
 
 ## Blockers and open questions
 
