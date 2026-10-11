@@ -47,9 +47,12 @@ describe("number formats", () => {
     expect(fmtInt(1234567.4)).toBe("1,234,567");
     expect(fmtInt(Number.NaN)).toBe("n/a");
     expect(fmtSec(1234)).toBe("1.23 s");
+    expect(fmtSec(2621200)).toBe("2,621 s");
     expect(fmtUsd(0)).toBe("$0");
     expect(fmtUsd(0.00456)).toBe("$0.0046");
     expect(fmtUsd(0.0456)).toBe("$0.046");
+    expect(fmtUsd(0.00999)).toBe("$0.010");
+    expect(fmtUsd(0.5)).toBe("$0.50");
     expect(fmtUsd(12.345)).toBe("$12.35");
     expect(fmtUsd(Number.POSITIVE_INFINITY)).toBe("n/a");
   });
@@ -143,10 +146,8 @@ describe("summary", () => {
   it("lists throughput, memory and both costs", () => {
     const md = formatSummary(r);
     expect(md).toContain("# Scan benchmark, 2026-10-09");
-    expect(md).toContain(
-      "| 1 | 200 | 0 | 720.00 s | 1,000 | 2.00 s | 3.00 s |",
-    );
-    expect(md).toContain("| 2 | 200 | 0 | 360.00 s | 2,000 |");
+    expect(md).toContain("| 1 | 200 | 0 | 720 s | 1,000 | 2.00 s | 3.00 s |");
+    expect(md).toContain("| 2 | 200 | 0 | 360 s | 2,000 |");
     expect(md).toContain("1,200 MB | 800 MB |");
     expect(md).toContain("14.0 at concurrency 1, 14.0 at concurrency 2.");
     // $5 a month at 1,000 pages an hour: 5 / (730 * 1000) * 1000.
@@ -164,8 +165,8 @@ describe("summary", () => {
       "| Pages the included hours cover each month | 10,000 |",
     );
     expect(md).toContain("| Each 1,000 pages past that | $0.090 |");
-    expect(md).toContain("| 10,000 | 10.0 | $5.00 | $0.500 |");
-    expect(md).toContain("| 100,000 | 100.0 | $13.10 | $0.131 |");
+    expect(md).toContain("| 10,000 | 10.0 | $5.00 | $0.50 |");
+    expect(md).toContain("| 100,000 | 100.0 | $13.10 | $0.13 |");
     expect(md).toContain("not a quote");
     expect(md).not.toContain(String.fromCharCode(0x2014));
   });

@@ -132,15 +132,19 @@ export function fmtInt(n: number): string {
   return Number.isFinite(n) ? Math.round(n).toLocaleString("en-US") : "n/a";
 }
 
+// Seconds with two decimals, or whole seconds from 100 s up.
 export function fmtSec(ms: number): string {
-  return Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)} s` : "n/a";
+  if (!Number.isFinite(ms)) return "n/a";
+  return ms >= 100_000
+    ? `${fmtInt(ms / 1000)} s`
+    : `${(ms / 1000).toFixed(2)} s`;
 }
 
+// Dollars and cents from $1 up; below that, two significant figures.
 export function fmtUsd(x: number): string {
   if (!Number.isFinite(x)) return "n/a";
   if (x === 0) return "$0";
-  if (x < 0.01) return `$${x.toFixed(4)}`;
-  if (x < 1) return `$${x.toFixed(3)}`;
+  if (x < 1) return `$${x.toPrecision(2)}`;
   return `$${x.toFixed(2)}`;
 }
 
