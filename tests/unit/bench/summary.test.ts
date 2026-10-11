@@ -90,6 +90,7 @@ function level(
       samples: 10,
     },
     errors: [],
+    requestsPerPage: 14,
     samples: [],
   };
 }
@@ -147,6 +148,7 @@ describe("summary", () => {
     );
     expect(md).toContain("| 2 | 200 | 0 | 360.00 s | 2,000 |");
     expect(md).toContain("1,200 MB | 800 MB |");
+    expect(md).toContain("14.0 at concurrency 1, 14.0 at concurrency 2.");
     // $5 a month at 1,000 pages an hour: 5 / (730 * 1000) * 1000.
     expect(md).toContain(
       "| This machine, concurrency 1 | 1,000 | $0.0068 | $0.014 | $0.021 |",

@@ -87,6 +87,9 @@ export interface LevelResult {
     peakProcesses: number;
     samples: number;
   } | null;
+  // Requests that reached the fixture server, per scanned page (robots.txt
+  // and the page's HTML, CSS and JS; images are blocked by the scan path).
+  requestsPerPage: number;
   errors: string[];
   samples: PageSample[];
 }
@@ -220,6 +223,9 @@ export function formatSummary(
   );
   out.push(
     "Peak RSS sums the Node process and the Chromium processes, so shared pages count more than once. Peak PSS splits shared pages and is the better guide to RAM needed.",
+  );
+  out.push(
+    `Requests that reached the store a page (robots.txt, HTML, CSS, JS; images blocked): ${result.levels.map((l) => `${l.requestsPerPage.toFixed(1)} at concurrency ${l.concurrency}`).join(", ")}.`,
   );
   out.push("");
 

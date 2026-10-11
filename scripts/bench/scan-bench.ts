@@ -31,6 +31,7 @@ import {
   serveFixtures,
   writeFixtures,
   type FixtureManifest,
+  type FixtureServer,
 } from "./fixtures";
 import {
   benchCpuSeconds,
@@ -157,9 +158,10 @@ async function scanStore(
 async function runLevel(
   opts: BenchOptions,
   manifest: FixtureManifest,
-  port: number,
+  server: FixtureServer,
   concurrency: number,
 ): Promise<LevelResult> {
+  const port = server.port;
   const log = opts.log ?? (() => {});
   const browser = await chromium.launch({
     executablePath: opts.executablePath || undefined,
@@ -189,6 +191,7 @@ async function runLevel(
     const cpu0 = readCpuTimes();
     const bench0 = benchCpuSeconds();
     const nodeCpu0 = process.cpuUsage();
+    const requests0 = server.requests;
     const t0 = performance.now();
     await Promise.all(
       Array.from({ length: Math.min(concurrency, storeCount) }, async () => {
@@ -216,6 +219,7 @@ async function runLevel(
       }),
     );
     const wallSeconds = (performance.now() - t0) / 1000;
+    const requests = server.requests - requests0;
     const cpu1 = readCpuTimes();
     const bench1 = benchCpuSeconds();
     const nodeCpu = process.cpuUsage(nodeCpu0);
@@ -255,6 +259,7 @@ async function runLevel(
         peakProcesses: peak.processes,
         samples: peak.samples,
       },
+      requestsPerPage: samples.length > 0 ? requests / samples.length : 0,
       errors,
       samples,
     };
@@ -302,7 +307,7 @@ export async function runBench(opts: BenchOptions): Promise<BenchResult> {
     const levels: LevelResult[] = [];
     for (const c of opts.concurrency) {
       log(`concurrency ${c}: ${opts.pages} pages`);
-      levels.push(await runLevel(opts, manifest, server.port, c));
+      levels.push(await runLevel(opts, manifest, server, c));
       const l = levels[levels.length - 1];
       log(
         `  ${l.pagesScanned} pages in ${l.wallSeconds.toFixed(1)} s, ${Math.round(l.pagesPerHour)} pages an hour, ${l.pagesFailed} failed`,
