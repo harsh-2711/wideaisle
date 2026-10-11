@@ -83,5 +83,5 @@ D-10
 - The VM moved hosts between sessions (2.10 GHz on 2026-10-08, 2.80 GHz on 2026-10-11). Compare runs only from the same host.
 - axe-core counts a placeholder as an input's name, so a faulty field needs no label and no placeholder for `missing-label` to fire.
 - `tsc` type-checks every .ts under the repo, gitignored `data/` included. Keep probe scripts out of the tree, or name them `.mts`.
-- Prettier rewrote `"—"` in tests into a literal em dash, which the writing check bans. Use `String.fromCharCode(0x2014)`.
+- Prettier rewrote the escaped em dash in test strings into the literal character, which the writing check bans. Use `String.fromCharCode(0x2014)`.
 - The census path fetches every CSS and JS file again on each page of a store (10.9 requests a page); Playwright routing turns off the HTTP cache.
