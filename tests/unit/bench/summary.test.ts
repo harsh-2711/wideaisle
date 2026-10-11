@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  browserLevel,
   browserSecondsPerPage,
   cpuSecondsPerPage,
+  describeCpuLimit,
   dist,
   fmtInt,
   fmtSec,
@@ -93,7 +95,26 @@ function level(
       samples: 10,
     },
     errors: [],
+    nodeEventLoopPercent: 35,
     requestsPerPage: 14,
+    byKind: {
+      home: {
+        n: pages,
+        pageMs: ms,
+        loadMs: dist([250]),
+        axeMs: dist([1700]),
+        domNodes: dist([1800]),
+        violationNodes: dist([45]),
+      },
+      cart: {
+        n: 0,
+        pageMs: dist([]),
+        loadMs: dist([]),
+        axeMs: dist([]),
+        domNodes: dist([]),
+        violationNodes: dist([]),
+      },
+    },
     samples: [],
   };
 }
@@ -115,7 +136,7 @@ function result(levels: LevelResult[]): BenchResult {
       memoryMb: 16000,
       platform: "linux",
       kernel: "6.0",
-      cgroupCpuMax: null,
+      cgroupCpuMax: "max 100000",
       node: "v22.0.0",
       chromium: "141.0",
       playwright: "1.64.0",
@@ -150,6 +171,15 @@ describe("summary", () => {
     expect(md).toContain("| 2 | 200 | 0 | 360 s | 2,000 |");
     expect(md).toContain("1,200 MB | 800 MB |");
     expect(md).toContain("14.0 at concurrency 1, 14.0 at concurrency 2.");
+    expect(md).toContain(
+      "Node's event loop was busy 35% of the time at concurrency 1, 35% of the time at concurrency 2.",
+    );
+    // Per page type, skipping types with no pages.
+    expect(md).toContain(
+      "| 1 | home | 200 | 0.25 s | 1.70 s | 2.00 s | 3.00 s | 1,800 | 45 |",
+    );
+    expect(md).not.toContain("| cart |");
+    expect(md).toContain("no cgroup CPU limit");
     // $5 a month at 1,000 pages an hour: 5 / (730 * 1000) * 1000.
     expect(md).toContain(
       "| This machine, concurrency 1 | 1,000 | $0.0068 | $0.014 | $0.021 |",
@@ -185,6 +215,25 @@ describe("summary", () => {
     });
     expect(md).toContain("| Rate | Pages an hour | $20 a month |");
     expect(md).not.toContain("vCPU, estimated");
+  });
+
+  it("takes the browser time and its label from the same level", () => {
+    // Concurrency 1 scanned nothing, so concurrency 2 sets the browser time.
+    const mixed = result([level(1, 0, 10, null), level(2, 200, 360, 2.7)]);
+    expect(browserLevel(mixed)?.concurrency).toBe(2);
+    expect(browserSecondsPerPage(mixed)).toBeCloseTo(1.8, 10);
+    expect(formatSummary(mixed)).toContain(
+      "Browser time a page: 1.80 s, the wall time a page at concurrency 2 here.",
+    );
+  });
+
+  it("describes the cgroup CPU limit", () => {
+    expect(describeCpuLimit("max 100000")).toBe("no cgroup CPU limit");
+    expect(describeCpuLimit("200000 100000")).toBe(
+      "cgroup CPU limit of 2.00 CPUs",
+    );
+    expect(describeCpuLimit(null)).toBe("cgroup CPU limit not found");
+    expect(describeCpuLimit("odd")).toBe('cgroup cpu.max "odd"');
   });
 
   it("says so when nothing was scanned", () => {

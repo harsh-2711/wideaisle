@@ -9,6 +9,7 @@ import {
   generateStore,
   mulberry32,
   serveFixtures,
+  startFixtureProcess,
   storeHost,
   writeFixtures,
   type FixtureServer,
@@ -37,7 +38,7 @@ describe("bench fixtures", () => {
       ]);
       for (const p of store.pages) {
         expect(p.totalBytes).toBeGreaterThan(300 * 1024);
-        expect(p.totalBytes).toBeLessThan(1.6 * 1024 * 1024);
+        expect(p.totalBytes).toBeLessThan(1.5 * 1024 * 1024);
         expect(p.htmlBytes).toBeGreaterThan(40 * 1024);
       }
     }
@@ -149,4 +150,37 @@ describe("bench fixture server", () => {
     expect(m.stores).toHaveLength(1);
     expect(fs.statSync(path.join(dir, "manifest.json")).mtimeMs).toBe(before);
   });
+});
+
+describe("bench fixture server in a child process", () => {
+  it("serves the stores and counts requests outside this process", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-bench-child-"));
+    writeFixtures(dir, 1, 1);
+    const host = await startFixtureProcess(dir);
+    try {
+      expect(host.pid).not.toBe(process.pid);
+      const before = await host.requestCount();
+      const status = await new Promise<number>((resolve, reject) => {
+        http
+          .get(
+            {
+              host: "127.0.0.1",
+              port: host.port,
+              path: "/",
+              headers: { host: `${storeHost(0)}:${host.port}` },
+            },
+            (res) => {
+              res.resume();
+              res.on("end", () => resolve(res.statusCode ?? 0));
+            },
+          )
+          .on("error", reject);
+      });
+      expect(status).toBe(200);
+      expect(await host.requestCount()).toBe(before + 1);
+    } finally {
+      await host.close();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
 });

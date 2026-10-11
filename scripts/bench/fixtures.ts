@@ -11,9 +11,12 @@
 //
 // The same seed always gives the same bytes. Nothing is fetched from the
 // network.
+import { fork } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
+import { createRequire } from "node:module";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Bump when the output changes, so cached fixtures are rebuilt.
 export const FIXTURE_VERSION = 3;
@@ -1198,10 +1201,16 @@ const TYPES: Record<string, string> = {
   ".js": "application/javascript",
 };
 
-export interface FixtureServer {
+// A running fixture server, in this process or a child one.
+export interface FixtureHost {
   port: number;
-  requests: number;
+  // Requests answered so far.
+  requestCount(): Promise<number>;
   close(): Promise<void>;
+}
+
+export interface FixtureServer extends FixtureHost {
+  requests: number;
 }
 
 // Serves the stores in `manifest` from `dir`, choosing the store by the Host
@@ -1251,10 +1260,74 @@ export async function serveFixtures(
     get requests() {
       return state.requests;
     },
+    requestCount: async () => state.requests,
     close: () =>
       new Promise((resolve) => {
         server.closeAllConnections();
         server.close(() => resolve());
+      }),
+  };
+}
+
+// Runs the fixture server in a child process (scripts/bench/fixture-server.ts)
+// for `writeFixtures` output in `dir`. The benchmark counts only its own Node
+// process and Chromium, so the server's CPU and memory stay out of them.
+export async function startFixtureProcess(
+  dir: string,
+): Promise<FixtureHost & { pid: number | undefined }> {
+  const tsx = pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href;
+  const entry = fileURLToPath(new URL("./fixture-server.ts", import.meta.url));
+  const child = fork(entry, [dir], {
+    execArgv: ["--import", tsx],
+    stdio: ["ignore", "inherit", "inherit", "ipc"],
+  });
+  const port = await new Promise<number>((resolve, reject) => {
+    const done = () => {
+      child.off("message", onMessage);
+      child.off("exit", onExit);
+      child.off("error", onError);
+    };
+    const onMessage = (m: unknown) => {
+      const port = (m as { port?: unknown } | null)?.port;
+      if (typeof port === "number") {
+        done();
+        resolve(port);
+      }
+    };
+    const onExit = (code: number | null) => {
+      done();
+      reject(
+        new Error(`the fixture server exited before listening (code ${code})`),
+      );
+    };
+    const onError = (err: Error) => {
+      done();
+      reject(err);
+    };
+    child.on("message", onMessage);
+    child.on("exit", onExit);
+    child.on("error", onError);
+  });
+  // Answers come back in the order they were asked for.
+  const waiting: ((n: number) => void)[] = [];
+  child.on("message", (m) => {
+    const n = (m as { requests?: unknown } | null)?.requests;
+    if (typeof n === "number") waiting.shift()?.(n);
+  });
+  return {
+    port,
+    pid: child.pid,
+    requestCount: () =>
+      new Promise((resolve) => {
+        waiting.push(resolve);
+        child.send("requests");
+      }),
+    close: () =>
+      new Promise((resolve) => {
+        if (child.exitCode !== null || child.signalCode !== null)
+          return resolve();
+        child.once("exit", () => resolve());
+        child.send("close");
       }),
   };
 }

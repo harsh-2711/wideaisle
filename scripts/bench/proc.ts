@@ -241,9 +241,20 @@ export function startMemorySampler(
   };
 }
 
-// The cgroup CPU limit, if the container sets one ("max 100000" means none).
-export function cgroupCpuMax(): string | null {
-  return read("/sys/fs/cgroup/cpu.max")?.trim() ?? null;
+// The cgroup CPU limit as cgroup v2 writes it: "<quota> <period>" in
+// microseconds, or "max <period>" for no limit. On cgroup v1 the quota and
+// period files are read and put in the same form (a quota of -1 is no
+// limit). Null when neither is there.
+export function cgroupCpuMax(root = "/sys/fs/cgroup"): string | null {
+  const v2 = read(`${root}/cpu.max`)?.trim();
+  if (v2) return v2;
+  for (const dir of ["cpu", "cpu,cpuacct", "cpuacct,cpu"]) {
+    const quota = read(`${root}/${dir}/cpu.cfs_quota_us`)?.trim();
+    const period = read(`${root}/${dir}/cpu.cfs_period_us`)?.trim();
+    if (!quota || !period) continue;
+    return `${Number(quota) < 0 ? "max" : quota} ${period}`;
+  }
+  return null;
 }
 
 // 1, 5 and 15 minute load averages, as a sign of other work on the machine.

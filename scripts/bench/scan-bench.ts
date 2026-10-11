@@ -28,10 +28,10 @@ import { openScanContext } from "../../scripts/census/census";
 import {
   FIXTURE_VERSION,
   PAGE_KINDS,
-  serveFixtures,
+  startFixtureProcess,
   writeFixtures,
+  type FixtureHost,
   type FixtureManifest,
-  type FixtureServer,
 } from "./fixtures";
 import {
   benchCpuSeconds,
@@ -46,6 +46,7 @@ import {
   formatSummary,
   type BenchResult,
   type LevelResult,
+  type KindStats,
   type PageSample,
   type SummaryOptions,
 } from "./summary";
@@ -62,6 +63,9 @@ export interface BenchOptions {
   executablePath?: string;
   // Milliseconds between memory readings.
   sampleMs?: number;
+  // Scan one store untimed before each level (default true). The smoke test
+  // turns it off so it scans only its own pages.
+  warmup?: boolean;
   log?: (line: string) => void;
 }
 
@@ -83,6 +87,11 @@ interface StoreRef {
 // Scans up to `pages` of one store's pages the way the census scan loop does:
 // robots.txt and a page slot, a vetted navigation, links from the home page,
 // then axe-core. Returns one sample per scanned page.
+//
+// Mirrors the per-store body of `scan()` in scripts/census/census.ts (the
+// `openScanContext` call, the `targets` list and the `for (const [kind,
+// pathOf] of targets)` loop, lines 290 to 329 on 2026-10-11). Keep the two in
+// step: a change to how the census loads or scans a page belongs here too.
 async function scanStore(
   browser: Browser,
   store: StoreRef,
@@ -155,10 +164,30 @@ async function scanStore(
   }
 }
 
+// Per page type: how many pages, and the spread of each timing.
+function statsByKind(samples: PageSample[]): Record<string, KindStats> {
+  return Object.fromEntries(
+    PAGE_KINDS.map((k) => {
+      const xs = samples.filter((s) => s.kind === k);
+      return [
+        k,
+        {
+          n: xs.length,
+          pageMs: dist(xs.map((s) => s.ms)),
+          loadMs: dist(xs.map((s) => s.loadMs)),
+          axeMs: dist(xs.map((s) => s.axeMs)),
+          domNodes: dist(xs.map((s) => s.domNodes)),
+          violationNodes: dist(xs.map((s) => s.violationNodes)),
+        },
+      ];
+    }),
+  );
+}
+
 async function runLevel(
   opts: BenchOptions,
   manifest: FixtureManifest,
-  server: FixtureServer,
+  server: FixtureHost,
   concurrency: number,
 ): Promise<LevelResult> {
   const port = server.port;
@@ -175,14 +204,15 @@ async function runLevel(
   try {
     // Warm-up, not timed: one store, so the first context and JIT costs do
     // not land on the first timed pages.
-    await scanStore(
-      browser,
-      manifest.stores[0],
-      port,
-      PAGE_KINDS.length,
-      () => {},
-      () => {},
-    );
+    if (opts.warmup !== false)
+      await scanStore(
+        browser,
+        manifest.stores[0],
+        port,
+        PAGE_KINDS.length,
+        () => {},
+        () => {},
+      );
 
     const storeCount = Math.ceil(opts.pages / PAGE_KINDS.length);
     let next = 0;
@@ -191,7 +221,8 @@ async function runLevel(
     const cpu0 = readCpuTimes();
     const bench0 = benchCpuSeconds();
     const nodeCpu0 = process.cpuUsage();
-    const requests0 = server.requests;
+    const elu0 = performance.eventLoopUtilization();
+    const requests0 = await server.requestCount();
     const t0 = performance.now();
     await Promise.all(
       Array.from({ length: Math.min(concurrency, storeCount) }, async () => {
@@ -219,7 +250,8 @@ async function runLevel(
       }),
     );
     const wallSeconds = (performance.now() - t0) / 1000;
-    const requests = server.requests - requests0;
+    const elu = performance.eventLoopUtilization(elu0).utilization;
+    const requests = (await server.requestCount()) - requests0;
     const cpu1 = readCpuTimes();
     const bench1 = benchCpuSeconds();
     const nodeCpu = process.cpuUsage(nodeCpu0);
@@ -247,6 +279,7 @@ async function runLevel(
         benchCpu === null || scanned === 0 ? null : benchCpu / scanned,
       nodeCpuSecondsPerPage:
         scanned > 0 ? (nodeCpu.user + nodeCpu.system) / 1e6 / scanned : 0,
+      nodeEventLoopPercent: elu * 100,
       benchCpuPercent:
         benchCpu === null ? null : (benchCpu / (wallSeconds * cores)) * 100,
       machineBusyPercent: machine === null ? null : machine * 100,
@@ -260,6 +293,7 @@ async function runLevel(
         samples: peak.samples,
       },
       requestsPerPage: samples.length > 0 ? requests / samples.length : 0,
+      byKind: statsByKind(samples),
       errors,
       samples,
     };
@@ -296,7 +330,8 @@ export async function runBench(opts: BenchOptions): Promise<BenchResult> {
   );
   log(`fixtures: ${distinct} stores in ${opts.fixturesDir}`);
   const manifest = writeFixtures(opts.fixturesDir, opts.seed, distinct);
-  const server = await serveFixtures(opts.fixturesDir, manifest);
+  // In a child process, so serving pages does not count as scanning them.
+  const server = await startFixtureProcess(opts.fixturesDir);
   let chromiumVersion = "unknown";
   try {
     const probe = await chromium.launch({

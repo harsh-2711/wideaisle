@@ -1,6 +1,10 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   busyShare,
+  cgroupCpuMax,
   isBrowserProcess,
   kbField,
   mergePeak,
@@ -67,5 +71,28 @@ describe("/proc parsing", () => {
       processes: 10,
       samples: 2,
     });
+  });
+
+  it("reads the cgroup CPU limit on v2 and v1", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "wa-cgroup-"));
+    try {
+      const write = (file: string, text: string) => {
+        fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+        fs.writeFileSync(path.join(root, file), text);
+      };
+      expect(cgroupCpuMax(root)).toBeNull();
+      // v1, no limit.
+      write("cpu/cpu.cfs_quota_us", "-1\n");
+      write("cpu/cpu.cfs_period_us", "100000\n");
+      expect(cgroupCpuMax(root)).toBe("max 100000");
+      // v1, two CPUs.
+      write("cpu/cpu.cfs_quota_us", "200000\n");
+      expect(cgroupCpuMax(root)).toBe("200000 100000");
+      // v2 wins when both are there.
+      write("cpu.max", "150000 100000\n");
+      expect(cgroupCpuMax(root)).toBe("150000 100000");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });
