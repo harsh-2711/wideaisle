@@ -24,7 +24,7 @@ Spike D has not reported. Every number below is a planning figure from D-10, the
 | Time per page scan | 5 to 10 seconds | Roadmap | Estimate, Spike D replaces it |
 | Pages per browser-hour | 360 to 720 | Roadmap | Estimate, Spike D replaces it |
 | PoC scan load: 20 stores, 4 key pages, daily rescans | 80 pages, about 7 to 13 browser-minutes a day | Derived from the rows above | Estimate, Spike D replaces it |
-| Census: 2,000 stores, 4 workers | About 2 hours, about 8 browser-hours | `docs/census/README.md` | Estimate, Spike D replaces it |
+| Census: 2,000 stores, 4 workers | About 2 hours, so about 8 browser-hours | `docs/census/README.md`; browser-hours derived | Estimate, Spike D replaces it |
 | Browser Run | $5 a month with 10 browser-hours, then $0.09 an hour | D-10, roadmap (Cloudflare price page, read 2026-10-07) | Estimate, Spike D replaces it |
 | Census on Browser Run | Within the 10 included hours: about $5 for a census month | Derived from the two rows above | Estimate, Spike D replaces it |
 
@@ -45,7 +45,7 @@ Spike D has not reported. Every number below is a planning figure from D-10, the
 - **Cost.** About $5 to $15 a month for the server, within $10 to $25 a month for server and object storage in M4 to M6. If the owner approves Workers Paid, add $5 a month. Every figure is an estimate that Spike D replaces. All of it sits well under the $150 cap (D-02).
 - **Easier.** One machine to run and watch. The PoC scan load is a small fraction of one browser's day (estimate), so the server has room for rescans after theme publishes and for before-and-after scans around each fix.
 - **Harder.** We run Postgres, updates and backups ourselves until launch.
-- **Risk: an outage.** It delays scans, previews and reverts we run. It does not break storefronts, because fixes live in the theme. Route B and route C reverts do not need us.
+- **Risk: an outage.** It delays scans, previews and the reverts we run. It does not break storefronts, because fixes live in the theme. On routes B and C the merchant or agency can revert without us: close or revert the pull request in GitHub, or republish the old theme.
 - **Risk: one host.** Postgres shares the host with the scanner. The scanner's egress guard must stay on for every scan, so a page cannot reach the database port (ADR 0001).
 - **Risk: wrong size.** If Spike D measures much more memory per page than planned, the server size or the scan concurrency changes. The design does not.
 - **Follow-up.** When Spike D's pull request (T-033) merges, replace every row marked "Estimate, Spike D replaces it" with the measured value, and note where it came from. T-035, the cost per merchant estimate, uses the same inputs.

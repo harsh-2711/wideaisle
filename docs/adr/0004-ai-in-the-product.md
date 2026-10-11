@@ -12,11 +12,11 @@ Missing alt text is on 53.1% of the top million home pages (WebAIM Million 2026,
 
 Spike C (T-032, merged in PR #39) built the alt-text pipeline. Sources: `docs/spikes/spike-c-alt-text.md`, `app/lib/alt-text/` and `scripts/alt-text/`. It is tested only with a mocked SDK. Nothing has called the real API (Q-04).
 
-- **Flow.** Input lines are validated and de-duplicated by media ID. Caps are checked before anything is sent. `batches.create` is sent with SDK retries off, since the endpoint takes no idempotency key. The client polls from 30 seconds, doubling up to 10 minutes, and gives up after 25 hours. It then parses and checks each draft and writes a review queue, a retry list and a failed list.
+- **Flow.** Inputs are validated and de-duplicated, and caps are checked before anything is sent. The batch is sent with SDK retries off, since the endpoint takes no idempotency key. Results are parsed and checked into a review queue, a retry list and a failed list.
 - **Run state.** An append-only log (`data/alt-text/<run>/state.jsonl`) records an intent before each submit and the batch ID after it. A resume never submits the same images twice.
 - **Images.** Images go as URLs. The Shopify CDN is asked for a 512 px copy, which is about 361 image tokens.
 - **Caps per run.** Images: default 250, ceiling 1,000. Requests: default 500, ceiling 3,000. Attempts per image: default 2, ceiling 3. The API key's monthly spend limit is the last backstop (Q-04).
-- **Checks.** A draft is flagged for review when it is long, starts with "image of", reads like an ad, makes accessibility or standards claims, echoes instructions, lists keywords, only repeats the title, or is marked decorative or low confidence. Product text goes into the prompt as escaped data, not instructions.
+- **Checks.** A draft is flagged for review when it is too long, reads like an ad, makes claims about standards, echoes instructions, or is decorative or low confidence. Product text goes into the prompt as escaped data, not instructions.
 - **Model.** The code defaults to `claude-haiku-5-5` (`DEFAULT_ALT_TEXT_MODEL` in `app/lib/alt-text/config.ts`), and `ALT_TEXT_MODEL` overrides it. D-11 names Haiku 4.5. Q-33 asks the owner to pick.
 
 | | Haiku 5.5 | Haiku 4.5 |
@@ -28,7 +28,7 @@ Spike C (T-032, merged in PR #39) built the alt-text pipeline. Sources: `docs/sp
 | Retires | not sooner than 2027-10-07 | not sooner than 2026-10-15 |
 | API differences the client already handles | `effort: "low"`; no sampling parameters; no prefill; refusals have no server-side fallback | no `effort` parameter |
 
-Prices and retirement dates are from Anthropic's pricing and deprecations pages, read by Spike C on 2026-10-08, and are still to be checked against a real invoice. The token counts are a guess; the real run measures them.
+Prices and retirement dates are from Anthropic's pricing and deprecations pages, read by Spike C on 2026-10-08. The prices are still to be checked against a real invoice. The token counts are a guess; the real run measures them.
 
 - **Plan allowance.** Starter includes alt text for up to 1,000 images a month (D-12). The budget keeps infrastructure plus AI per store under 10% of its plan price: $2.90 on Starter.
 - **The fixer interface.** `fixFile` is synchronous and returns `Patch | null` (`app/lib/fixers/types.ts`).
@@ -61,7 +61,7 @@ This ADR does not pick the model; Q-33 does. The design is the same for either H
 
 Nothing here builds B. B needs its own owner decision with cost numbers. To keep it a change rather than a rewrite:
 
-- **Async fixers.** The M4 Fixer contract makes `fixFile` return a promise, and the engine awaits each fixer. Rule fixers resolve at once, so a live AI fixer would need no engine change.
+- **Async fixers.** The M4 Fixer contract makes `fixFile` return a promise, and the engine awaits each fixer. Rule fixers resolve at once, so a live AI fixer would need no engine change. This is cheap now, with six fixers, and costly once lanes build on the sync shape.
 - **Source on every change.** Every patch and every alt-text draft records where it came from: `rule`, with the fixer id and version (ADR 0003), or `model`, with the model ID and prompt version.
 - **Same gates.** A model-made patch would pass the same checks as a rule patch: the `before` check, preview, merchant approval, a receipt for revert, and an axe-core rescan. It would always be marked for review.
 - **Cached output.** Model output would be cached by theme file hash, fixer, model and prompt version. The same input then gives the same patch, which keeps it idempotent and paid for once.
@@ -80,4 +80,3 @@ Nothing here builds B. B needs its own owner decision with cost numbers. To keep
 - **Risk: refusals and fetch errors.** Haiku 5.5 refusals have no server-side fallback. The merchant writes those alt texts. If image fetches fail often, switch from URLs to base64.
 - **Risk: model retirement.** Haiku 4.5 may retire soon after 2026-10-15. If Q-33 keeps it, plan a move. A move is a config change plus a rating run.
 - **Risk: prompt injection.** Merchants control product titles. The defences are the escaped data block, the output checks and merchant approval.
-- **Contract change.** An async Fixer interface is cheap now, with six fixers, and costly after lanes build on the sync one.

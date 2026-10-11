@@ -33,7 +33,7 @@ Spike A (T-030) built all three behind one interface. Sources: `docs/spikes/spik
 
 - **A, Admin API.** Preview duplicates the live theme as an unpublished theme named "Wide Aisle preview <id>". It writes the patch there, reads every file back, compares bytes and returns a preview link. Apply writes to the live theme in batches of 50 files and reads every file back. If a write fails partway, it throws `PartialApplyError` with a receipt of everything it may have written.
 - **B, GitHub pull request.** Preview compares git blob IDs on the connected branch and writes nothing. Apply creates a branch `wide-aisle/<id>-<suffix>` and opens a pull request. Whoever merges the pull request applies the fix.
-- **C, patched theme file.** The merchant uploads their theme zip. We check every `before` and return a new zip in which only the patched files change. The merchant uploads it as an unpublished theme, previews it and publishes it. Our zip reader refuses unsafe archives, and the size limits are 50 MB per zip and 300 MB unpacked.
+- **C, patched theme file.** The merchant gives us their theme zip. We check every `before` and return a zip in which only the patched files change. The merchant uploads it as an unpublished theme, previews it and publishes it. The reader refuses unsafe archives, zips over 50 MB and contents over 300 MB.
 
 ### Receipts
 
@@ -43,7 +43,7 @@ We store every receipt in Postgres when apply returns, in the same transaction t
 
 ### Revert
 
-- **A: one call.** It waits for pending write jobs and stops with `JOB_PENDING` if one is still running. A file is ours if it holds `after`, or the checksum our write returned. Ours goes back to `before`; files we created are deleted. A file that already holds `before` is skipped. Anything else is a conflict, and nothing is written. Three outcomes: restored; refused with nothing written; or originals written but `VERIFY_FAILED`, because Shopify rewrote the bytes on write.
+- **A: one call.** It restores each file that still holds our write (our `after`, or the checksum our write returned) and deletes files we created. It skips files already at `before`. If any other file changed, or a write job is still running, it writes nothing. It ends in one of three ways: restored; refused with nothing written; or restored but `VERIFY_FAILED`, because Shopify rewrote the bytes on write.
 - **B.** If the pull request is still open, revert closes it and deletes our branch (one call). If it was merged, revert opens a pull request that restores each file's original blob, and someone must merge it.
 - **C.** The merchant republishes the old theme, which stays in their theme library, or uploads the original zip we return.
 
@@ -69,7 +69,7 @@ Spike A lists 12 checks. These six could change this design:
 5. `fileUpdate` changes product image alt text with `write_files` only.
 6. Route B: a merged pull request syncs to the theme, and a revert pull request syncs back. Route C: Shopify accepts our zip, and our reader accepts Shopify's export zip.
 
-The other six: real responses to replace the hand-written fixtures, job timings, the preview URL format, the longest theme name, how a missing file is reported, and how non-UTF-8 files are served.
+The spike doc lists the other six. They affect fixtures and limits, not the design.
 
 ## Consequences
 
@@ -78,7 +78,7 @@ The other six: real responses to replace the hand-written fixtures, job timings,
 - **Harder.** Three routes to test and support. Routes B and C give weaker revert, and the merchant does more work.
 - **Scopes.** Route A needs `write_themes` and `write_files`. `shopify.app.toml` asks only for `read_themes`, and its comment says alt text adds `write_products`. Per Spike A that should be `write_files`. The M4 delivery and alt-text lanes change it.
 - **Risk: no compare-and-swap.** `themeFilesUpsert` overwrites whatever is there. An edit that lands between our `before` check and our write is lost. The read-back catches edits that land after our write, and revert then refuses rather than overwrite them.
-- **Risk: stale previews.** A route B pull request goes stale if the merchant edits in the theme editor before it is merged. A route C zip misses theme editor changes made after the merchant downloaded it, so the merchant should download a fresh zip right before using this route.
-- **Risk: the exemption.** It may be denied, and it may be granted per app ID, so each custom-distribution app could need its own.
+- **Risk: stale changes.** A route B pull request goes stale if the merchant edits in the theme editor before it is merged. A route C zip misses edits made after the merchant downloaded the theme.
+- **Risk: the exemption.** It may be denied. It may also be granted per app ID, so each custom-distribution app could need its own.
 - **Risk: billing.** One community reply says custom apps cannot use the Billing API (not verified). Pilots on a custom-distribution app may need another way to pay.
 - **One-way door.** Any change that lets apply write to a live store is merged by the owner (AGENTS.md). That includes PR #41 (Q-34) and the M4 wiring.
