@@ -23,4 +23,8 @@ Each one is a test or a check someone can run.
 
 ## Out of scope
 
-- (fill in)
+- The cost per merchant estimate. That is T-035, which shares this branch.
+- Writing the M4 contracts (Issue, Fix, Patch, Evidence schemas and types). The ADRs only say what the spikes mean for them.
+- Code, scope or config changes, for example the `write_files` note in `shopify.app.toml`. The owning lanes make them.
+- Measuring scan speed or cost. Spike D (T-033) does that; the hosting ADR uses planning figures marked as estimates.
+- Owner decisions: the alt-text model (Q-33), the exemption request (Q-27), the hosting provider, Workers Paid (Q-05), merging PR #41 (Q-34).
