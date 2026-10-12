@@ -5,9 +5,9 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import type { Browser } from "playwright";
+import type { Browser, Route } from "playwright";
 import { PoliteClient } from "../../app/lib/scanner/polite";
-import { scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
+import { openScanContext, scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
 
 const YEAR = "public, max-age=31536000";
 // Over the 5 MB entry cap.
@@ -26,13 +26,16 @@ const adds = (tag: string, props: Record<string, string> = {}) =>
 //   theme.js    an empty button
 //   fresh.js    an unlabelled input; sent with no-store
 //   big.js      an empty link; over the entry cap
-//   cdn.test/shared.css  the same file for every store, also read by axe
+//   cdn.test/shared.css  the same file for every store, also read by axe;
+//                        allows any origin
+//   cdn.test/closed.css  the same, but allows no other origin
 async function startStores(browser: Browser) {
   const hits: string[] = [];
   let port = 0;
   const html = (title: string) => `<!doctype html><html lang="en"><head><title>${title}</title>
 <link rel="stylesheet" href="/assets/theme.css">
 <link rel="stylesheet" href="http://cdn.test:${port}/shared.css">
+<link rel="stylesheet" href="http://cdn.test:${port}/closed.css">
 <script src="/assets/theme.js"></script>
 <script src="/assets/fresh.js"></script>
 <script src="/assets/big.js"></script></head>
@@ -60,10 +63,28 @@ async function startStores(browser: Browser) {
       res.writeHead(200, { "content-type": "text/css", "cache-control": YEAR, "access-control-allow-origin": "*" });
       return res.end("h1 { margin: 0; }");
     }
+    if (host === "cdn.test" && url === "/closed.css") {
+      // No Access-Control-Allow-Origin: axe's reads cannot use the copy.
+      res.writeHead(200, { "content-type": "text/css", "cache-control": YEAR });
+      return res.end("main { padding: 0; }");
+    }
     const asset = host !== "cdn.test" ? assets[url] : undefined;
     if (asset) {
       res.writeHead(200, { "content-type": asset.type, "cache-control": asset.cache });
       return res.end(asset.body);
+    }
+    // A script that redirects, and a page that asks for its target directly.
+    if (url === "/assets/moved.js") {
+      res.writeHead(302, { location: "/assets/target.js" });
+      return res.end();
+    }
+    if (url === "/assets/target.js") {
+      res.writeHead(200, { "content-type": "text/javascript", "cache-control": YEAR });
+      return res.end("");
+    }
+    if (url === "/moved" || url === "/target") {
+      res.writeHead(200, { "content-type": "text/html" });
+      return res.end(`<!doctype html><html lang="en"><head><title>${url}</title><script src="/assets${url}.js"></script></head><body><main></main></body></html>`);
     }
     if (host !== "cdn.test" && PAGES.includes(url)) {
       res.writeHead(200, { "content-type": "text/html", "cache-control": "private, no-store" });
@@ -76,8 +97,11 @@ async function startStores(browser: Browser) {
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   port = (server.address() as { port: number }).port;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-census-cache-"));
+  const client = () => new PoliteClient({ contact: "census@example.com", minDelayMs: 50, allowPrivate: true, lookup: async () => ["127.0.0.1"] });
   return {
     count: (host: string, url: string) => hits.filter((h) => h === host + url).length,
+    domain: (name: string) => `${name}:${port}`,
+    client,
     // Scans the stores one after the other, as one census worker does.
     async scan(names: string[]): Promise<ScanRecord[]> {
       const stores: StoreRecord[] = names.map((name) => ({
@@ -89,9 +113,8 @@ async function startStores(browser: Browser) {
         theme: null,
         apps: [],
       }));
-      const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 50, allowPrivate: true, lookup: async () => ["127.0.0.1"] });
       const out = path.join(dir, "scans.jsonl");
-      await scan(stores, out, client, { browser, concurrency: 1 });
+      await scan(stores, out, client(), { browser, concurrency: 1 });
       return fs.readFileSync(out, "utf8").trim().split("\n").map((l) => JSON.parse(l) as ScanRecord);
     },
     close() {
@@ -109,6 +132,9 @@ test("a store's CSS, JS and fonts are fetched once, and no-store files on every 
     expect(record.pages.map((p) => p.kind)).toEqual(KINDS);
     for (const url of ["/assets/theme.css", "/assets/theme.js", "/assets/w.woff2"]) expect(stores.count("a.test", url), url).toBe(1);
     expect(stores.count("cdn.test", "/shared.css")).toBe(1);
+    // The browser fetches closed.css once; axe's read on each page goes to
+    // the network, since the copy does not allow the store's origin.
+    expect(stores.count("cdn.test", "/closed.css")).toBe(5);
     expect(stores.count("a.test", "/assets/fresh.js")).toBe(4);
     // Pages are never cached.
     for (const url of PAGES) expect(stores.count("a.test", url), url).toBe(1);
@@ -134,6 +160,41 @@ test("a file over the entry cap is not cached and still loads on every page", as
     expect(stores.count("a.test", "/assets/big.js")).toBe(4);
     for (const p of record.pages) expect(p.sixTypes["empty-link"], p.kind).toBe(1);
   } finally {
+    stores.close();
+  }
+});
+
+test("only answers the proxy fetched are stored, not ones another handler fulfilled", async ({ browser }) => {
+  const stores = await startStores(browser);
+  const client = stores.client();
+  const origin = `http://${stores.domain("a.test")}`;
+  const ctx = await openScanContext(browser, client, stores.domain("a.test"));
+  try {
+    const page = await ctx.context.newPage();
+    const load = async (p: string) => {
+      expect(await client.pageTurn(origin + p)).toBeNull();
+      expect(await ctx.goto(page, origin + p)).toMatchObject({ url: origin + p });
+      // Give the cache time to store what this page fetched.
+      await page.waitForTimeout(300);
+    };
+    // A page route answers theme.js before the census's handler sees it.
+    const fake = (route: Route) => route.fulfill({ status: 200, contentType: "text/javascript", headers: { "cache-control": YEAR }, body: "" });
+    await page.route("**/assets/theme.js", fake);
+    await load("/");
+    await page.unroute("**/assets/theme.js", fake);
+    expect(stores.count("a.test", "/assets/theme.js")).toBe(0);
+    // That answer was not stored, so the next page fetches the real file,
+    // and the page after that reuses it.
+    await load("/cart");
+    await load("/collections/shirts");
+    expect(stores.count("a.test", "/assets/theme.js")).toBe(1);
+    // A redirect's target is stored too: its first hop went through the proxy.
+    await load("/moved");
+    await load("/target");
+    expect(stores.count("a.test", "/assets/moved.js")).toBe(1);
+    expect(stores.count("a.test", "/assets/target.js")).toBe(1);
+  } finally {
+    await ctx.close();
     stores.close();
   }
 });

@@ -195,11 +195,18 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
   // responses the browser fetched through the proxy are stored, and the
   // cache dies with the context, so no store sees another's entries.
   const assets = new AssetCache();
-  // Requests answered from the cache, so they are not stored again.
-  const fromCache = new WeakSet<Request>();
+  // Requests the route handler sent on to the network. Only their answers
+  // are stored, so a cache hit, or anything another handler fulfils, never
+  // is. The route handler sees only the first hop of a redirect chain.
+  const viaProxy = new WeakSet<Request>();
+  const firstHop = (req: Request) => {
+    let first = req;
+    for (let prev = req.redirectedFrom(); prev; prev = prev.redirectedFrom()) first = prev;
+    return first;
+  };
   const remember = async (req: Request) => {
     const ask = assetRequest(req);
-    if (fromCache.has(req) || !AssetCache.stores(ask)) return;
+    if (!AssetCache.stores(ask) || !viaProxy.has(firstHop(req))) return;
     try {
       const res = await req.response();
       if (!res) return;
@@ -230,9 +237,9 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // A fresh copy from an earlier page of this store makes no request.
         // A miss goes out through the proxy as before.
         const hit = assets.get(assetRequest(req));
-        if (!hit) return route.continue();
-        fromCache.add(req);
-        return route.fulfill(hit);
+        if (hit) return route.fulfill(hit);
+        viaProxy.add(req);
+        return route.continue();
       }
       // Main-frame navigations: only the one the scan asked for, on the
       // store's site. Anything else gets an empty 204, which keeps the page
