@@ -2,12 +2,14 @@
   "title": "Spike D: scan benchmark",
   "milestone": "M3",
   "lane": "scanner",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "builder",
+  "state": "Blocked on you",
+  "step": "Local benchmark done (PR #47); Browser Run comparison waits on Q-05",
   "branch": "claude/feat-scan-benchmark",
   "issue": 29,
-  "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "needs": [
+    "owner:Q-05"
+  ],
+  "updated": "2026-10-11T17:20:44Z",
   "id": "T-033"
 }

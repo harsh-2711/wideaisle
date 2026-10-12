@@ -1,0 +1,351 @@
+{
+  "tool": "scan-bench",
+  "startedAt": "2026-10-11T15:24:17.835Z",
+  "finishedAt": "2026-10-11T16:56:35.575Z",
+  "options": {
+    "pages": 1000,
+    "concurrency": [
+      1,
+      2,
+      4
+    ],
+    "seed": 1,
+    "stores": 50
+  },
+  "machine": {
+    "cpuCount": 4,
+    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "memoryMb": 16093,
+    "platform": "linux",
+    "kernel": "6.18.44-fc-v114",
+    "cgroupCpuMax": null,
+    "node": "v22.22.0",
+    "chromium": "141.0.7390.37",
+    "playwright": "1.64.0",
+    "axeCore": "4.13.0"
+  },
+  "fixtures": {
+    "stores": 50,
+    "fixtureVersion": 3,
+    "pageKb": {
+      "n": 200,
+      "mean": 844.7588818359375,
+      "p50": 850.953125,
+      "p95": 1125.5947265625,
+      "min": 419.86328125,
+      "max": 1257.2001953125
+    },
+    "htmlKb": {
+      "n": 200,
+      "mean": 146.1869189453125,
+      "p50": 127.09765625,
+      "p95": 290.1689453125,
+      "min": 64.693359375,
+      "max": 318.7998046875
+    },
+    "byKind": {
+      "home": {
+        "pageKb": {
+          "n": 50,
+          "mean": 839.456328125,
+          "p50": 829.03515625,
+          "p95": 1125.5947265625,
+          "min": 536.3896484375,
+          "max": 1207.8701171875
+        },
+        "htmlKb": {
+          "n": 50,
+          "mean": 172.1378515625,
+          "p50": 170.1044921875,
+          "p95": 267.6376953125,
+          "min": 85.8173828125,
+          "max": 284.38671875
+        }
+      },
+      "collection": {
+        "pageKb": {
+          "n": 50,
+          "mean": 910.35287109375,
+          "p50": 900.4453125,
+          "p95": 1187.7578125,
+          "min": 556.8525390625,
+          "max": 1257.2001953125
+        },
+        "htmlKb": {
+          "n": 50,
+          "mean": 221.3932421875,
+          "p50": 213.8564453125,
+          "p95": 306.0888671875,
+          "min": 135.8076171875,
+          "max": 318.7998046875
+        }
+      },
+      "product": {
+        "pageKb": {
+          "n": 50,
+          "mean": 858.24119140625,
+          "p50": 872.03125,
+          "p95": 1112.2822265625,
+          "min": 510.99609375,
+          "max": 1165.90234375
+        },
+        "htmlKb": {
+          "n": 50,
+          "mean": 116.23650390625,
+          "p50": 115.0771484375,
+          "p95": 138.41015625,
+          "min": 89.109375,
+          "max": 151.0927734375
+        }
+      },
+      "cart": {
+        "pageKb": {
+          "n": 50,
+          "mean": 770.98513671875,
+          "p50": 790.2109375,
+          "p95": 1041.3115234375,
+          "min": 419.86328125,
+          "max": 1066.3310546875
+        },
+        "htmlKb": {
+          "n": 50,
+          "mean": 74.980078125,
+          "p50": 75.166015625,
+          "p95": 84.0966796875,
+          "min": 64.693359375,
+          "max": 89.14453125
+        }
+      }
+    }
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "pagesTarget": 1000,
+      "pagesScanned": 1000,
+      "pagesFailed": 0,
+      "stores": 250,
+      "wallSeconds": 2621.198850224,
+      "pagesPerHour": 1373.4173581269329,
+      "pageMs": {
+        "n": 1000,
+        "mean": 2585.642933947993,
+        "p50": 2260.2173429999966,
+        "p95": 4582.570689999993,
+        "min": 1282.6680100001395,
+        "max": 5826.2910680000205
+      },
+      "loadMs": {
+        "n": 1000,
+        "mean": 228.33071407100036,
+        "p50": 221.60302000003867,
+        "p95": 331.9197609999683,
+        "min": 118.65254200005438,
+        "max": 416.06878899992444
+      },
+      "axeMs": {
+        "n": 1000,
+        "mean": 2357.312219876993,
+        "p50": 2032.0539110000245,
+        "p95": 4284.360562999733,
+        "min": 1127.69743799977,
+        "max": 5499.807131000096
+      },
+      "domNodes": {
+        "n": 1000,
+        "mean": 1577.695,
+        "p50": 1291,
+        "p95": 3063,
+        "min": 643,
+        "max": 4111
+      },
+      "violationNodes": {
+        "n": 1000,
+        "mean": 42.215,
+        "p50": 36,
+        "p95": 106,
+        "min": 3,
+        "max": 172
+      },
+      "sixTypes": {
+        "low-contrast": 22585,
+        "missing-alt": 6265,
+        "missing-label": 970,
+        "empty-link": 5610,
+        "empty-button": 5765,
+        "missing-lang": 20
+      },
+      "cpuSecondsPerPage": 3.86686,
+      "nodeCpuSecondsPerPage": 0.9039340379999999,
+      "benchCpuPercent": 36.88064337115772,
+      "machineBusyPercent": 38.82257632540178,
+      "loadAvgStart": [
+        5.95,
+        5.03,
+        3.6
+      ],
+      "memory": {
+        "peakNodeRssMb": 551.34765625,
+        "peakBrowserRssMb": 1147.03515625,
+        "peakTotalRssMb": 1676.16796875,
+        "peakTotalPssMb": 1094.984375,
+        "peakProcesses": 10,
+        "samples": 2564
+      },
+      "requestsPerPage": 10.88,
+      "errors": []
+    },
+    {
+      "concurrency": 2,
+      "pagesTarget": 1000,
+      "pagesScanned": 1000,
+      "pagesFailed": 0,
+      "stores": 250,
+      "wallSeconds": 1646.3311293220004,
+      "pagesPerHour": 2186.6803924691435,
+      "pageMs": {
+        "n": 1000,
+        "mean": 3231.062505592993,
+        "p50": 2906.9974589999765,
+        "p95": 5434.484385999851,
+        "min": 1455.4158279998228,
+        "max": 7132.345465000253
+      },
+      "loadMs": {
+        "n": 1000,
+        "mean": 343.20511278299523,
+        "p50": 308.90298599982634,
+        "p95": 689.6924439999275,
+        "min": 135.67983100004494,
+        "max": 1115.3576800003648
+      },
+      "axeMs": {
+        "n": 1000,
+        "mean": 2887.8573928099977,
+        "p50": 2560.0096390000544,
+        "p95": 5043.569935999811,
+        "min": 1285.378492999822,
+        "max": 6501.623114999849
+      },
+      "domNodes": {
+        "n": 1000,
+        "mean": 1577.695,
+        "p50": 1291,
+        "p95": 3063,
+        "min": 643,
+        "max": 4111
+      },
+      "violationNodes": {
+        "n": 1000,
+        "mean": 42.215,
+        "p50": 36,
+        "p95": 106,
+        "min": 3,
+        "max": 172
+      },
+      "sixTypes": {
+        "low-contrast": 22585,
+        "missing-alt": 6265,
+        "missing-label": 970,
+        "empty-link": 5610,
+        "empty-button": 5765,
+        "missing-lang": 20
+      },
+      "cpuSecondsPerPage": 3.9528499999999993,
+      "nodeCpuSecondsPerPage": 0.89546824,
+      "benchCpuPercent": 60.02513603730314,
+      "machineBusyPercent": 61.924582437660405,
+      "loadAvgStart": [
+        1.48,
+        1.62,
+        1.7
+      ],
+      "memory": {
+        "peakNodeRssMb": 567.43359375,
+        "peakBrowserRssMb": 1573.671875,
+        "peakTotalRssMb": 2106.25,
+        "peakTotalPssMb": 1312.365234375,
+        "peakProcesses": 12,
+        "samples": 1589
+      },
+      "requestsPerPage": 10.88,
+      "errors": []
+    },
+    {
+      "concurrency": 4,
+      "pagesTarget": 1000,
+      "pagesScanned": 1000,
+      "pagesFailed": 0,
+      "stores": 250,
+      "wallSeconds": 1233.1796759790004,
+      "pagesPerHour": 2919.2826237117642,
+      "pageMs": {
+        "n": 1000,
+        "mean": 4756.7094139819965,
+        "p50": 4463.189035999589,
+        "p95": 7375.367037000135,
+        "min": 2197.306983999908,
+        "max": 9397.688112000003
+      },
+      "loadMs": {
+        "n": 1000,
+        "mean": 619.666929423999,
+        "p50": 548.262297000736,
+        "p95": 1159.576306000352,
+        "min": 221.17032799962908,
+        "max": 2063.525723000057
+      },
+      "axeMs": {
+        "n": 1000,
+        "mean": 4137.042484557997,
+        "p50": 3854.438674999401,
+        "p95": 6782.875193000771,
+        "min": 1734.5055750003085,
+        "max": 8615.022595000453
+      },
+      "domNodes": {
+        "n": 1000,
+        "mean": 1577.695,
+        "p50": 1291,
+        "p95": 3063,
+        "min": 643,
+        "max": 4111
+      },
+      "violationNodes": {
+        "n": 1000,
+        "mean": 42.215,
+        "p50": 36,
+        "p95": 106,
+        "min": 3,
+        "max": 172
+      },
+      "sixTypes": {
+        "low-contrast": 22585,
+        "missing-alt": 6265,
+        "missing-label": 970,
+        "empty-link": 5610,
+        "empty-button": 5765,
+        "missing-lang": 20
+      },
+      "cpuSecondsPerPage": 3.7399800000000005,
+      "nodeCpuSecondsPerPage": 0.841961675,
+      "benchCpuPercent": 75.81985157659393,
+      "machineBusyPercent": 77.57457426211212,
+      "loadAvgStart": [
+        2.95,
+        3.54,
+        3.35
+      ],
+      "memory": {
+        "peakNodeRssMb": 600.6171875,
+        "peakBrowserRssMb": 2532.51171875,
+        "peakTotalRssMb": 3095.83984375,
+        "peakTotalPssMb": 1845.091796875,
+        "peakProcesses": 16,
+        "samples": 1179
+      },
+      "requestsPerPage": 10.88,
+      "errors": []
+    }
+  ]
+}
