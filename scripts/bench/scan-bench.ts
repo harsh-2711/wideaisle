@@ -20,11 +20,11 @@ import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
-import { chromium, type Browser } from "playwright";
+import type { Browser } from "playwright";
 import { scanPage } from "../../app/lib/scanner/axe";
 import { sampleLinks } from "../../app/lib/scanner/detect";
 import { PoliteClient, describeSkip } from "../../app/lib/scanner/polite";
-import { openScanContext } from "../../scripts/census/census";
+import { launchCensusBrowser, openScanContext } from "../../scripts/census/census";
 import {
   FIXTURE_VERSION,
   PAGE_KINDS,
@@ -192,11 +192,9 @@ async function runLevel(
 ): Promise<LevelResult> {
   const port = server.port;
   const log = opts.log ?? (() => {});
-  const browser = await chromium.launch({
-    executablePath: opts.executablePath || undefined,
-    // As the census launches it: WebRTC may not bypass the proxy.
-    args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"],
-  });
+  // As the census launches it.
+  const launched = await launchCensusBrowser(opts.executablePath);
+  const browser = launched.browser;
   const samples: PageSample[] = [];
   const errors: string[] = [];
   const sixTotals: Record<string, number> = {};
@@ -298,7 +296,7 @@ async function runLevel(
       samples,
     };
   } finally {
-    await browser.close();
+    await launched.close();
   }
 }
 
@@ -334,10 +332,9 @@ export async function runBench(opts: BenchOptions): Promise<BenchResult> {
   const server = await startFixtureProcess(opts.fixturesDir);
   let chromiumVersion = "unknown";
   try {
-    const probe = await chromium.launch({
-      executablePath: opts.executablePath || undefined,
-    });
-    chromiumVersion = probe.version();
+    // Same launcher as the scan, so the probe sends nothing of its own.
+    const probe = await launchCensusBrowser(opts.executablePath);
+    chromiumVersion = probe.browser.version();
     await probe.close();
     const levels: LevelResult[] = [];
     for (const c of opts.concurrency) {
