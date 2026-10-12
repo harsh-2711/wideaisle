@@ -8,7 +8,7 @@ See TASK.md. Census tests and scans reach no host but the store and its assets: 
 
 ## Status
 
-Running. Last updated 2026-10-12.
+In review. PR #50 (https://github.com/harsh-2711/wideaisle/pull/50). Last updated 2026-10-12.
 
 ## Done so far
 
@@ -19,17 +19,24 @@ Running. Last updated 2026-10-12.
 | `--disable-features` check on Chromium 141: a second switch replaces the first (evidence below) | (scratch script, not committed) |
 | (a) census spec clients resolve nothing; `cdn.shopify.com` in `blockedHosts` | b2b3af9 |
 | (b) `launchCensusBrowser`: merged feature list, new switches, refusing launch-level proxy; bench uses it; `tests/a11y/census-egress.spec.ts` | 99f586e |
-| Census README rule line | (this checkpoint) |
+| Census README rule line; evidence in this file; exit criteria ticked | d049855 |
+| All checks green; PR #50 opened | d049855 |
 
 ## Current step
 
-Running every check before the PR.
+PR #50 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
 
 ## Next three steps
 
-1. Run lint, typecheck, `npm test`, the census, census-cache, census-egress and bench specs, the four rule checks, `lint-handoff --all` and commitlint.
-2. Push, open the PR from the template with the evidence below, set the board to In review.
-3. Report the PR link, head commit and checks to the lead. Do not merge.
+1. Answer review comments on PR #50.
+2. Once the lead says it merged, set the board to Done.
+3. Possible follow-up for the lead: Shopify themes can ship speculation rules, which make Chromium prefetch other store pages outside the PoliteClient gap. Not checked here.
+
+## Checks run before the PR (all passed)
+
+- lint, typecheck, `npm test` (238 unit, 313 agent tests)
+- census, census-cache, census-egress and bench specs: 10 passed with the full chrome binary, 10 with the headless shell 1194; full suite 19 passed; egress and cache specs 4 times on 4 workers, 24 passed
+- writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint from 4e0d210
 
 ## Evidence: a second --disable-features replaces the first
 

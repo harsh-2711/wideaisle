@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "Running",
-  "step": "Check whether a second --disable-features replaces Playwright's list",
+  "state": "In review",
+  "step": "PR #50 open; waiting for a reviewer",
   "branch": "claude/fix-census-test-egress",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-12T12:17:36Z",
+  "updated": "2026-10-12T12:32:14Z",
   "id": "T-026"
 }
