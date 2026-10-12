@@ -21,6 +21,9 @@ In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last update
 | After-change benchmark: 4.71 requests a page (18.8 a store); 1,899, 3,120 and 3,892 pages an hour at concurrency 1, 2 and 4 | (data/bench, not committed) |
 | Census README and the dated Spike D line; exit criteria ticked | 08f49e4 |
 | Typecheck fix in the unit test; all checks green; PR #49 opened | db9620b |
+| Review (APPROVE at 6deab53), finding 1: age is the larger of Age and now minus Date | e19c385 |
+| Findings 2 and 4: store only answers sent through the proxy (`viaProxy`, first redirect hop); specs for a fulfilled answer, a redirect target, and `closed.css` with no CORS header (5 requests) | 5378e80 |
+| Finding 3: README lists every reason a file is fetched again | 251d91e |
 
 ## Measured (200 pages a level, same machine, 2026-10-12)
 
@@ -36,25 +39,36 @@ In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last update
 
 ## Current step
 
-PR #49 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
+The four review findings are fixed and pushed. Waiting for the lead to merge PR #49. Do not merge it here.
 
 ## Next three steps
 
-1. Answer review comments on PR #49. The reviewer may question the XHR and fetch reads of stored CSS (see Design); to drop them, set `SERVED_TYPES` to `STORED_TYPES` and expect 5 hits for `cdn.test/shared.css` in the spec.
-2. Once CI is green and a reviewer has checked it, merge with a merge commit if the lead says so.
-3. After merge, set the board to Done.
+1. Wait for the lead to say PR #49 merged, then set the board to Done.
+2. Start T-026 on `claude/fix-census-test-egress`, cut from main after the merge. The plan is under "Follow-up: T-026".
+3. Create T-026 with the board CLI in that PR (M2, data lane).
 
-## Checks run before the PR (all passed)
+## Checks run (all passed)
 
-- `npm run lint`, `npm run typecheck`, `npm test` (237 unit, 313 agent tests)
-- `npx playwright test` with `PW_CHROMIUM_PATH` set: 16 passed. Cache specs repeated 6 times on 4 workers: 18 passed.
-- `node scripts/ci/checks.mjs` writing, claims, decisions, and handoff for this branch; `node scripts/agents/board.mjs lint-handoff --all`; commitlint from the merge base
+- Before the PR: lint, typecheck, `npm test` (237 unit, 313 agent tests); `npx playwright test` with `PW_CHROMIUM_PATH` set (16 passed); cache specs 6 times on 4 workers (18 passed); writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint.
+- After the review fixes: lint, typecheck, `npm test` (238 unit, 313 agent tests); census, census-cache and bench specs (8 passed); cache specs 5 times on 4 workers (20 passed). With the `viaProxy` check removed, the fulfilled-answer spec fails (0 for 1); with only the request itself checked, the redirect spec fails (2 for 1).
+
+## Follow-up: T-026 (plan, not started)
+
+Branch `claude/fix-census-test-egress` from main after #49 merges. M2, data lane.
+
+- (a) `tests/a11y/census.spec.ts`: the clients at lines 37 and 151 use system DNS. Give both `lookup: async () => []` so no host but the IP-literal store resolves. Assert the first spec's record has `blockedHosts` containing `cdn.shopify.com`.
+- (b) Chromium's own traffic. Launch sites: `scan()` in `scripts/census/census.ts` and `runLevel` in `scripts/bench/scan-bench.ts` (scanner lane; ask the lead before editing). The Playwright specs use the config's `browser` fixture, which does not get the census's launch args, so the new test must launch Chromium through a census helper.
+  - Playwright 1.64 already passes `--disable-background-networking`, `--disable-component-update`, `--disable-sync`, `--disable-default-apps`, `--disable-client-side-phishing-detection`, `--metrics-recording-only`, `--no-first-run`, and `--disable-features=` with a list that includes OptimizationHints, NetworkTimeServiceQuerying and Translate.
+  - Playwright appends user args after its own. Chromium may keep only the last `--disable-features`, which would drop Playwright's list. Check this on Chromium 141 before relying on a second `--disable-features`.
+  - Present in the installed Chromium 141 binary: `AutofillServerCommunication`, `OptimizationHintsFetching`, `--disable-domain-reliability`, `--no-pings`. The headless shell (`chromium_headless_shell-1194`, used when `PW_CHROMIUM_PATH` is unset) has no autofill feature; the full `chrome` binary does.
+  - Test idea: a lookup that records every host, maps the store to 127.0.0.1 and returns no address for the rest. Scan a store with a form page, wait a few seconds, and assert the recorded hosts are only the store and its asset hosts. Run it with both binaries.
 
 ## Design
 
 - Misses keep `route.continue()`, so they take the same path as before: browser, egress proxy, address checks, pinned lookups.
 - A context `requestfinished` listener copies a finished CSS, JS or font response (headers via `allHeaders()`, body via `body()`) into the cache. It reads no body that could not be stored, and checks the encoded size first.
-- A hit is answered with `route.fulfill` from memory and makes no request. Hits are kept in a WeakSet so they are not stored again.
+- A hit is answered with `route.fulfill` from memory and makes no request. Storage works by inclusion: the route handler adds each request it passes to `route.continue()` to a `viaProxy` WeakSet, and `requestfinished` stores a response only if the first hop of its redirect chain is in that set. Playwright calls the route handler for the first hop only.
+- Age is the larger of the Age header and now minus Date (RFC 9111, section 4.2.3).
 - axe-core re-reads each cross-origin stylesheet by XHR on every page (its CSSOM preload). Found when the spec counted 5 server hits for one CDN stylesheet over 4 pages. XHR and fetch GETs may now be answered from a stored copy, but only when the copy allows their origin: fetched for the same origin, or sent with `Access-Control-Allow-Origin: *`. Otherwise they go to the network as before. XHR and fetch responses are never stored.
 - Entries match on URL and the request headers Vary names. Requests with a Range header are never served from the cache.
 - Image and media blocking and main-frame navigation vetting run as before; documents are never cached.
@@ -90,5 +104,5 @@ none
 - Playwright 1.64 turns the browser's HTTP cache off as soon as any route is set (`Network.setCacheDisabled`). The census routes every request, so the cache has to live in the route handler.
 - Do not run heavy commands while the benchmark runs: it measures this machine's CPU.
 - With routing on, Chromium adds `Cache-Control: no-cache` and `Pragma: no-cache` to every request it sends. They are not in `request.headers()`, so the cache ignores request cache headers.
-- `tests/a11y/census.spec.ts` (first spec) loads `https://cdn.shopify.com/x.js` through the proxy with system DNS. The host does not resolve in this cloud session, so nothing live is fetched here; in CI it may be.
+- `tests/a11y/census.spec.ts` (first spec) loads `https://cdn.shopify.com/x.js` through the proxy with system DNS. The host does not resolve in this cloud session, so nothing live is fetched here; in CI it may be. T-026 fixes it.
 - tsx scripts in the scratchpad need a `.mts` name for top-level await, and absolute imports of the worktree's `node_modules`.
