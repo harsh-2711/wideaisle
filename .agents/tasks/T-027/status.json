@@ -1,0 +1,13 @@
+{
+  "title": "Census prefetch",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "Running",
+  "step": "Probe each prefetch vector on both builds",
+  "branch": "claude/fix-census-prefetch",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-12T13:16:30Z",
+  "id": "T-027"
+}
