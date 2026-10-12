@@ -317,14 +317,82 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
   };
 }
 
+// Playwright 1.64.0 passes these in its own --disable-features switch.
+// Chromium honours only the last --disable-features switch, and Playwright
+// puts ours after its own, so ours must repeat this list (T-026). A spec in
+// tests/a11y/census-egress.spec.ts fails when Playwright's list changes.
+export const PLAYWRIGHT_DISABLED_FEATURES = [
+  "AvoidUnnecessaryBeforeUnloadCheckSync",
+  "DestroyProfileOnBrowserClose",
+  "DialMediaRouteProvider",
+  "GlobalMediaControls",
+  "HttpsUpgrades",
+  "LensOverlay",
+  "MediaRouter",
+  "PaintHolding",
+  "ThirdPartyStoragePartitioning",
+  "BlockOriginHeaderModificationOnRedirect",
+  "Translate",
+  "AutoDeElevate",
+  "OptimizationHints",
+  "NetworkTimeServiceQuerying",
+  "AimEnabled",
+  "msForceBrowserSignIn",
+  "msEdgeUpdateLaunchServicesPreferredVersion",
+];
+
+// Features that make Chromium itself call Google from a store's context,
+// through the egress proxy, which lets any public host through.
+export const CENSUS_DISABLED_FEATURES = [
+  // Sends each form's shape to content-autofill.googleapis.com.
+  "AutofillServerCommunication",
+  // Asks optimizationguide-pa.googleapis.com for page-load hints.
+  "OptimizationHintsFetching",
+];
+
+// Playwright already turns off background networking, component updates,
+// sync and the like. These add what the census needs on top.
+export const CENSUS_CHROMIUM_ARGS = [
+  // WebRTC's UDP traffic would not go through the proxy.
+  "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+  "--disable-domain-reliability",
+  "--no-pings",
+  `--disable-features=${[...PLAYWRIGHT_DISABLED_FEATURES, ...CENSUS_DISABLED_FEATURES].join(",")}`,
+];
+
+export interface CensusBrowser {
+  browser: Browser;
+  // Hosts the browser itself tried to reach outside any store's context.
+  refused: Set<string>;
+  close(): Promise<void>;
+}
+
+// Launches Chromium for the census (and the scan benchmark). Each store's
+// context has its own egress proxy. Traffic outside those contexts, such as
+// Chromium's sign-in check and push-service check-in, goes to a proxy that
+// allows no port, so it is refused and never leaves the machine.
+export async function launchCensusBrowser(executablePath?: string): Promise<CensusBrowser> {
+  const deny = await startEgressProxy({ ports: [] });
+  try {
+    const browser = await chromium.launch({ executablePath: executablePath || undefined, args: CENSUS_CHROMIUM_ARGS, proxy: { server: deny.server } });
+    return {
+      browser,
+      refused: deny.blocked,
+      close: async () => {
+        await browser.close();
+        await deny.close();
+      },
+    };
+  } catch (err) {
+    await deny.close();
+    throw err;
+  }
+}
+
 export async function scan(stores: StoreRecord[], out: string, client: PoliteClient, opts: { concurrency?: number; browser?: Browser } = {}) {
   const seen = done(out);
-  const browser =
-    opts.browser ??
-    (await chromium.launch({
-      executablePath: process.env.PW_CHROMIUM_PATH || undefined,
-      args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"],
-    }));
+  const launched = opts.browser ? null : await launchCensusBrowser(process.env.PW_CHROMIUM_PATH);
+  const browser = opts.browser ?? launched!.browser;
   try {
     await pool(stores.filter((s) => s.isShopify && s.origin && !seen.has(s.domain)), opts.concurrency ?? 2, async (store) => {
       const record: ScanRecord = { domain: store.domain, theme: store.theme, apps: store.apps, scannedAt: new Date().toISOString(), pages: [], skipped: [] };
@@ -386,7 +454,7 @@ export async function scan(stores: StoreRecord[], out: string, client: PoliteCli
       append(out, record);
     });
   } finally {
-    if (!opts.browser) await browser.close();
+    await launched?.close();
   }
 }
 
