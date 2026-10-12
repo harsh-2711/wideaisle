@@ -34,7 +34,9 @@ test("the census finds the store, respects robots.txt and scans the sampled page
   const port = (server.address() as { port: number }).port;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-census-"));
   try {
-    const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 50, allowPrivate: true });
+    // No host resolves: the store is an IP literal, and nothing else may be
+    // looked up, so the CDN script below is refused, not fetched.
+    const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 50, allowPrivate: true, lookup: async () => [] });
     const storesFile = path.join(dir, "stores.jsonl");
     await discover([`127.0.0.1:${port}`], storesFile, client, { scheme: "http" });
     const stores = fs.readFileSync(storesFile, "utf8").trim().split("\n").map((l) => JSON.parse(l) as StoreRecord);
@@ -49,6 +51,7 @@ test("the census finds the store, respects robots.txt and scans the sampled page
     expect(record.pages[0].sixTypes["missing-alt"]).toBe(1);
     expect(record.pages[1].sixTypes["empty-link"]).toBe(1);
     expect(record.pages[2].sixTypes["missing-label"]).toBe(1);
+    expect(record.blockedHosts).toContain("cdn.shopify.com");
 
     // Never fetched the cart, and every request named us.
     expect(hits.some((h) => h.path === "/cart")).toBe(false);
@@ -148,7 +151,8 @@ test("browser redirects are vetted before the browser requests them", async ({ b
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as { port: number }).port;
   const origin = `http://127.0.0.1:${port}`;
-  const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 0, allowPrivate: true });
+  // No host resolves; the store is an IP literal.
+  const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 0, allowPrivate: true, lookup: async () => [] });
   const ctx = await openScanContext(browser, client, `127.0.0.1:${port}`);
   try {
     const page = await ctx.context.newPage();
