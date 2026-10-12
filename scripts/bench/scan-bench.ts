@@ -20,7 +20,7 @@ import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
-import { chromium, type Browser } from "playwright";
+import type { Browser } from "playwright";
 import { scanPage } from "../../app/lib/scanner/axe";
 import { sampleLinks } from "../../app/lib/scanner/detect";
 import { PoliteClient, describeSkip } from "../../app/lib/scanner/polite";
@@ -332,10 +332,9 @@ export async function runBench(opts: BenchOptions): Promise<BenchResult> {
   const server = await startFixtureProcess(opts.fixturesDir);
   let chromiumVersion = "unknown";
   try {
-    const probe = await chromium.launch({
-      executablePath: opts.executablePath || undefined,
-    });
-    chromiumVersion = probe.version();
+    // Same launcher as the scan, so the probe sends nothing of its own.
+    const probe = await launchCensusBrowser(opts.executablePath);
+    chromiumVersion = probe.browser.version();
     await probe.close();
     const levels: LevelResult[] = [];
     for (const c of opts.concurrency) {
