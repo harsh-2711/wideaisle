@@ -11,7 +11,7 @@ See TASK.md. Infrastructure plus AI per store per month, from measured numbers.
 
 ## Status
 
-Running on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 2026-10-12.
+In review: PR #48 on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 2026-10-12.
 
 ## Done so far
 
@@ -20,17 +20,18 @@ Running on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 
 | 1. Read inputs: AGENTS.md, D-04, D-10, D-11, D-12, roadmap (Architecture, Go-to-market, Budget), Spike C, Spike D and its results, ADRs 0001 to 0005, owner queue. Board set to Running; TASK.md branch fixed (was claude/docs-adr-m3, merged) and out of scope filled in | 4887ab1 |
 | 2. docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price, drivers, owner questions, caveats | ec5794a |
 | 3. ADR 0005: Spike D's measured values and sources in place of the "Estimate, Spike D replaces it" rows; scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. T-034 HANDOFF next step 1 marked done (`Refs: T-034`) | 91eaded |
-| 4. Checks: writing, claims, handoff, decisions, lint-handoff --all and commitlint all pass | (this commit) |
+| 4. Checks: writing, claims, handoff, decisions, lint-handoff --all and commitlint all pass | 646527b |
+| 5. Opened PR #48 to main (https://github.com/harsh-2711/wideaisle/pull/48); board set to In review | (this commit) |
 
 ## Current step
 
-Opening the pull request to main.
+In review: PR #48. Waiting for a reviewer.
 
 ## Next three steps
 
-1. Open the PR to main from the template; set the board to In review.
-2. Report to the parent: PR link and head commit, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
-3. After review, fix what the reviewer asks. Do not merge until the parent says so.
+1. Report to the parent: PR link and head commit, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
+2. After review, fix what the reviewer asks, rerun the checks and push.
+3. Merge only when the parent says so.
 
 ## Blockers and open questions
 
@@ -67,3 +68,4 @@ Recompute the result table by hand from the doc's Inputs and Method: fixed pool 
 - `gh pr create` uses GraphQL, which is blocked here. Use `gh api repos/harsh-2711/wideaisle/pulls` (REST), as T-034 did.
 - The arithmetic is plain: cost a store = fixed pool / stores + images x price per 1,000. Low pool and Spike C's guess for low; high pool and twice the guess for high. Round half up to cents.
 - Scan CPU never moves the result. Spend review time on the store count, the model and the image count.
+- commitlint reads a body line that starts with "Word:" as a footer and warns. Avoid that shape in commit bodies.

@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "architect",
   "agent": "architect",
-  "state": "Running",
-  "step": "Drafting the estimate",
+  "state": "In review",
+  "step": "PR #48 open; waiting for review",
   "branch": "claude/docs-cost-per-merchant",
   "issue": 31,
   "needs": [],
-  "updated": "2026-10-12T03:07:44Z",
+  "updated": "2026-10-12T03:16:57Z",
   "id": "T-035"
 }
