@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AssetCache, freshForMs, parseCacheControl, replayHeaders, reusableForMs, type AssetRequest } from "../../../app/lib/scanner/asset-cache";
+import { AssetCache, freshForMs, parseCacheControl, replayHeaders, reusableForMs, type AssetRequest, type HeaderMap } from "../../../app/lib/scanner/asset-cache";
 
 const NOW = Date.parse("2026-10-12T00:00:00Z");
 const DATE = new Date(NOW).toUTCString();
@@ -42,16 +42,15 @@ describe("which responses are stored", () => {
   });
 
   it("refuses what a browser would not reuse without asking", () => {
-    for (const headers of [
+    const refused: HeaderMap[] = [
       { "cache-control": "no-store, max-age=60" },
       { "cache-control": "no-cache, max-age=60" },
       { "cache-control": "max-age=abc" },
       { pragma: "no-cache", expires: new Date(NOW + 60_000).toUTCString() },
       { "cache-control": "max-age=60", vary: "Accept-Encoding, *" },
       { "cache-control": "max-age=60", "set-cookie": "a=1" },
-    ]) {
-      expect(freshForMs(200, headers, NOW), JSON.stringify(headers)).toBeNull();
-    }
+    ];
+    for (const headers of refused) expect(freshForMs(200, headers, NOW), JSON.stringify(headers)).toBeNull();
     expect(freshForMs(206, year, NOW)).toBeNull();
     expect(freshForMs(304, year, NOW)).toBeNull();
   });
