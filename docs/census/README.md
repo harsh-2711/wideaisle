@@ -39,7 +39,7 @@ Both steps resume: stores already in the output file are skipped, so a stopped r
 npm run census -- report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md   # both files are required
 ```
 
-Requests a store: robots.txt, the four pages, and each script, stylesheet and font once if the server lets it be cached. On the Spike D fixture stores that is 18.8 requests a store, or 4.7 a page (measured 2026-10-12, T-025; 43.5 a store before the cache). Live stores load more app scripts from other hosts, so expect more. A file the server marks `no-store` or `no-cache`, or that is over 5 MB, is fetched on every page. axe-core reads each stylesheet from another host again on every page; that read reuses the cached copy only when the server allows any origin (`Access-Control-Allow-Origin: *`).
+Requests a store: robots.txt, the four pages, and each script, stylesheet and font once if the server lets it be cached. On the Spike D fixture stores that is 18.8 requests a store, or 4.7 a page (measured 2026-10-12, T-025; 43.5 a store before the cache). Live stores may load more app scripts from other hosts; this is not measured. A file is fetched on every page if the server marks it `no-store` or `no-cache`, if it is over 5 MB, or if the store's 20 MB of cached files is used up. axe-core reads each stylesheet from another host again on every page. That read reuses the cached copy only if the copy allows the store's origin: the server sent `Access-Control-Allow-Origin: *`, or the copy was itself fetched with CORS for that origin.
 
 Time, from the 2-second gap between page loads: about 10 to 15 seconds a store per worker. With 4 workers, 2,000 stores take about 2 hours. This is an estimate; Spike D (T-033) measures it.
 
