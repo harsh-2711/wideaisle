@@ -46,7 +46,7 @@ Exit criteria from docs/plan/roadmap.md. Tick a box only with evidence: a merged
 ## M3 Technical spikes
 
 - [ ] Architecture and delivery-path records approved (D-09, D-10, D-11) **(owner approves the ADRs)**
-- [ ] Cost per merchant per month estimated
+- [x] Cost per merchant per month estimated (docs/spikes/cost-per-merchant.md, PR 48; owner questions in Q-37)
 - [ ] All six fixers pass on Dawn: zero axe-core findings of those types and no visual change beyond the agreed threshold **(needs a dev store, Q-03)**
 
 ## M4 Proof of concept

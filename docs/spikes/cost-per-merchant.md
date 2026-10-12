@@ -69,7 +69,7 @@ The high end as a share of price. For pilots: list price, then the 50% founding 
 
 ## What moves the result most
 
-1. **Paying stores sharing the fixed cost.** The scan load barely uses the server, so its price is a fixed fee. Fewer installs or more Free stores raise every figure. At M7, keeping the PoC setup ($10 to $30) cuts the shared cost to $0.67 to $2.00 a paying store; Starter on Haiku 5.5 then tops out at 7.6% and Agency at 11.1%.
+1. **Paying stores sharing the fixed cost.** The scan load barely uses the server, so its price is a fixed fee. Fewer installs or more Free stores raise every figure. At M7, keeping the PoC setup ($10 to $30) cuts the shared cost to $0.67 to $2.00 a paying store; Starter on Haiku 5.5 then tops out at 7.6% and Agency at 11.1%. That is 50 installs on one server, past the 20 PoC stores D-10 accepts, so it needs the owner's call.
 2. **The model (Q-33).** Haiku 4.5 costs ten times Haiku 5.5: $1.05 to $2.10 a store at the full allowance, against $0.11 to $0.21. At twice the token guess, an Agency store's alt text alone ($2.10) is over its $1.99 bar.
 3. **The price the bar is judged against.** A 50% founding price halves every pilot's bar.
 4. **Images and tokens.** Every store is assumed to use all 1,000 images every month. After a first catalogue pass, most likely send far fewer. Tokens an image are a guess until the real run (Q-04).
@@ -83,7 +83,7 @@ This estimate changes no decision. Owner queue Q-37 holds these questions.
 1. **What image allowance should an Agency store get?** Agency a store is over its 10% bar at the high end on Haiku 4.5 in every case, and on either model at M5 and M7. The roadmap sets no Agency allowance. Picking Haiku 5.5 (Q-33) brings Agency under at Launch.
 2. **Does the 10% bar apply to founding prices?** If it does, Starter and Agency pilots at 10 stores go over on either model: up to 22% and 32% on Haiku 5.5.
 3. **What scan cadence should Free and Agency get?** This estimate assumes one Free scan a month and Pro cadence for Agency.
-4. **Should the move to the Launch setup follow paying store count rather than the launch date?** D-10 moves Postgres to a managed service at launch. At M7 the Launch setup puts Starter at up to 25% on Haiku 5.5; the PoC setup, at up to 7.6%.
+4. **Should the move to the Launch setup follow paying store count rather than the launch date?** D-10 moves Postgres to a managed service at launch. At M7 the Launch setup puts Starter at up to 25% on Haiku 5.5; the PoC setup, at up to 7.6%. D-10 accepts one server for up to 20 PoC stores, so the second option goes past it.
 
 ## Caveats
 

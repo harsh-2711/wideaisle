@@ -11,7 +11,7 @@ See TASK.md. Infrastructure plus AI per store per month, from measured numbers.
 
 ## Status
 
-In review: PR #48 on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 2026-10-12.
+Done. PR #48 merges the estimate after two review rounds; the reviewer approved ec9d711. The owner's questions are Q-37. Last updated 2026-10-12.
 
 ## Done so far
 
@@ -26,13 +26,12 @@ In review: PR #48 on `claude/docs-cost-per-merchant`, cut from main f037d8b. Las
 
 ## Current step
 
-Review fixes pushed to PR #48. Waiting for the re-review.
+None. The task is done.
 
 ## Next three steps
 
-1. Report to the parent: new head, the changed headline numbers and the check results. Do not merge.
-2. Fix what the re-review asks, rerun the checks and push.
-3. Merge only when the parent says so.
+1. When Q-33 (model) or Q-37 (cost questions) is answered, update docs/spikes/cost-per-merchant.md.
+2. When Q-04 allows a real Spike C run, replace the token guess with the measured tokens and recompute.
 
 ## Blockers and open questions
 

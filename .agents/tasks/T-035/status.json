@@ -3,11 +3,11 @@
   "milestone": "M3",
   "lane": "architect",
   "agent": "architect",
-  "state": "In review",
-  "step": "PR #48 open; waiting for review",
+  "state": "Done",
+  "step": "Merged in PR #48; owner questions in Q-37",
   "branch": "claude/docs-cost-per-merchant",
   "issue": 31,
   "needs": [],
-  "updated": "2026-10-12T03:16:57Z",
+  "updated": "2026-10-12T03:29:54Z",
   "id": "T-035"
 }
