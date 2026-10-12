@@ -11,7 +11,7 @@ See TASK.md. Records for the architecture, fix delivery and AI use, ready for G1
 
 ## Status
 
-Blocked on you. PR #46 merges the five ADRs as Status Proposed after three review rounds. The owner moves them to Accepted (Q-28) and picks the revert cases (Q-35). Last updated 2026-10-11.
+Blocked on you. PR #46 merges the five ADRs as Status Proposed after three review rounds. The owner moves them to Accepted (Q-28) and picks the revert cases (Q-35). Spike D's numbers went into ADR 0005 on 2026-10-12 (step 13). Last updated 2026-10-12.
 
 ## Done so far
 
@@ -29,6 +29,8 @@ Blocked on you. PR #46 merges the five ADRs as Status Proposed after three revie
 | 10. Review fixes (items 1 to 17): 0002 states plainly that route C and merged route B do not meet D-09, adds intent rows before the first write, zips in object storage, four revert outcomes, D-12 billing, corrected Q-03 count and impacts. Owner queue gains Q-35 (revert cases) and Q-36 (pilot billing) with the lead's approval, and Q-28 is reworded. Dates set to 2026-10-11. Server-size row dropped from 0005. Citations fixed in 0001 and 0004. 0004 Context points to Spike C | 5a2bf30 |
 | 11. Re-review fixes: retry recovery reads alt-text values too, so alt-text-only patches are covered; route B stores its branch suffix and a retry looks for its open pull request first | 49d6f98 |
 | 12. Route B retry also finds a merged pull request (599b8de); board set to Blocked on you and Q-28 opened for the merge | (this commit) |
+| 13. Spike D (PR #47) numbers in ADR 0005: each row marked "Estimate, Spike D replaces it" now has the measured value and its source, or says Spike D did not measure it. Scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. Done on T-035's branch `claude/docs-cost-per-merchant` | 91eaded |
+| 14. PR #48 review: ADR 0004's cost line now says the $2.90 comparison counts alt text alone and points to the cost doc ($3.60 for Starter on Haiku 4.5 with infrastructure). ADR 0005's worker figures corrected to 220 MB and 23% | (this commit) |
 
 ## Current step
 
@@ -36,8 +38,9 @@ Waiting for the owner: Q-28 (move the ADRs to Accepted) and Q-35 (revert cases i
 
 ## Next three steps
 
-1. When Spike D's pull request (T-033, `claude/feat-scan-benchmark`) merges, update the numbers in docs/adr/0005-poc-hosting.md: replace every row marked "Estimate, Spike D replaces it" with the measured value and its source, and recheck the cost lines in ADR 0001.
+1. Done (step 13): Spike D's numbers are in ADR 0005 and the ADR 0001 cost line is rechecked. When Q-05 or Q-01 is answered and Browser Run or live pages are measured, update the rows that still say "not measured".
 2. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-33 is answered, name the chosen model in ADR 0004. When Q-35 is answered, update ADR 0002's "Revert" section.
+3. Done (step 14): ADR 0004's cost line points to docs/spikes/cost-per-merchant.md.
 
 ## Blockers and open questions
 
@@ -82,7 +85,7 @@ node scripts/agents/board.mjs lint-handoff T-034
 - The guard hook blocks `git checkout -- <path>`. To move onto a newer main with only the board's status.json changed, use `git merge --ff-only origin/main`.
 - `git checkout -B <branch> origin/main` sets origin/main as upstream. Unset it and push with `-u origin claude/docs-adr-m3`.
 - Spike A is not on main. Read it with `git show origin/claude/feat-delivery-adapters:<path>`.
-- T-035 (cost per merchant) shares this branch. Leave its files alone. The handoff check passes when either task's HANDOFF.md changes.
+- T-035 (cost per merchant) shared this branch at first. It moved to `claude/docs-cost-per-merchant`, which also carries step 13.
 - The claims check scans only merchant-facing paths, not docs/adr. Keep to the D-06 wording by hand anyway.
 - `gh pr create` and `gh pr edit` use GraphQL, which is blocked here. Use `gh api repos/harsh-2711/wideaisle/pulls` (REST) instead.
 - An ADR must not quietly relax an owner decision. Where the build falls short of a decision, say so plainly and add an owner queue item.
