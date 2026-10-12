@@ -1,0 +1,13 @@
+{
+  "title": "Census test egress",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "Running",
+  "step": "Check whether a second --disable-features replaces Playwright's list",
+  "branch": "claude/fix-census-test-egress",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-12T12:17:36Z",
+  "id": "T-026"
+}
