@@ -8,7 +8,7 @@ See TASK.md. Census tests and scans reach no host but the store and its assets: 
 
 ## Status
 
-In review. PR #50 (https://github.com/harsh-2711/wideaisle/pull/50). Last updated 2026-10-12.
+Done. Merged in PR #50 (https://github.com/harsh-2711/wideaisle/pull/50) as deb55fa. Last updated 2026-10-12.
 
 ## Done so far
 
@@ -21,16 +21,15 @@ In review. PR #50 (https://github.com/harsh-2711/wideaisle/pull/50). Last update
 | (b) `launchCensusBrowser`: merged feature list, new switches, refusing launch-level proxy; bench uses it; `tests/a11y/census-egress.spec.ts` | 99f586e |
 | Census README rule line; evidence in this file; exit criteria ticked | d049855 |
 | All checks green; PR #50 opened | d049855 |
+| Lead added d481523 (bench version probe uses the launcher) and d53caf9 (redirect spec timing), then merged | deb55fa |
 
 ## Current step
 
-PR #50 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
+None. Merged in PR #50 as deb55fa.
 
 ## Next three steps
 
-1. Answer review comments on PR #50.
-2. Once the lead says it merged, set the board to Done.
-3. Possible follow-up for the lead: Shopify themes can ship speculation rules, which make Chromium prefetch other store pages outside the PoliteClient gap. Not checked here.
+1. None for this task. The speculation-rules and prefetch follow-up is T-027 (`.agents/tasks/T-027/`), on `claude/fix-census-prefetch`.
 
 ## Checks run before the PR (all passed)
 

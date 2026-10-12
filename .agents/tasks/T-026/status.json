@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "In review",
-  "step": "PR #50 open; waiting for a reviewer",
+  "state": "Done",
+  "step": "Merged in PR #50",
   "branch": "claude/fix-census-test-egress",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-12T12:32:14Z",
+  "updated": "2026-10-12T13:16:30Z",
   "id": "T-026"
 }
