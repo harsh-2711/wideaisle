@@ -12,9 +12,15 @@
 // store. It never revalidates, so a response that needs revalidation is not
 // stored at all.
 
-// The request types the cache handles. Images and media are blocked before
-// they reach it; pages are always fetched fresh.
-export const CACHED_TYPES: ReadonlySet<string> = new Set(["stylesheet", "script", "font"]);
+// Responses to these request types are stored. Images and media are
+// blocked before they reach the cache; pages are always fetched fresh.
+export const STORED_TYPES: ReadonlySet<string> = new Set(["stylesheet", "script", "font"]);
+
+// Requests of these types may be answered from a stored copy. axe-core reads
+// each cross-origin stylesheet again by XHR on every page (its CSSOM
+// preload), so XHR and fetch may reuse the copy the page loaded. Nothing
+// they fetch from the network is stored.
+export const SERVED_TYPES: ReadonlySet<string> = new Set([...STORED_TYPES, "xhr", "fetch"]);
 
 export interface AssetCacheLimits {
   // The largest entry stored: decoded body plus headers.
@@ -45,10 +51,10 @@ export interface CachedAsset {
 export type StoreResult = "stored" | "not cacheable" | "too large" | "full";
 
 interface Entry extends CachedAsset {
-  resourceType: string;
-  // Request header values the response depends on: those its Vary names,
-  // and Origin, since a CORS request needs a response meant for it.
-  match: HeaderMap;
+  // Values of the request headers the response's Vary names.
+  vary: HeaderMap;
+  // The Origin header of the request that fetched it, or "".
+  origin: string;
   expiresAt: number;
   bytes: number;
 }
@@ -117,23 +123,33 @@ export function freshForMs(status: number, headers: HeaderMap, now: number): num
   return left > 0 ? left : null;
 }
 
+// How long the response to `req` may be reused, or null when it must not
+// be stored. The census checks this before it reads a body.
+export function reusableForMs(req: AssetRequest, status: number, headers: HeaderMap, now: number): number | null {
+  return AssetCache.stores(req) ? freshForMs(status, headers, now) : null;
+}
+
 // The response headers to replay from the cache.
 export function replayHeaders(headers: HeaderMap): HeaderMap {
   return Object.fromEntries(Object.entries(headers).filter(([k]) => !TRANSFER_HEADERS.has(k) && !k.startsWith(":")));
 }
 
-function matchKeys(headers: HeaderMap): string[] {
-  const vary = (headers["vary"] ?? "")
+function varyNames(headers: HeaderMap): string[] {
+  const names = (headers["vary"] ?? "")
     .split(",")
     .map((v) => v.trim().toLowerCase())
     .filter(Boolean);
-  return [...new Set(["origin", ...vary])];
+  return [...new Set(names)];
 }
 
 function sizeOf(headers: HeaderMap, body: Buffer): number {
   let n = body.length;
   for (const [k, v] of Object.entries(headers)) n += k.length + v.length;
   return n;
+}
+
+function isGet(req: Pick<AssetRequest, "method" | "url">): boolean {
+  return req.method === "GET" && /^https?:/i.test(req.url);
 }
 
 export class AssetCache {
@@ -145,9 +161,14 @@ export class AssetCache {
     private readonly now: () => number = Date.now,
   ) {}
 
-  // Whether the cache deals with this kind of request at all.
-  static handles(req: Pick<AssetRequest, "method" | "url" | "resourceType">): boolean {
-    return req.method === "GET" && CACHED_TYPES.has(req.resourceType) && /^https?:/i.test(req.url);
+  // Whether a response to this request may be stored.
+  static stores(req: Pick<AssetRequest, "method" | "url" | "resourceType">): boolean {
+    return isGet(req) && STORED_TYPES.has(req.resourceType);
+  }
+
+  // Whether this request may be answered from a stored copy.
+  static serves(req: AssetRequest): boolean {
+    return isGet(req) && SERVED_TYPES.has(req.resourceType) && req.headers["range"] === undefined;
   }
 
   get bytes(): number {
@@ -163,7 +184,7 @@ export class AssetCache {
   // A fresh stored response for the request, or null. Expired entries are
   // dropped on the way.
   get(req: AssetRequest): CachedAsset | null {
-    if (!AssetCache.handles(req)) return null;
+    if (!AssetCache.serves(req)) return null;
     const list = this.entries.get(req.url);
     if (!list) return null;
     const now = this.now();
@@ -172,9 +193,7 @@ export class AssetCache {
         this.remove(req.url, e);
         continue;
       }
-      if (e.resourceType === req.resourceType && this.matches(e, req.headers)) {
-        return { status: e.status, headers: { ...e.headers }, body: e.body };
-      }
+      if (this.fits(e, req.headers)) return { status: e.status, headers: { ...e.headers }, body: e.body };
     }
     return null;
   }
@@ -182,26 +201,31 @@ export class AssetCache {
   // Stores a response the browser fetched for `req`. Anything that is not
   // clearly reusable, or that would break a limit, is left out.
   put(req: AssetRequest, status: number, headers: HeaderMap, body: Buffer): StoreResult {
-    if (!AssetCache.handles(req)) return "not cacheable";
     const now = this.now();
-    const fresh = freshForMs(status, headers, now);
+    const fresh = reusableForMs(req, status, headers, now);
     if (fresh === null) return "not cacheable";
     const replay = replayHeaders(headers);
     const bytes = sizeOf(replay, body);
     if (bytes > this.limits.maxEntryBytes) return "too large";
-    const match = Object.fromEntries(matchKeys(headers).map((k) => [k, req.headers[k] ?? ""]));
-    const list = this.entries.get(req.url) ?? [];
-    const old = list.find((e) => e.resourceType === req.resourceType && this.matches(e, match));
+    const vary = Object.fromEntries(varyNames(headers).map((k) => [k, req.headers[k] ?? ""]));
+    const origin = req.headers["origin"] ?? "";
+    const old = (this.entries.get(req.url) ?? []).find((e) => e.origin === origin && sameVary(e.vary, vary));
     if (this.total - (old?.bytes ?? 0) + bytes > this.limits.maxTotalBytes) return "full";
     if (old) this.remove(req.url, old);
-    const entry: Entry = { status, headers: replay, body, resourceType: req.resourceType, match, expiresAt: now + fresh, bytes };
+    const entry: Entry = { status, headers: replay, body, vary, origin, expiresAt: now + fresh, bytes };
     this.entries.set(req.url, [...(this.entries.get(req.url) ?? []), entry]);
     this.total += bytes;
     return "stored";
   }
 
-  private matches(e: Entry, headers: HeaderMap): boolean {
-    return Object.entries(e.match).every(([k, v]) => (headers[k] ?? "") === v);
+  // A stored copy fits a request when the headers its Vary names match. A
+  // CORS request (one with an Origin header) also needs a copy that allows
+  // its origin: fetched for that same origin, or sent with
+  // Access-Control-Allow-Origin: *. Otherwise it goes to the network.
+  private fits(e: Entry, headers: HeaderMap): boolean {
+    if (!Object.entries(e.vary).every(([k, v]) => (headers[k] ?? "") === v)) return false;
+    const origin = headers["origin"] ?? "";
+    return !origin || origin === e.origin || e.headers["access-control-allow-origin"]?.trim() === "*";
   }
 
   private remove(url: string, e: Entry) {
@@ -210,4 +234,9 @@ export class AssetCache {
     else this.entries.delete(url);
     this.total -= e.bytes;
   }
+}
+
+function sameVary(a: HeaderMap, b: HeaderMap): boolean {
+  const ka = Object.keys(a);
+  return ka.length === Object.keys(b).length && ka.every((k) => a[k] === b[k]);
 }
