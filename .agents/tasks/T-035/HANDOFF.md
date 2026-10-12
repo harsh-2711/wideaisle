@@ -18,17 +18,19 @@ Running on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 
 | Step | Commit |
 |---|---|
 | 1. Read inputs: AGENTS.md, D-04, D-10, D-11, D-12, roadmap (Architecture, Go-to-market, Budget), Spike C, Spike D and its results, ADRs 0001 to 0005, owner queue. Board set to Running; TASK.md branch fixed (was claude/docs-adr-m3, merged) and out of scope filled in | 4887ab1 |
-| 2. docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price, drivers, owner questions, caveats | (this commit) |
+| 2. docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price, drivers, owner questions, caveats | ec5794a |
+| 3. ADR 0005: Spike D's measured values and sources in place of the "Estimate, Spike D replaces it" rows; scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. T-034 HANDOFF next step 1 marked done (`Refs: T-034`) | 91eaded |
+| 4. Checks: writing, claims, handoff, decisions, lint-handoff --all and commitlint all pass | (this commit) |
 
 ## Current step
 
-Updating ADR 0005 with Spike D's measured values.
+Opening the pull request to main.
 
 ## Next three steps
 
-1. Update docs/adr/0005-poc-hosting.md with Spike D's measured values (commit with `Refs: T-034`), recheck the cost lines in ADR 0001, and mark next step 1 done in .agents/tasks/T-034/HANDOFF.md.
-2. Run the checks, push, open the PR to main, set the board to In review.
-3. Report to the parent: PR link, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
+1. Open the PR to main from the template; set the board to In review.
+2. Report to the parent: PR link and head commit, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
+3. After review, fix what the reviewer asks. Do not merge until the parent says so.
 
 ## Blockers and open questions
 
@@ -42,6 +44,8 @@ D-10, D-12. Also cites D-02, D-04, D-06 and D-11.
 ## Files touched
 
 - docs/spikes/cost-per-merchant.md (new)
+- docs/adr/0005-poc-hosting.md, docs/adr/0001-system-architecture-at-poc.md (T-034 follow-up)
+- .agents/tasks/T-034/HANDOFF.md
 - .agents/tasks/T-035/TASK.md, HANDOFF.md, status.json
 
 ## How to verify
@@ -52,7 +56,10 @@ node scripts/ci/checks.mjs claims --base origin/main
 node scripts/ci/checks.mjs handoff --base origin/main
 node scripts/ci/checks.mjs decisions
 node scripts/agents/board.mjs lint-handoff --all
+npx commitlint --from origin/main --to HEAD
 ```
+
+Recompute the result table by hand from the doc's Inputs and Method: fixed pool / stores + images / 1,000 x price.
 
 ## Lessons and gotchas
 
