@@ -17,21 +17,23 @@ Running on `claude/docs-cost-per-merchant`, cut from main f037d8b. Last updated 
 
 | Step | Commit |
 |---|---|
-| 1. Read inputs: AGENTS.md, D-04, D-10, D-11, D-12, roadmap (Architecture, Go-to-market, Budget), Spike C, Spike D and its results, ADRs 0001 to 0005, owner queue. Board set to Running; TASK.md branch fixed (was claude/docs-adr-m3, merged) and out of scope filled in | (this commit) |
+| 1. Read inputs: AGENTS.md, D-04, D-10, D-11, D-12, roadmap (Architecture, Go-to-market, Budget), Spike C, Spike D and its results, ADRs 0001 to 0005, owner queue. Board set to Running; TASK.md branch fixed (was claude/docs-adr-m3, merged) and out of scope filled in | 4887ab1 |
+| 2. docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price, drivers, owner questions, caveats | (this commit) |
 
 ## Current step
 
-Drafting docs/spikes/cost-per-merchant.md.
+Updating ADR 0005 with Spike D's measured values.
 
 ## Next three steps
 
-1. Write docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price against the 10% bar, the inputs that move it most, caveats.
-2. Update docs/adr/0005-poc-hosting.md with Spike D's measured values (commit with `Refs: T-034`), recheck the cost lines in ADR 0001, and mark next step 1 done in .agents/tasks/T-034/HANDOFF.md.
-3. Run the checks, push, open the PR to main, set the board to In review, report to the parent. Do not merge.
+1. Update docs/adr/0005-poc-hosting.md with Spike D's measured values (commit with `Refs: T-034`), recheck the cost lines in ADR 0001, and mark next step 1 done in .agents/tasks/T-034/HANDOFF.md.
+2. Run the checks, push, open the PR to main, set the board to In review.
+3. Report to the parent: PR link, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
 
 ## Blockers and open questions
 
 - None block the estimate. It uses estimates where nothing is measured: server and object storage prices (provider memo, ADR 0005), Browser Run (Q-05), alt-text tokens and prices (Q-04), the model (Q-33), live pages (Q-01).
+- Result: on Haiku 5.5 every paid plan is under 10% at stage capacity. On Haiku 4.5, Agency a store is over at the high end at both stages, and Starter at the PoC high end. Four questions for the owner are in the doc's "Questions for the owner"; the planner decides which reach the owner queue.
 
 ## Decisions used
 
@@ -39,6 +41,7 @@ D-10, D-12. Also cites D-02, D-04, D-06 and D-11.
 
 ## Files touched
 
+- docs/spikes/cost-per-merchant.md (new)
 - .agents/tasks/T-035/TASK.md, HANDOFF.md, status.json
 
 ## How to verify
@@ -55,3 +58,5 @@ node scripts/agents/board.mjs lint-handoff --all
 
 - `git checkout -B <branch> origin/main` sets origin/main as upstream. Unset it and push with `-u origin claude/docs-cost-per-merchant`.
 - `gh pr create` uses GraphQL, which is blocked here. Use `gh api repos/harsh-2711/wideaisle/pulls` (REST), as T-034 did.
+- The arithmetic is plain: cost a store = fixed pool / stores + images x price per 1,000. Low pool and Spike C's guess for low; high pool and twice the guess for high. Round half up to cents.
+- Scan CPU never moves the result. Spend review time on the store count, the model and the image count.
