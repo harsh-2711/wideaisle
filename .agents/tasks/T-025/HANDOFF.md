@@ -14,17 +14,27 @@ Running. Last updated 2026-10-12.
 
 | Step | Commit |
 |---|---|
-| Task created, branch cut from main at f037d8b | (this checkpoint) |
+| Task created, branch cut from main at f037d8b | 2a3fd65 |
+| `app/lib/scanner/asset-cache.ts` and 14 unit tests | 05de911 |
 
 ## Current step
 
-Baseline `npm run bench:scan` (200 pages a level) running on unchanged code. Writing the cache module meanwhile.
+Baseline `npm run bench:scan` (200 pages a level) running on unchanged code. Census wiring and `tests/a11y/census-cache.spec.ts` are written, not yet run or committed.
 
 ## Next three steps
 
-1. Add `app/lib/scanner/asset-cache.ts` (storage rules, limits, Vary matching) with unit tests in `tests/unit/scanner/asset-cache.test.ts`.
-2. Wire it into the route handler in `scripts/census/census.ts`: hits are fulfilled from memory, misses keep `route.continue()`, and a `requestfinished` listener stores what the browser fetched.
-3. Playwright specs in `tests/a11y/census.spec.ts`: one request per asset per store, no-store fetched every page, the 5 MB entry cap, and no sharing across stores. Then re-run the benchmark and update the docs.
+1. When the baseline ends: run `tests/a11y/census-cache.spec.ts`, `census.spec.ts` and `bench.spec.ts`; commit the wiring in `scripts/census/census.ts` with the spec.
+2. Re-run `npm run bench:scan` with the cache; record requests a page and pages an hour, before and after.
+3. Update `docs/census/README.md` (request counts, "as any visitor would") and add one dated line to `docs/spikes/spike-d-scan-benchmark.md`. Then all checks, push, PR, board to In review.
+
+## Design
+
+- Misses keep `route.continue()`, so they take the same path as before: browser, egress proxy, address checks, pinned lookups.
+- A context `requestfinished` listener copies a finished CSS, JS or font response (headers via `allHeaders()`, body via `body()`) into the cache. It reads no body that could not be stored, and checks the encoded size first.
+- A hit is answered with `route.fulfill` from memory and makes no request. Hits are kept in a WeakSet so they are not stored again.
+- Image and media blocking and main-frame navigation vetting run as before; documents are never cached.
+- One `AssetCache` per `openScanContext` call, so per store. It dies with the context.
+- Storage rules: status 200; no `no-store` or `no-cache`; no `Set-Cookie`; no `Vary: *`; a lifetime from max-age, Expires, or Last-Modified (a tenth of its age, as browsers do). An ETag alone is not stored: a browser would revalidate it, and this cache never revalidates. `private` is stored, since the cache serves one store's scan and is never shared.
 
 ## Blockers and open questions
 
