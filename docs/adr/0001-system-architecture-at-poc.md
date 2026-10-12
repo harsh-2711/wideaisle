@@ -60,7 +60,7 @@ What the spikes mean for the M4 contracts (day 1):
 
 ## Consequences
 
-- **Cost.** About $5 to $15 a month for the server (D-10). Server and object storage within $10 to $25 a month in M4 to M6 (roadmap). Workers Paid for census bursts adds $5 a month, only after the owner approves it (Q-05). All are estimates; ADR 0005 lists them and Spike D replaces them.
+- **Cost.** About $5 to $15 a month for the server (D-10). Server and object storage within $10 to $25 a month in M4 to M6 (roadmap). Workers Paid for census bursts adds $5 a month, only after the owner approves it (Q-05). All are still price estimates. Spike D measured scan time, not prices: the PoC scan load uses under 1% of one vCPU, so the monthly price, not the scan rate, sets the cost (ADR 0005). The cost per store is in `docs/spikes/cost-per-merchant.md`.
 - **Easier.** One deploy and one database. A job and its records commit in one transaction. Local development is `npm run db:up` plus `npm run dev`. Lanes work in parallel in separate folders.
 - **Harder.** The server is a single point of failure (D-10). A heavy scan could starve the app, so scans run only in the worker process, with a concurrency limit on the `scan` queue.
 - **Scale path without a rewrite** (roadmap). Move the worker to its own server when scan-queue wait grows past an agreed limit; this is a deploy change, since the worker is already a separate process. Move Postgres to a managed service at launch. Split queues by shop. Ship the fix library as its own package.
