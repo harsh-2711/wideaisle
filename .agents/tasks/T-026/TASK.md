@@ -18,9 +18,9 @@ Census tests and scans reach no host but the store and its assets: no real DNS i
 
 Each one is a test or a check someone can run.
 
-- [ ] tests/a11y/census.spec.ts makes no real DNS lookup: its clients resolve nothing, and cdn.shopify.com is in blockedHosts
-- [ ] A scan with the census launch flags reaches no host except the store and its asset hosts, with the full chrome binary and the headless shell
-- [ ] The PR shows whether a second --disable-features replaces Playwright's list on Chromium 141
+- [x] tests/a11y/census.spec.ts makes no real DNS lookup: its clients resolve nothing, and cdn.shopify.com is in blockedHosts
+- [x] A scan with the census launch flags reaches no host except the store and its asset hosts, with the full chrome binary and the headless shell (`tests/a11y/census-egress.spec.ts`; headless shell build 1194, since Playwright's default build 1248 is not installed here)
+- [x] The PR shows whether a second --disable-features replaces Playwright's list on Chromium 141 (it does; evidence in HANDOFF.md and the PR)
 
 ## Out of scope
 
