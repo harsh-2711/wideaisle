@@ -18,8 +18,8 @@ Cache CSS and JS per store during the census, as a visitor's browser would
 
 Each one is a test or a check someone can run.
 
-- [ ] A store's second page reuses its cached CSS and JS: a test shows the server gets one request per asset per store
-- [ ] docs/census/README.md request counts match a measured run
+- [x] A store's second page reuses its cached CSS and JS: a test shows the server gets one request per asset per store (`tests/a11y/census-cache.spec.ts`)
+- [x] docs/census/README.md request counts match a measured run (18.8 a store, `npm run bench:scan` on 2026-10-12)
 
 ## Out of scope
 

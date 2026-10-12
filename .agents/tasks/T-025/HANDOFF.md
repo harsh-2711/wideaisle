@@ -18,16 +18,30 @@ Running. Last updated 2026-10-12.
 | `app/lib/scanner/asset-cache.ts` and 14 unit tests | 05de911 |
 | Baseline benchmark on main's code: 10.88 requests a page (43.5 a store); 1,853, 3,052 and 3,992 pages an hour at concurrency 1, 2 and 4 | (data/bench, not committed) |
 | Census wiring, `tests/a11y/census-cache.spec.ts` (3 specs), XHR reads of stored CSS, 17 unit tests | 91921db |
+| After-change benchmark: 4.71 requests a page (18.8 a store); 1,899, 3,120 and 3,892 pages an hour at concurrency 1, 2 and 4 | (data/bench, not committed) |
+| Census README and the dated Spike D line; exit criteria ticked | (this checkpoint) |
+
+## Measured (200 pages a level, same machine, 2026-10-12)
+
+| Concurrency | Pages an hour before | After | Requests a page before | After |
+|---|---|---|---|---|
+| 1 | 1,853 | 1,899 | 10.88 | 4.71 |
+| 2 | 3,052 | 3,120 | 10.88 | 4.71 |
+| 4 | 3,992 | 3,892 | 10.88 | 4.71 |
+
+- Pages an hour moved +2.5%, +2.2% and -2.5%: within run-to-run noise. Locally there is no network time, so fewer requests do not speed up the scan here. CPU-seconds a page stayed at 2.7 to 2.8.
+- This session's VM reports a 2.10 GHz Xeon and ran faster than the Spike D runs (1,458, 2,186 and 2,782). Compare before and after only with each other.
+- Runs: `data/bench/scan-bench-2026-10-12T03-10-54-750Z` (before) and `data/bench/scan-bench-2026-10-12T03-31-55-863Z` (after), gitignored.
 
 ## Current step
 
-After-change `npm run bench:scan` (200 pages a level) running in the background. Log: the scratchpad's `bench-after.log`; results land in `data/bench/`.
+Docs updated. Running every check before the PR.
 
 ## Next three steps
 
-1. Read the after-change results: requests a page and pages an hour at each level.
-2. Update `docs/census/README.md` (measured requests a store, the "as any visitor would" line) and add one dated line to `docs/spikes/spike-d-scan-benchmark.md`.
-3. Run all checks, push, open the PR, set the board to In review, report to the lead.
+1. Run lint, typecheck, `npm test`, the census and bench Playwright specs, the writing, claims, handoff and decisions checks, and `lint-handoff --all`.
+2. Push, open the PR from the template, set the board to In review.
+3. Report the PR link, head commit, numbers and check results to the lead. Do not merge.
 
 ## Design
 
@@ -55,6 +69,8 @@ none
 - scripts/census/census.ts (`openScanContext`)
 - tests/unit/scanner/asset-cache.test.ts (new)
 - tests/a11y/census-cache.spec.ts (new)
+- docs/census/README.md (rules line, requests a store)
+- docs/spikes/spike-d-scan-benchmark.md (one dated line)
 
 ## How to verify
 
