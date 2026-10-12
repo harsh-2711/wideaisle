@@ -21,31 +21,33 @@ In review: PR #48 on `claude/docs-cost-per-merchant`, cut from main f037d8b. Las
 | 2. docs/spikes/cost-per-merchant.md: inputs with sources, PoC and Launch per plan, share of plan price, drivers, owner questions, caveats | ec5794a |
 | 3. ADR 0005: Spike D's measured values and sources in place of the "Estimate, Spike D replaces it" rows; scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. T-034 HANDOFF next step 1 marked done (`Refs: T-034`) | 91eaded |
 | 4. Checks: writing, claims, handoff, decisions, lint-handoff --all and commitlint all pass | 646527b |
-| 5. Opened PR #48 to main (https://github.com/harsh-2711/wideaisle/pull/48); board set to In review | (this commit) |
+| 5. Opened PR #48 to main (https://github.com/harsh-2711/wideaisle/pull/48); board set to In review | 28ed421 |
+| 6. Review round 1 (CHANGES NEEDED at 28ed421). The fixed pool is now split over paying stores, with a share-that-pays input (M7: 15 of 50). Pilots are judged at list and at a 50% founding price. New cases: 10 pilots (M4, M5), M7 on the Launch setup, Launch at 30% paying. Summary leads with the point and the M5 and M7 cases. Smaller fixes: CPU range 3.76 to 3.86, the census condition, question 3 as a question, the Haiku 4.5 withdrawal line, the Sources table dropped, the Postgres row folded into storage, the images status, local fixtures on memory. ADR 0005 worker figures (220 MB, 23%) and ADR 0004's cost line (`Refs: T-034`). Owner queue Q-37 added with the coordinator's approval | (this commit) |
 
 ## Current step
 
-In review: PR #48. Waiting for a reviewer.
+Review fixes pushed to PR #48. Waiting for the re-review.
 
 ## Next three steps
 
-1. Report to the parent: PR link and head commit, cost per plan against the 10% bar, drivers, owner questions, check results. Do not merge.
-2. After review, fix what the reviewer asks, rerun the checks and push.
+1. Report to the parent: new head, the changed headline numbers and the check results. Do not merge.
+2. Fix what the re-review asks, rerun the checks and push.
 3. Merge only when the parent says so.
 
 ## Blockers and open questions
 
 - None block the estimate. It uses estimates where nothing is measured: server and object storage prices (provider memo, ADR 0005), Browser Run (Q-05), alt-text tokens and prices (Q-04), the model (Q-33), live pages (Q-01).
-- Result: on Haiku 5.5 every paid plan is under 10% at stage capacity. On Haiku 4.5, Agency a store is over at the high end at both stages, and Starter at the PoC high end. Four questions for the owner are in the doc's "Questions for the owner"; the planner decides which reach the owner queue.
+- Result: the 10% bar holds only at scale. At M5 (10 pilots, 50% founding price) Starter reaches 22% of price on Haiku 5.5 and 35% on Haiku 4.5. At M7 (15 paying of 50, Launch setup) Starter reaches 25% on Haiku 5.5. At Launch capacity with 30% paying, Haiku 5.5 keeps every plan under (Agency 9.8%); Haiku 4.5 puts Starter (13.3%) and Agency (19.3%) over at the high end. Owner queue Q-37 holds the four questions.
 
 ## Decisions used
 
-D-10, D-12. Also cites D-02, D-04, D-06 and D-11.
+D-10, D-12. Also cites D-04, D-08 and D-11.
 
 ## Files touched
 
 - docs/spikes/cost-per-merchant.md (new)
-- docs/adr/0005-poc-hosting.md, docs/adr/0001-system-architecture-at-poc.md (T-034 follow-up)
+- docs/adr/0005-poc-hosting.md, docs/adr/0001-system-architecture-at-poc.md, docs/adr/0004-ai-in-the-product.md (T-034 follow-ups)
+- .agents/owner-queue.md (Q-37, approved by the coordinator in the PR #48 review)
 - .agents/tasks/T-034/HANDOFF.md
 - .agents/tasks/T-035/TASK.md, HANDOFF.md, status.json
 
@@ -60,12 +62,13 @@ node scripts/agents/board.mjs lint-handoff --all
 npx commitlint --from origin/main --to HEAD
 ```
 
-Recompute the result table by hand from the doc's Inputs and Method: fixed pool / stores + images / 1,000 x price.
+Recompute the result tables by hand from the doc's Inputs and Method: fixed pool / paying stores + images / 1,000 x price.
 
 ## Lessons and gotchas
 
 - `git checkout -B <branch> origin/main` sets origin/main as upstream. Unset it and push with `-u origin claude/docs-cost-per-merchant`.
 - `gh pr create` uses GraphQL, which is blocked here. Use `gh api repos/harsh-2711/wideaisle/pulls` (REST), as T-034 did.
-- The arithmetic is plain: cost a store = fixed pool / stores + images x price per 1,000. Low pool and Spike C's guess for low; high pool and twice the guess for high. Round half up to cents.
-- Scan CPU never moves the result. Spend review time on the store count, the model and the image count.
+- The arithmetic is plain: cost a paying store = fixed pool / paying stores + images x price per 1,000. Low pool and Spike C's guess for low; high pool and twice the guess for high. Round costs half up to cents; take percentages from the unrounded cost.
+- Scan CPU never moves the result. Spend review time on the paying store count, the model and the image count.
+- Judge pilots against the price they pay: the founding price, as well as list. Free stores pay nothing, so split shared costs over paying stores only.
 - commitlint reads a body line that starts with "Word:" as a footer and warns. Avoid that shape in commit bodies.
