@@ -124,7 +124,7 @@ test("browser redirects are vetted before the browser requests them", async ({ b
   const hits: string[] = [];
   const server = http.createServer((req, res) => {
     hits.push(req.url ?? "");
-    const redirects: Record<string, string> = { "/a": "/b", "/c": "/secret", "/d": `http://localhost:${port}/x`, "/f": "/b#top" };
+    const redirects: Record<string, string> = { "/a": "/b", "/c": "/secret", "/d": `http://localhost:${port}/x`, "/f": "/h#top" };
     // A script that navigates while the page is still parsing.
     if (req.url === "/g") {
       res.writeHead(200, { "content-type": "text/html" });
@@ -138,6 +138,12 @@ test("browser redirects are vetted before the browser requests them", async ({ b
       const rewrite = req.url === "/j" ? `history.replaceState(null, "", "/j?variant=1");` : "";
       return res.end(`<!doctype html><html lang="en"><head><title>${req.url}</title><script>${rewrite}location.href = "/h";</script></head><body>i</body></html>`);
     }
+    // Where the script redirects land: a plain page, so the only redirect
+    // in each hop is the one under test.
+    if (req.url === "/h") {
+      res.writeHead(200, { "content-type": "text/html" });
+      return res.end(`<!doctype html><html lang="en"><title>h</title><body>h</body></html>`);
+    }
     if (req.url === "/robots.txt") return res.end("User-agent: *\nDisallow: /secret\n");
     const to = redirects[req.url ?? ""];
     if (to) {
@@ -145,8 +151,11 @@ test("browser redirects are vetted before the browser requests them", async ({ b
       return res.end();
     }
     res.writeHead(200, { "content-type": "text/html" });
-    // A page script tries to navigate somewhere the scan did not ask for.
-    res.end(`<!doctype html><html lang="en"><title>b</title><script>setTimeout(() => { location.href = "/e"; }, 10)</script></html>`);
+    // A page script tries to navigate somewhere the scan did not ask for,
+    // after the page has loaded. A navigation before load counts as a
+    // redirect by design, so starting the timer at load keeps this case
+    // apart from the redirect cases on a slow machine.
+    res.end(`<!doctype html><html lang="en"><title>b</title><script>addEventListener("load", () => setTimeout(() => { location.href = "/e"; }, 50))</script></html>`);
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as { port: number }).port;
@@ -167,7 +176,7 @@ test("browser redirects are vetted before the browser requests them", async ({ b
 
     // A fragment in Location does not break the match with what Chromium requests.
     const frag = await ctx.goto(page, origin + "/f");
-    expect("url" in frag && frag.url).toBe(origin + "/b#top");
+    expect("url" in frag && frag.url).toBe(origin + "/h#top");
     // A navigation during parsing is followed as a vetted hop, not a 30 s hang.
     const started = Date.now();
     const parsed = await ctx.goto(page, origin + "/g");
