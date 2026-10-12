@@ -3,11 +3,13 @@
   "milestone": "M3",
   "lane": "scanner",
   "agent": "builder",
-  "state": "In review",
-  "step": "PR open; local benchmark measured, Browser Run waits on Q-05",
+  "state": "Blocked on you",
+  "step": "Local benchmark done (PR #47); Browser Run comparison waits on Q-05",
   "branch": "claude/feat-scan-benchmark",
   "issue": 29,
-  "needs": [],
-  "updated": "2026-10-11T17:00:49Z",
+  "needs": [
+    "owner:Q-05"
+  ],
+  "updated": "2026-10-11T17:20:44Z",
   "id": "T-033"
 }
