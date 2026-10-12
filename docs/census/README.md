@@ -6,7 +6,7 @@ The census finds about 2,000 live Shopify stores, reads each store's public them
 
 - Public storefront pages only. No logins, no admin, no checkout.
 - robots.txt first, matched by our product token `WideAisleCensus`. Disallowed pages are skipped and logged. A 5xx, a 429 or an unreachable robots.txt means stay out; a later run retries. Every redirect hop is checked against robots.txt too.
-- At least 2 seconds between page loads on one store, more if robots.txt sets Crawl-delay. Redirect hops are spaced like page loads. A store that asks for more than 30 seconds is skipped. The browser loads a page's scripts and styles together, as any visitor would, but not its images or media.
+- At least 2 seconds between page loads on one store, more if robots.txt sets Crawl-delay. Redirect hops are spaced like page loads. A store that asks for more than 30 seconds is skipped. The browser loads a page's scripts, styles and fonts, but not its images or media. Like a visitor's browser, it keeps the ones the server lets it cache and reuses them on the store's later pages, so each is fetched once a store. The copies live in memory for that store's scan only (`app/lib/scanner/asset-cache.ts`).
 - A user agent that names the project and a contact address (Q-02). The crawler refuses to run without one.
 - Results stay private in `data/` (gitignored). Only summaries are committed.
 - Public addresses only, on ports 80 and 443. A host is resolved once, every address is checked, and the connection goes to a checked address, so a second DNS answer cannot point at a private one. IPv6 must be global unicast (2000::/3), without the documentation, Teredo and 6to4 ranges.
@@ -39,7 +39,9 @@ Both steps resume: stores already in the output file are skipped, so a stopped r
 npm run census -- report --input data/census/stores.jsonl --scans data/census/scans.jsonl --out docs/census/gap-report.md   # both files are required
 ```
 
-Time, from the 2-second gap and 4 to 6 requests a store: about 10 to 15 seconds a store per worker. With 4 workers, 2,000 stores take about 2 hours. This is an estimate; Spike D (T-033) measures it.
+Requests a store: robots.txt, the four pages, and each script, stylesheet and font once if the server lets it be cached. On the Spike D fixture stores that is 18.8 requests a store, or 4.7 a page (measured 2026-10-12, T-025; 43.5 a store before the cache). Live stores may load more app scripts from other hosts; this is not measured. A file is fetched on every page if the server marks it `no-store` or `no-cache`, if it is over 5 MB, or if the store's 20 MB of cached files is used up. axe-core reads each stylesheet from another host again on every page. That read reuses the cached copy only if the copy allows the store's origin: the server sent `Access-Control-Allow-Origin: *`, or the copy was itself fetched with CORS for that origin.
+
+Time, from the 2-second gap between page loads: about 10 to 15 seconds a store per worker. With 4 workers, 2,000 stores take about 2 hours. This is an estimate; Spike D (T-033) measures it.
 
 ## Output
 

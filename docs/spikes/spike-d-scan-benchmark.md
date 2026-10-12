@@ -116,6 +116,7 @@ Per page type at concurrency 1, full run:
 - axe-core time grows with DOM size and violation count. The collection page, with the most nodes, takes longest.
 - Node itself uses 0.84 to 0.88 CPU-seconds a page, close to a quarter of the total. That covers the census path's request routing (every request passes a Playwright route handler and the egress proxy) and moving axe results out of the browser. Serving the fixtures from Node's own process, as the earlier runs did, cost little: Node used 0.84 to 0.90 CPU-seconds a page then, and pages an hour moved by -3% to +7% between the earlier and reported runs, within the spread between runs.
 - Every page sent 10.9 requests to the store: robots.txt once a store, then the HTML and every CSS and JS file again on each page. The census path routes every request through Playwright, and Playwright's own docs say routing turns off the HTTP cache, so a store's assets are never reused between its four pages. On live stores this costs bandwidth and time on every page.
+- 2026-10-12: fixed in T-025. The census now caches a store's CSS, JS and fonts for its scan; the default run sends 4.7 requests a page (18.8 a store), down from 10.9.
 
 ### Scaling and limits
 

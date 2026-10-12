@@ -16,8 +16,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { chromium, type Browser, type BrowserContext, type Page, type Response } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page, type Request, type Response } from "playwright";
 import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine } from "../../app/lib/census/report";
+import { AssetCache, reusableForMs, type AssetRequest } from "../../app/lib/scanner/asset-cache";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
@@ -174,6 +175,10 @@ function sameOrigin(a: string, b: string): boolean {
   }
 }
 
+function assetRequest(req: Request): AssetRequest {
+  return { method: req.method(), url: req.url(), resourceType: req.resourceType(), headers: req.headers() };
+}
+
 export async function openScanContext(browser: Browser, client: PoliteClient, domain: string): Promise<ScanContext> {
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
   // The one main-frame navigation the scan asked for, where it redirected,
@@ -185,6 +190,36 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
     loading: false,
     signal: () => {},
   };
+  // The store's CSS, JS and fonts (T-025). Routing turns the browser's HTTP
+  // cache off, so without this every page would fetch them all again. Only
+  // responses the browser fetched through the proxy are stored, and the
+  // cache dies with the context, so no store sees another's entries.
+  const assets = new AssetCache();
+  // Requests the route handler sent on to the network. Only their answers
+  // are stored, so a cache hit, or anything another handler fulfils, never
+  // is. The route handler sees only the first hop of a redirect chain.
+  const viaProxy = new WeakSet<Request>();
+  const firstHop = (req: Request) => {
+    let first = req;
+    for (let prev = req.redirectedFrom(); prev; prev = prev.redirectedFrom()) first = prev;
+    return first;
+  };
+  const remember = async (req: Request) => {
+    const ask = assetRequest(req);
+    if (!AssetCache.stores(ask) || !viaProxy.has(firstHop(req))) return;
+    try {
+      const res = await req.response();
+      if (!res) return;
+      const headers = await res.allHeaders();
+      // Read no body that would not be stored. The decoded size is checked
+      // again when it is.
+      if (reusableForMs(ask, res.status(), headers, Date.now()) === null) return;
+      if ((await req.sizes()).responseBodySize > assets.limits.maxEntryBytes) return;
+      assets.put(ask, res.status(), headers, await res.body());
+    } catch {
+      // The context closed, or the browser no longer holds the body.
+    }
+  };
   let context: BrowserContext | undefined;
   try {
     context = await browser.newContext({
@@ -194,10 +229,18 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
     });
     await context.addInitScript(noWebRtc);
     await context.routeWebSocket(/.*/, (ws) => ws.close());
+    context.on("requestfinished", (req) => void remember(req));
     await context.route("**/*", async (route) => {
       const req = route.request();
       if (["image", "media"].includes(req.resourceType())) return route.abort("blockedbyclient");
-      if (!req.isNavigationRequest() || req.frame().parentFrame() !== null) return route.continue();
+      if (!req.isNavigationRequest() || req.frame().parentFrame() !== null) {
+        // A fresh copy from an earlier page of this store makes no request.
+        // A miss goes out through the proxy as before.
+        const hit = assets.get(assetRequest(req));
+        if (hit) return route.fulfill(hit);
+        viaProxy.add(req);
+        return route.continue();
+      }
       // Main-frame navigations: only the one the scan asked for, on the
       // store's site. Anything else gets an empty 204, which keeps the page
       // where it is (an abort would leave an error page behind).
