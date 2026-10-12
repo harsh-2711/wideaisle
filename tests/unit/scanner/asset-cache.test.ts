@@ -29,9 +29,23 @@ describe("which responses are stored", () => {
 
   it("uses Expires against the response's own Date", () => {
     const expires = new Date(NOW + 120_000).toUTCString();
-    expect(freshForMs(200, { date: DATE, expires }, NOW + 999_999)).toBe(120_000);
+    expect(freshForMs(200, { date: DATE, expires }, NOW)).toBe(120_000);
+    expect(freshForMs(200, { date: DATE, expires }, NOW + 999_999)).toBeNull();
     expect(freshForMs(200, { date: DATE, expires: DATE }, NOW)).toBeNull();
     expect(freshForMs(200, { expires: "0" }, NOW)).toBeNull();
+  });
+
+  it("counts the time since Date as age, or the Age header if larger", () => {
+    // Sent an hour ago, fresh for 60 s after that: a browser treats it as stale.
+    const hourAgo = NOW - 3_600_000;
+    expect(freshForMs(200, { date: new Date(hourAgo).toUTCString(), expires: new Date(hourAgo + 60_000).toUTCString() }, NOW)).toBeNull();
+    expect(freshForMs(200, { date: new Date(hourAgo).toUTCString(), "cache-control": "max-age=60" }, NOW)).toBeNull();
+    // 10 s since Date and an Age of 30 s: the larger counts.
+    const tenAgo = new Date(NOW - 10_000).toUTCString();
+    expect(freshForMs(200, { date: tenAgo, "cache-control": "max-age=60" }, NOW)).toBe(50_000);
+    expect(freshForMs(200, { date: tenAgo, "cache-control": "max-age=60", age: "30" }, NOW)).toBe(30_000);
+    // A server clock ahead of ours does not add freshness.
+    expect(freshForMs(200, { date: new Date(NOW + 5_000).toUTCString(), "cache-control": "max-age=60" }, NOW)).toBe(60_000);
   });
 
   it("gives a Last-Modified response a tenth of its age, and an ETag alone nothing", () => {

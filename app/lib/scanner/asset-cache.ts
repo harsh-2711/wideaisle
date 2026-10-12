@@ -119,7 +119,10 @@ export function freshForMs(status: number, headers: HeaderMap, now: number): num
     // on every page, so this cache does not store it.
     return null;
   }
-  const left = lifetime - (seconds(headers["age"]) ?? 0) * 1000;
+  // The response's age: the larger of the Age header and the time since its
+  // Date (RFC 9111, section 4.2.3). A server clock ahead of ours counts as 0.
+  const age = Math.max(Math.max(0, now - date), (seconds(headers["age"]) ?? 0) * 1000);
+  const left = lifetime - age;
   return left > 0 ? left : null;
 }
 
