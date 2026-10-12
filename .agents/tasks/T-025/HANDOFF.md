@@ -8,7 +8,7 @@ See TASK.md. Cache CSS and JS per store during the census, as a visitor's browse
 
 ## Status
 
-Running. Last updated 2026-10-12.
+In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last updated 2026-10-12.
 
 ## Done so far
 
@@ -19,7 +19,8 @@ Running. Last updated 2026-10-12.
 | Baseline benchmark on main's code: 10.88 requests a page (43.5 a store); 1,853, 3,052 and 3,992 pages an hour at concurrency 1, 2 and 4 | (data/bench, not committed) |
 | Census wiring, `tests/a11y/census-cache.spec.ts` (3 specs), XHR reads of stored CSS, 17 unit tests | 91921db |
 | After-change benchmark: 4.71 requests a page (18.8 a store); 1,899, 3,120 and 3,892 pages an hour at concurrency 1, 2 and 4 | (data/bench, not committed) |
-| Census README and the dated Spike D line; exit criteria ticked | (this checkpoint) |
+| Census README and the dated Spike D line; exit criteria ticked | 08f49e4 |
+| Typecheck fix in the unit test; all checks green; PR #49 opened | db9620b |
 
 ## Measured (200 pages a level, same machine, 2026-10-12)
 
@@ -35,13 +36,19 @@ Running. Last updated 2026-10-12.
 
 ## Current step
 
-Docs updated. Running every check before the PR.
+PR #49 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
 
 ## Next three steps
 
-1. Run lint, typecheck, `npm test`, the census and bench Playwright specs, the writing, claims, handoff and decisions checks, and `lint-handoff --all`.
-2. Push, open the PR from the template, set the board to In review.
-3. Report the PR link, head commit, numbers and check results to the lead. Do not merge.
+1. Answer review comments on PR #49. The reviewer may question the XHR and fetch reads of stored CSS (see Design); to drop them, set `SERVED_TYPES` to `STORED_TYPES` and expect 5 hits for `cdn.test/shared.css` in the spec.
+2. Once CI is green and a reviewer has checked it, merge with a merge commit if the lead says so.
+3. After merge, set the board to Done.
+
+## Checks run before the PR (all passed)
+
+- `npm run lint`, `npm run typecheck`, `npm test` (237 unit, 313 agent tests)
+- `npx playwright test` with `PW_CHROMIUM_PATH` set: 16 passed. Cache specs repeated 6 times on 4 workers: 18 passed.
+- `node scripts/ci/checks.mjs` writing, claims, decisions, and handoff for this branch; `node scripts/agents/board.mjs lint-handoff --all`; commitlint from the merge base
 
 ## Design
 

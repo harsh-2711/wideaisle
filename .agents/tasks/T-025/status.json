@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "Running",
-  "step": "Read the census route handler and plan the cache",
+  "state": "In review",
+  "step": "PR #49 open; waiting for a reviewer",
   "branch": "claude/fix-census-asset-cache",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-12T03:06:53Z",
+  "updated": "2026-10-12T03:48:57Z",
   "id": "T-025"
 }
