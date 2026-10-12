@@ -8,7 +8,7 @@ See TASK.md. Cache CSS and JS per store during the census, as a visitor's browse
 
 ## Status
 
-In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last updated 2026-10-12.
+Done. Merged in PR #49 (https://github.com/harsh-2711/wideaisle/pull/49) as 4e0d210. Last updated 2026-10-12.
 
 ## Done so far
 
@@ -24,6 +24,7 @@ In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last update
 | Review (APPROVE at 6deab53), finding 1: age is the larger of Age and now minus Date | e19c385 |
 | Findings 2 and 4: store only answers sent through the proxy (`viaProxy`, first redirect hop); specs for a fulfilled answer, a redirect target, and `closed.css` with no CORS header (5 requests) | 5378e80 |
 | Finding 3: README lists every reason a file is fetched again | 251d91e |
+| PR #49 merged by the lead | 4e0d210 |
 
 ## Measured (200 pages a level, same machine, 2026-10-12)
 
@@ -39,29 +40,20 @@ In review. PR #49 (https://github.com/harsh-2711/wideaisle/pull/49). Last update
 
 ## Current step
 
-The four review findings are fixed and pushed. Waiting for the lead to merge PR #49. Do not merge it here.
+None. Merged in PR #49 as 4e0d210.
 
 ## Next three steps
 
-1. Wait for the lead to say PR #49 merged, then set the board to Done.
-2. Start T-026 on `claude/fix-census-test-egress`, cut from main after the merge. The plan is under "Follow-up: T-026".
-3. Create T-026 with the board CLI in that PR (M2, data lane).
+1. None for this task. The follow-up is T-026 (`.agents/tasks/T-026/`), on `claude/fix-census-test-egress`.
 
 ## Checks run (all passed)
 
 - Before the PR: lint, typecheck, `npm test` (237 unit, 313 agent tests); `npx playwright test` with `PW_CHROMIUM_PATH` set (16 passed); cache specs 6 times on 4 workers (18 passed); writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint.
 - After the review fixes: lint, typecheck, `npm test` (238 unit, 313 agent tests); census, census-cache and bench specs (8 passed); cache specs 5 times on 4 workers (20 passed). With the `viaProxy` check removed, the fulfilled-answer spec fails (0 for 1); with only the request itself checked, the redirect spec fails (2 for 1).
 
-## Follow-up: T-026 (plan, not started)
+## Follow-up: T-026
 
-Branch `claude/fix-census-test-egress` from main after #49 merges. M2, data lane.
-
-- (a) `tests/a11y/census.spec.ts`: the clients at lines 37 and 151 use system DNS. Give both `lookup: async () => []` so no host but the IP-literal store resolves. Assert the first spec's record has `blockedHosts` containing `cdn.shopify.com`.
-- (b) Chromium's own traffic. Launch sites: `scan()` in `scripts/census/census.ts` and `runLevel` in `scripts/bench/scan-bench.ts` (scanner lane; ask the lead before editing). The Playwright specs use the config's `browser` fixture, which does not get the census's launch args, so the new test must launch Chromium through a census helper.
-  - Playwright 1.64 already passes `--disable-background-networking`, `--disable-component-update`, `--disable-sync`, `--disable-default-apps`, `--disable-client-side-phishing-detection`, `--metrics-recording-only`, `--no-first-run`, and `--disable-features=` with a list that includes OptimizationHints, NetworkTimeServiceQuerying and Translate.
-  - Playwright appends user args after its own. Chromium may keep only the last `--disable-features`, which would drop Playwright's list. Check this on Chromium 141 before relying on a second `--disable-features`.
-  - Present in the installed Chromium 141 binary: `AutofillServerCommunication`, `OptimizationHintsFetching`, `--disable-domain-reliability`, `--no-pings`. The headless shell (`chromium_headless_shell-1194`, used when `PW_CHROMIUM_PATH` is unset) has no autofill feature; the full `chrome` binary does.
-  - Test idea: a lookup that records every host, maps the store to 127.0.0.1 and returns no address for the rest. Scan a store with a form page, wait a few seconds, and assert the recorded hosts are only the store and its asset hosts. Run it with both binaries.
+Started on `claude/fix-census-test-egress` after the merge. Its plan and progress are in `.agents/tasks/T-026/HANDOFF.md`.
 
 ## Design
 
