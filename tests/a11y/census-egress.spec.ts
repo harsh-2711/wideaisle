@@ -10,8 +10,10 @@ import { chromium } from "playwright";
 import { PoliteClient } from "../../app/lib/scanner/polite";
 import {
   CENSUS_DISABLED_FEATURES,
+  CENSUS_ENABLED_FEATURES,
   launchCensusBrowser,
   PLAYWRIGHT_DISABLED_FEATURES,
+  PLAYWRIGHT_ENABLED_FEATURES,
   scan,
   type ScanRecord,
   type StoreRecord,
@@ -34,36 +36,41 @@ function browserArgs(): Map<number, string[]> {
   return out;
 }
 
-// The --disable-features lists of a browser `launch` starts.
-async function disabledFeatureSwitches(launch: () => Promise<() => Promise<void>>): Promise<string[][]> {
+// The command line of the browser `launch` starts.
+async function launchArgs(launch: () => Promise<() => Promise<void>>): Promise<string[]> {
   const before = browserArgs();
   const close = await launch();
   try {
     const started = [...browserArgs()].filter(([pid]) => !before.has(pid));
     expect(started).toHaveLength(1);
-    return started[0][1].filter((a) => a.startsWith("--disable-features=")).map((a) => a.slice("--disable-features=".length).split(","));
+    return started[0][1];
   } finally {
     await close();
   }
 }
 
-test("the census's --disable-features switch keeps Playwright's list", async () => {
+// Each value of a --name= switch, as a feature list.
+const lists = (args: string[], name: string) => args.filter((a) => a.startsWith(`--${name}=`)).map((a) => a.slice(name.length + 3).split(","));
+
+test("the census's feature switches keep Playwright's lists", async () => {
   test.skip(process.platform !== "linux", "reads /proc");
-  // Chromium honours only the last --disable-features switch, and
-  // Playwright puts its own first. If this fails after a Playwright upgrade,
-  // copy its new list into PLAYWRIGHT_DISABLED_FEATURES.
-  const plain = await disabledFeatureSwitches(async () => {
+  // Chromium honours only the last --disable-features switch, and only the
+  // last --enable-features switch (T-026, T-027). Playwright puts its own
+  // first. If this fails after a Playwright upgrade, copy its new lists into
+  // PLAYWRIGHT_DISABLED_FEATURES and PLAYWRIGHT_ENABLED_FEATURES.
+  const plain = await launchArgs(async () => {
     const b = await chromium.launch({ executablePath: EXE });
     return () => b.close();
   });
-  expect(plain).toHaveLength(1);
-  expect(PLAYWRIGHT_DISABLED_FEATURES).toEqual(plain[0]);
+  expect(lists(plain, "disable-features")).toEqual([PLAYWRIGHT_DISABLED_FEATURES]);
+  expect(lists(plain, "enable-features")).toEqual(PLAYWRIGHT_ENABLED_FEATURES.length ? [PLAYWRIGHT_ENABLED_FEATURES] : []);
 
-  const census = await disabledFeatureSwitches(async () => {
+  const census = await launchArgs(async () => {
     const b = await launchCensusBrowser(EXE);
     return () => b.close();
   });
-  expect(census.at(-1)).toEqual([...PLAYWRIGHT_DISABLED_FEATURES, ...CENSUS_DISABLED_FEATURES]);
+  expect(lists(census, "disable-features").at(-1)).toEqual([...PLAYWRIGHT_DISABLED_FEATURES, ...CENSUS_DISABLED_FEATURES]);
+  expect(lists(census, "enable-features").at(-1)).toEqual([...PLAYWRIGHT_ENABLED_FEATURES, ...CENSUS_ENABLED_FEATURES]);
 });
 
 // A checkout-like form, which makes Chromium's autofill ask its server
