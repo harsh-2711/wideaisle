@@ -18,9 +18,9 @@ Store pages cannot make the census browser fetch store URLs outside robots.txt a
 
 Each one is a test or a check someone can run.
 
-- [ ] A spec with robots.txt disallowing /secret and one page per vector shows the server never sees a /secret request, with the full binary and the headless shell
-- [ ] The census specs launch through launchCensusBrowser
-- [ ] docs/census/README.md line 8 says what is blocked, with a dated line
+- [x] A spec with robots.txt disallowing /secret and one page per vector shows the server never sees a /secret request, with the full binary and the headless shell (`tests/a11y/census-prefetch.spec.ts`: one page carries every vector, each with its own /secret path; headless shell build 1194)
+- [x] The census specs launch through launchCensusBrowser
+- [x] docs/census/README.md line 8 says what is blocked, with a dated line
 
 ## Out of scope
 

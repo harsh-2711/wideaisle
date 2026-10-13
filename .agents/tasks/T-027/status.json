@@ -4,10 +4,10 @@
   "lane": "data",
   "agent": "",
   "state": "Running",
-  "step": "Probe each prefetch vector on both builds",
+  "step": "Running every check before the PR",
   "branch": "claude/fix-census-prefetch",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-12T13:16:30Z",
+  "updated": "2026-10-13T19:41:23Z",
   "id": "T-027"
 }
