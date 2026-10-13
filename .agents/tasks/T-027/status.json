@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "Running",
-  "step": "Running every check before the PR",
+  "state": "In review",
+  "step": "PR #51 open; waiting for a reviewer",
   "branch": "claude/fix-census-prefetch",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-13T19:41:23Z",
+  "updated": "2026-10-13T19:45:20Z",
   "id": "T-027"
 }

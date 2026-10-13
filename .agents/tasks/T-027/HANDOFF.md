@@ -8,7 +8,7 @@ See TASK.md. Store pages cannot make the census browser fetch store URLs outside
 
 ## Status
 
-Running. Last updated 2026-10-13.
+In review. PR #51 (https://github.com/harsh-2711/wideaisle/pull/51). Last updated 2026-10-13.
 
 ## Done so far
 
@@ -21,16 +21,24 @@ Running. Last updated 2026-10-13.
 | Census specs on `launchCensusBrowser` (worker fixture); `census-prefetch.spec.ts` | c4d9d66 |
 | Drift check for `--enable-features` | bd48b84 |
 | README line 8 and a dated line | 985339e |
+| Evidence in this file; all checks green; PR #51 opened | 0fec63f |
 
 ## Current step
 
-Running every check before the PR.
+PR #51 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
 
 ## Next three steps
 
-1. Lint, typecheck, `npm test`; the full Playwright suite on both builds; the redirect spec with `--repeat-each 20`; the four rule checks; `lint-handoff --all`; commitlint.
-2. Push, open the PR with the evidence below, set the board to In review.
-3. Report the PR link, head, which vectors are blocked on each build, and the checks. Do not merge.
+1. Answer review comments on PR #51.
+2. Once the lead says it merged, set the board to Done.
+3. Open questions for the lead: iframes and a page's own fetch and XHR calls still load without a robots.txt check (README says so).
+
+## Checks run before the PR (all passed)
+
+- lint, typecheck, `npm test` (245 unit, 313 agent tests)
+- full Playwright suite: 20 passed with the full binary, 20 with the headless shell 1194
+- redirect spec `--repeat-each 20`: 20 of 20 on each build; prefetch and cache specs 5 times on 4 workers: 25 passed (full), prefetch 5 of 5 (shell)
+- writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint from deb55fa
 
 ## Found on the way: HTTPS hung the census
 
