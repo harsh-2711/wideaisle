@@ -28,13 +28,20 @@ In review. PR #51 (https://github.com/harsh-2711/wideaisle/pull/51). Last update
 
 ## Current step
 
-Review findings fixed. Running every check, then push and report the head to the lead. Do not merge.
+Review findings fixed and pushed to PR #51. Waiting for the lead. Do not merge.
 
 ## Next three steps
 
-1. Lint, typecheck, `npm test`; full Playwright suite on both builds; `census-prefetch` with `--repeat-each 5` on both; four rule checks; `lint-handoff --all`; commitlint.
-2. Push and report the new head and the checks to the lead.
-3. Once the lead says it merged, set the board to Done.
+1. Answer any further review comments on PR #51.
+2. Once the lead says it merged, set the board to Done.
+3. Open questions for the lead: iframes and a page's own fetch, XHR and beacon calls still load without a robots.txt check (README says so).
+
+## Checks after the review fixes (all passed)
+
+- lint, typecheck, `npm test` (247 unit, 313 agent tests)
+- full Playwright suite: 20 passed with the full binary, 20 with the headless shell 1194
+- `census-prefetch` with `--repeat-each 5`: 5 of 5 on each build
+- writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint from deb55fa
 
 ## Checks run before the PR (all passed)
 
