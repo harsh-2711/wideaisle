@@ -139,6 +139,23 @@ describe("egress proxy", () => {
       await strict.close();
     }
   });
+
+  it("closes while a CONNECT tunnel is still open, and ends the tunnel", async () => {
+    // Every HTTPS request goes through a tunnel. A browser keeps them open,
+    // and close() used to wait for them, so the census hung after an
+    // HTTPS store (T-027).
+    const proxy = await startEgressProxy({ lookup: toLocal, allowPrivate: true, ports: "any" });
+    const p = new URL(proxy.server);
+    const sock = net.connect(Number(p.port), p.hostname);
+    const ended = new Promise<void>((r) => sock.on("close", () => r()));
+    await new Promise<void>((resolve) => {
+      sock.on("connect", () => sock.write(`CONNECT store.test:${port} HTTP/1.1\r\nHost: store.test:${port}\r\n\r\n`));
+      sock.once("data", () => resolve());
+    });
+    const closed = await Promise.race([proxy.close().then(() => "closed"), new Promise((r) => setTimeout(() => r("still open after 2 s"), 2000))]);
+    expect(closed).toBe("closed");
+    await ended;
+  });
 });
 
 describe("hostile upstreams", () => {
