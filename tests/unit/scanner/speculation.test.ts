@@ -1,6 +1,14 @@
 import vm from "node:vm";
 import { describe, expect, it } from "vitest";
-import { BLOCK_SPECULATION_RULES, isHtml, REMOVED_TYPE, withoutRulesHeader, withoutRulesScripts } from "../../../app/lib/scanner/speculation";
+import {
+  BLOCK_SPECULATION_RULES,
+  isHtml,
+  NEUTRALIZE_RULES_JS,
+  neutralizeRules,
+  REMOVED_TYPE,
+  withoutRulesHeader,
+  withoutRulesScripts,
+} from "../../../app/lib/scanner/speculation";
 
 const strip = (html: string) => withoutRulesScripts(Buffer.from(html, "latin1"))?.toString("latin1") ?? null;
 
@@ -20,6 +28,23 @@ describe("speculation rules in a page", () => {
       expect(out!.toLowerCase(), tag).not.toMatch(/type\s*=\s*["']?\s*speculationrules/);
       // The rule text stays; only the type changes.
       expect(out, tag).toContain(`{"prefetch":[]}</script>`);
+    }
+  });
+
+  it("finds the type however the HTML spells it, including inside a declarative shadow root", () => {
+    for (const html of [
+      `<script data-x="a>b" type="speculationrules">{}</script>`,
+      `<script type="speculation&#114;ules">{}</script>`,
+      `<script type="&#x53;peculationRules">{}</script>`,
+      `<script type="speculation&#114ules">{}</script>`,
+      `<script type="&Tab;speculationrules&NewLine;">{}</script>`,
+      `<script/type=speculationrules>{}</script>`,
+      `<script a="x"type="speculationrules">{}</script>`,
+      `<div><template shadowrootmode="closed"><script data-x="a>b" type="speculation&#114;ules">{}</script></template></div>`,
+    ]) {
+      const out = strip(html);
+      expect(out, html).not.toBeNull();
+      expect(out, html).toContain(`type="${REMOVED_TYPE}"`);
     }
   });
 
@@ -49,6 +74,20 @@ describe("speculation rules in a page", () => {
     expect(isHtml({ "Content-Type": "application/xhtml+xml" })).toBe(true);
     expect(isHtml({})).toBe(true);
     expect(isHtml({ "content-type": "application/json" })).toBe(false);
+  });
+
+  it("filters document.write in the page the same way as the HTML", () => {
+    // The page-side copy is source text; run it here and compare.
+    const pageSide = vm.runInNewContext(NEUTRALIZE_RULES_JS) as (html: string) => string;
+    for (const html of [
+      `<script type="speculationrules">{}</script>`,
+      `<template shadowrootmode="closed"><script data-x="a>b" type="speculation&#114;ules">{}</script></template>`,
+      `<script/type=speculationrules>{}</script>`,
+      `<script type="module">import "x";</script>`,
+      `<p data-type="speculationrules">text</p>`,
+    ]) {
+      expect(pageSide(html), html).toBe(neutralizeRules(html) ?? html);
+    }
   });
 
   it("ships the init script as plain JavaScript that parses", () => {
