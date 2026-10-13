@@ -22,16 +22,19 @@ In review. PR #51 (https://github.com/harsh-2711/wideaisle/pull/51). Last update
 | Drift check for `--enable-features` | bd48b84 |
 | README line 8 and a dated line | 985339e |
 | Evidence in this file; all checks green; PR #51 opened | 0fec63f |
+| Review (CHANGES NEEDED at 2f3459a), finding 1: shadow roots; filter reads type values as the browser does; document.write filter; setAttributeNS patch | 804dfe4 |
+| Findings 1 to 3 in the spec: shadow cases, control browser without the holdback, setup inside the try, no page errors | 01fc284 |
+| README: shadow roots, closed declarative roots, beacons | cb6f66a |
 
 ## Current step
 
-PR #51 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
+Review findings fixed. Running every check, then push and report the head to the lead. Do not merge.
 
 ## Next three steps
 
-1. Answer review comments on PR #51.
-2. Once the lead says it merged, set the board to Done.
-3. Open questions for the lead: iframes and a page's own fetch and XHR calls still load without a robots.txt check (README says so).
+1. Lint, typecheck, `npm test`; full Playwright suite on both builds; `census-prefetch` with `--repeat-each 5` on both; four rule checks; `lint-handoff --all`; commitlint.
+2. Push and report the new head and the checks to the lead.
+3. Once the lead says it merged, set the board to Done.
 
 ## Checks run before the PR (all passed)
 
@@ -59,12 +62,18 @@ Probe: `scratchpad/t027/probe.mts` (not committed), one host per vector, 4 s on 
 | `createContextualFragment` | yes | yes | none | none | init script observer |
 | rules added 300 ms to 1.5 s after load | yes | yes | none | none | init script |
 | rules inside an iframe | no | no | none | none | (never fired) |
+| rules in an open shadow root, set with setAttributeNS (review) | yes | yes | none | none | setAttributeNS patch |
+| rules in a closed shadow root, from a fragment | yes | yes | none | none | attachShadow watch |
+| declarative shadow root, open or closed, with `>` in another attribute or `&#114;` in the type | yes | yes | none | none | HTML filter reads the value as the browser does |
+| closed declarative shadow root written by `document.write` | yes | yes | none | none | document.write filter |
+| `setHTMLUnsafe` with a declarative shadow root | no | no | none | none | (scripts stay inert) |
 
 - On the shell, "before" for split `document.write`, fragments and late rules comes from the spec's unprotected control context, which fetches each of them; the other rows come from probe runs of the unchanged census code.
 - Inline rules fail with `PrefetchFailedNetError` if the test certificate is not trusted, which hides them. The probe and the spec trust only the test certificate's key.
 - Prerender itself never ran: `PrerenderingDisabledByDevTools`.
 - Init script variants, measured on the full binary: overriding `HTMLScriptElement.supports` stopped only rules behind a supports check. The MutationObserver alone stopped every case. The type and setAttribute patch alone missed `document.write` and fragments. Shipped: patch plus observer.
 - `--enable-features`: with a later `--enable-features=WebXR`, `<link rel="prerender">` fetched /secret again; with `--enable-features=WebXR,NoStatePrefetchHoldback` it did not. So only the last switch counts, and ours repeats Playwright's `CDPScreenshotNewSurface`.
+- Second round (review of 2f3459a), probed the same way, both builds, census context: the shadow-root and declarative rows above leaked before 804dfe4 and fetched nothing after, with no page errors. Without the attachShadow watch, the closed-shadow fragment case fetched again. A closed declarative shadow root in the page source is reachable only by the HTML filter (no script hook sees it); the README says so.
 - Under tsx (`npm run census`), esbuild wrapped an inner arrow function of the init script in `__name(...)`, which the page lacks. The init script is therefore source text.
 
 ## Blockers and open questions
