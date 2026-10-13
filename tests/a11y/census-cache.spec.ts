@@ -1,6 +1,6 @@
 // The census keeps a store's CSS, JS and fonts for the rest of its scan, as
 // a visitor's browser would (T-025). A local server counts what reaches it.
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./census-browser";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -124,7 +124,7 @@ async function startStores(browser: Browser) {
   };
 }
 
-test("a store's CSS, JS and fonts are fetched once, and no-store files on every page", async ({ browser }) => {
+test("a store's CSS, JS and fonts are fetched once, and no-store files on every page", async ({ censusBrowser: browser }) => {
   test.setTimeout(60_000);
   const stores = await startStores(browser);
   try {
@@ -149,7 +149,7 @@ test("a store's CSS, JS and fonts are fetched once, and no-store files on every 
   }
 });
 
-test("a file over the entry cap is not cached and still loads on every page", async ({ browser }) => {
+test("a file over the entry cap is not cached and still loads on every page", async ({ censusBrowser: browser }) => {
   test.setTimeout(60_000);
   const stores = await startStores(browser);
   try {
@@ -164,7 +164,7 @@ test("a file over the entry cap is not cached and still loads on every page", as
   }
 });
 
-test("only answers the proxy fetched are stored, not ones another handler fulfilled", async ({ browser }) => {
+test("only answers the proxy fetched are stored, not ones another handler fulfilled", async ({ censusBrowser: browser }) => {
   const stores = await startStores(browser);
   const client = stores.client();
   const origin = `http://${stores.domain("a.test")}`;
@@ -199,7 +199,7 @@ test("only answers the proxy fetched are stored, not ones another handler fulfil
   }
 });
 
-test("two stores scanned one after the other share no cached files", async ({ browser }) => {
+test("two stores scanned one after the other share no cached files", async ({ censusBrowser: browser }) => {
   test.setTimeout(90_000);
   const stores = await startStores(browser);
   try {
