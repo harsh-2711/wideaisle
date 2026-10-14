@@ -5,43 +5,50 @@
 // script whose type is speculationrules in the HTML, and any a page adds
 // later (BLOCK_SPECULATION_RULES).
 
+import vm from "node:vm";
+
 // An inert type: the element stays, so the page's DOM keeps its shape.
 export const REMOVED_TYPE = "text/x-wide-aisle-removed-speculationrules";
 
-// A type attribute and its value, anywhere in the HTML. The HTML tokenizer
-// starts an attribute after whitespace, a slash or a closing quote. Not tied
-// to tag boundaries, so a ">" inside another attribute's value, or a
-// <template shadowrootmode> around the script, changes nothing. A match
-// outside a tag only makes some text inert, which is harmless.
-const TYPE_ATTR_SOURCE = String.raw`(?<=[\s/"'])(type\s*=\s*)("[^"]*"|'[^']*'|[^\s>]+)`;
-const TYPE_ATTR = new RegExp(TYPE_ATTR_SOURCE, "gi");
+// The filter, as JavaScript source text: (html) => html, with every
+// speculationrules type made inert. There is one copy. The page runs it
+// inside the init script (document.write); Node compiles the same text
+// once, below, for response bodies.
+//
+// It finds a type attribute and its value anywhere in the HTML. The HTML
+// tokenizer starts an attribute after whitespace, a slash or a closing
+// quote. Not tied to tag boundaries, so a ">" inside another attribute's
+// value, or a <template shadowrootmode> around the script, changes nothing.
+// A match outside a tag only makes some text inert, which is harmless.
+//
+// It reads the value as the browser does: unquoted, numeric character
+// references and the two whitespace names decoded, whitespace trimmed,
+// lower case. Only ASCII matters for "speculationrules". trim(), not a
+// regex: a regex with an end anchor retries from every character of a
+// whitespace run, which is quadratic. trim() also drops non-ASCII spaces,
+// so it may make a few more values inert; harmless.
+export const NEUTRALIZE_RULES_JS = String.raw`((html) => {
+  const typeAttr = /(?<=[\s/"'])(type\s*=\s*)("[^"]*"|'[^']*'|[^\s>]+)/gi;
+  const ascii = (code) => (code < 128 ? String.fromCharCode(code) : "\ufffd");
+  return html.replace(typeAttr, (whole, name, value) => {
+    const v = (/^["']/.test(value) ? value.slice(1, -1) : value)
+      .replace(/&#x([0-9a-f]+);?/gi, (m, hex) => ascii(parseInt(hex, 16)))
+      .replace(/&#([0-9]+);?/g, (m, dec) => ascii(Number(dec)))
+      .replace(/&Tab;/g, "\t")
+      .replace(/&NewLine;/g, "\n")
+      .trim()
+      .toLowerCase();
+    return v === "speculationrules" ? name + ${JSON.stringify(`"${REMOVED_TYPE}"`)} : whole;
+  });
+})`;
 
-// An attribute value as the browser reads it: unquoted, numeric character
-// references and the two whitespace names decoded, ASCII whitespace trimmed,
-// lower case. Only ASCII matters for "speculationrules".
-export function attrValue(raw: string): string {
-  const ascii = (code: number) => (code < 128 ? String.fromCharCode(code) : "�");
-  return (/^["']/.test(raw) ? raw.slice(1, -1) : raw)
-    .replace(/&#x([0-9a-f]+);?/gi, (_m, hex: string) => ascii(parseInt(hex, 16)))
-    .replace(/&#([0-9]+);?/g, (_m, dec: string) => ascii(Number(dec)))
-    .replace(/&Tab;/g, "\t")
-    .replace(/&NewLine;/g, "\n")
-    // trim(), not a regex: a regex with an end anchor retries from every
-    // character of a whitespace run, which is quadratic. trim() also drops
-    // non-ASCII spaces, so it may make a few more values inert; harmless.
-    .trim()
-    .toLowerCase();
-}
+// Compiled once from our own constant above, not from page input.
+const neutralize = vm.runInNewContext(NEUTRALIZE_RULES_JS) as (html: string) => string;
 
 // The HTML with every speculationrules type made inert, or null if none.
 export function neutralizeRules(html: string): string | null {
-  let changed = false;
-  const out = html.replace(TYPE_ATTR, (whole, name: string, value: string) => {
-    if (attrValue(value) !== "speculationrules") return whole;
-    changed = true;
-    return `${name}"${REMOVED_TYPE}"`;
-  });
-  return changed ? out : null;
+  const out = neutralize(html);
+  return out === html ? null : out;
 }
 
 // For a response body. Works on bytes as latin1, which maps each byte to
@@ -57,23 +64,6 @@ export function withoutRulesHeader(headers: Record<string, string>, bodyChanged:
   const drop = new Set(["speculation-rules", ...(bodyChanged ? ["content-length", "content-encoding", "transfer-encoding"] : [])]);
   return Object.fromEntries(Object.entries(headers).filter(([k]) => !drop.has(k.toLowerCase())));
 }
-
-// neutralizeRules for the page, as source text: (html) => html. A unit
-// test checks it agrees with neutralizeRules.
-export const NEUTRALIZE_RULES_JS = `((html) => {
-  const typeAttr = new RegExp(${JSON.stringify(TYPE_ATTR_SOURCE)}, "gi");
-  const ascii = (code) => (code < 128 ? String.fromCharCode(code) : "\\ufffd");
-  return html.replace(typeAttr, (whole, name, value) => {
-    const v = (/^["']/.test(value) ? value.slice(1, -1) : value)
-      .replace(/&#x([0-9a-f]+);?/gi, (m, hex) => ascii(parseInt(hex, 16)))
-      .replace(/&#([0-9]+);?/g, (m, dec) => ascii(Number(dec)))
-      .replace(/&Tab;/g, "\\t")
-      .replace(/&NewLine;/g, "\\n")
-      .trim()
-      .toLowerCase();
-    return v === "speculationrules" ? name + ${JSON.stringify(`"${REMOVED_TYPE}"`)} : whole;
-  });
-})`;
 
 // An init script: it runs in every page and frame before the page's own
 // scripts, and stops rules a page adds later, which the HTML filter cannot

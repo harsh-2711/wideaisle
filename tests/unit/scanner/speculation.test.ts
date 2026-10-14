@@ -86,18 +86,13 @@ describe("speculation rules in a page", () => {
     expect(isHtml({ "content-type": "application/json" })).toBe(false);
   });
 
-  it("filters document.write in the page the same way as the HTML", () => {
-    // The page-side copy is source text; run it here and compare.
+  it("uses one copy of the filter for the HTML and for document.write", () => {
+    // neutralizeRules is compiled from NEUTRALIZE_RULES_JS, and the init
+    // script embeds the same text, so every spelling test above covers both.
+    expect(BLOCK_SPECULATION_RULES).toContain(`const neutralize = ${NEUTRALIZE_RULES_JS};`);
     const pageSide = vm.runInNewContext(NEUTRALIZE_RULES_JS) as (html: string) => string;
-    for (const html of [
-      `<script type="speculationrules">{}</script>`,
-      `<template shadowrootmode="closed"><script data-x="a>b" type="speculation&#114;ules">{}</script></template>`,
-      `<script/type=speculationrules>{}</script>`,
-      `<script type="module">import "x";</script>`,
-      `<p data-type="speculationrules">text</p>`,
-    ]) {
-      expect(pageSide(html), html).toBe(neutralizeRules(html) ?? html);
-    }
+    const html = `<script type="&#x53;peculation&#114;ules">{}</script>`;
+    expect(pageSide(html)).toBe(neutralizeRules(html));
   });
 
   it("ships the init script as plain JavaScript that parses", () => {
