@@ -8,7 +8,7 @@ See TASK.md. Decode page bodies with stacked or raw content-encodings the way Ch
 
 ## Status
 
-Running (builder). Last updated 2026-10-14.
+In review: PR #55. Last updated 2026-10-14.
 
 ## Done so far
 
@@ -18,17 +18,25 @@ Running (builder). Last updated 2026-10-14.
 | Decoder: every layer, last applied first; deflate zlib then raw; one decoded budget for all layers; ContentEncodingError. Six unit tests | 756df80 |
 | Census skips a page it cannot decode, with the reason; two specs | 53db8b2 |
 | New tests run against main's decoder: all eight fail (see Proof) | no commit, files restored |
-| README line on decoding | this checkpoint |
+| README line on decoding | 9545c16 |
+| All checks green (list below); pushed; PR #55 opened; board In review | this checkpoint |
 
 ## Current step
 
-Every check, then the PR.
+Waiting on review of PR #55. Do not merge; the lead decides.
 
 ## Next three steps
 
-1. Run lint, typecheck, `npm test`, the full Playwright suite, `node scripts/ci/checks.mjs writing claims handoff decisions --base origin/main` and `node scripts/agents/board.mjs lint-handoff --all`.
-2. Push, open the PR from .github/pull_request_template.md, set the board to In review with the PR number.
-3. Report to the lead: PR link, head commit, the proof, check results. Do not merge.
+1. Answer review comments on PR #55, with a new test for each fix.
+2. Rerun every check in "Checks run before the PR" after any change.
+3. Once merged, set T-029 Done with the PR number.
+
+## Checks run before the PR (all passed)
+
+- lint, typecheck, `npm test` (255 unit, 313 agent tests)
+- full Playwright suite: 25 of 25 with chromium-1194, 25 of 25 with the 1194 headless shell
+- census, census-prefetch and census-doc-cap specs with `--repeat-each 5`: 45 of 45
+- `node scripts/ci/checks.mjs` writing, claims, handoff, decisions with `--base origin/main`; `lint-handoff --all`; commitlint from origin/main
 
 ## Design
 
