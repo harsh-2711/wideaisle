@@ -8,7 +8,7 @@ See TASK.md. Cap the main document the census fulfils, so hostile HTML cannot bl
 
 ## Status
 
-Running. Last updated 2026-10-14.
+In review. PR #53 (https://github.com/harsh-2711/wideaisle/pull/53). Last updated 2026-10-14.
 
 ## Done so far
 
@@ -18,16 +18,24 @@ Running. Last updated 2026-10-14.
 | Task created | 88157a8 |
 | Page HTML through pinnedFetch at MAX_PAGE_BYTES (10 MB, wire and decoded); skip reason; ResponseTooLargeError, decodedBody, headerList; unit tests; census-doc-cap.spec.ts | 34a558b |
 | README line; context comment | b30b05c, 3955c99 |
+| All checks green; PR #53 opened | ab55bb6 |
 
 ## Current step
 
-Running every check before the PR.
+PR #53 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
 
 ## Next three steps
 
-1. Lint, typecheck, `npm test`; full Playwright suite on both builds; four rule checks; `lint-handoff --all`; commitlint.
-2. Push, open the PR from the template, set the board to In review.
-3. Report the PR link, head and checks to the lead. Do not merge.
+1. Answer review comments on PR #53.
+2. Once the lead says it merged, set the board to Done.
+3. None further.
+
+## Checks run before the PR (all passed)
+
+- lint, typecheck, `npm test` (249 unit, 313 agent tests)
+- full Playwright suite: 22 passed with the full binary, 22 with the headless shell 1194
+- census, census-prefetch and census-doc-cap specs with `--repeat-each 5`: 30 of 30 on each build
+- writing, claims, decisions and handoff checks; `lint-handoff --all`; commitlint from 0aeb6ab
 
 ## Design
 
