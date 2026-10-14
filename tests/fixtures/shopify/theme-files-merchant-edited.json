@@ -1,0 +1,40 @@
+{
+  "data": {
+    "theme": {
+      "id": "gid://shopify/OnlineStoreTheme/111111111",
+      "files": {
+        "nodes": [
+          {
+            "filename": "assets/base.css",
+            "checksumMd5": "9e9c277b60410dbbf0f3f30362517fb0",
+            "size": "50",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyBase64",
+              "contentBase64": "LmJ1dHRvbiB7IGNvbG9yOiAjOTk5OTk5OyBiYWNrZ3JvdW5kOiAjZmZmZmZmOyB9DQo="
+            }
+          },
+          {
+            "filename": "sections/header.liquid",
+            "checksumMd5": "914973fff4ce4d1a1c3bb868e7339147",
+            "size": "100",
+            "body": {
+              "__typename": "OnlineStoreThemeFileBodyText",
+              "content": "<a href=\"{{ routes.cart_url }}\" class=\"header__icon header__icon--cart\">{% render 'icon-bag' %}</a>\n"
+            }
+          }
+        ],
+        "userErrors": [
+          { "filename": "snippets/wa-visually-hidden.liquid", "code": "NOT_FOUND" }
+        ],
+        "pageInfo": { "hasNextPage": false, "endCursor": null }
+      }
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 6,
+      "actualQueryCost": 6,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1994, "restoreRate": 100.0 }
+    }
+  }
+}

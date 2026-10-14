@@ -2,12 +2,12 @@
   "title": "Spike A: theme write path and delivery adapters",
   "milestone": "M3",
   "lane": "delivery",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "builder",
+  "state": "In review",
+  "step": "Adapters, tests and spike doc done; live run waits on Q-03",
   "branch": "claude/feat-delivery-adapters",
   "issue": 26,
   "needs": [],
-  "updated": "2026-10-08T06:04:01Z",
+  "updated": "2026-10-08T11:49:16Z",
   "id": "T-030"
 }

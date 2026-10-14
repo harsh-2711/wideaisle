@@ -1,0 +1,23 @@
+{
+  "data": {
+    "themeFilesUpsert": {
+      "job": null,
+      "upsertedThemeFiles": null,
+      "userErrors": [
+        {
+          "field": ["files"],
+          "filename": null,
+          "code": "THROTTLED",
+          "message": "Too many updates in a short period. Please try again later."
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1970, "restoreRate": 100.0 }
+    }
+  }
+}

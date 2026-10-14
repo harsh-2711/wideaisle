@@ -1,0 +1,21 @@
+{
+  "sha": "5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809",
+  "node_id": "MDY6Q29tbWl0NWU2ZjcwODE5MmEzYjRjNWQ2ZTdmODA5MTJhM2I0YzVkNmU3ZjgwOQ==",
+  "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/commits/5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809",
+  "html_url": "https://github.com/acme-agency/acme-dawn-theme/commit/5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f809",
+  "author": { "date": "2026-10-09T09:00:00Z", "name": "wide-aisle[bot]", "email": "wide-aisle[bot]@users.noreply.github.com" },
+  "committer": { "date": "2026-10-09T09:00:00Z", "name": "wide-aisle[bot]", "email": "wide-aisle[bot]@users.noreply.github.com" },
+  "message": "Revert: Name the cart link and raise button contrast\n\nUndoes Wide Aisle patch p-001 (pull request #42).",
+  "tree": {
+    "sha": "4d5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f8",
+    "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/trees/4d5e6f708192a3b4c5d6e7f80912a3b4c5d6e7f8"
+  },
+  "parents": [
+    {
+      "sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
+      "url": "https://api.github.com/repos/acme-agency/acme-dawn-theme/git/commits/e5bd3914e2e596debea16f433f57875b5b90bcd6",
+      "html_url": "https://github.com/acme-agency/acme-dawn-theme/commit/e5bd3914e2e596debea16f433f57875b5b90bcd6"
+    }
+  ],
+  "verification": { "verified": false, "reason": "unsigned", "signature": null, "payload": null, "verified_at": null }
+}

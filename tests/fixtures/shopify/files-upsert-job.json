@@ -1,0 +1,20 @@
+{
+  "data": {
+    "themeFilesUpsert": {
+      "job": { "id": "gid://shopify/Job/5f8e2a7c-1d3b-4c6a-9e0f-2b7d4a1c8e3f", "done": false },
+      "upsertedThemeFiles": [
+        { "filename": "sections/header.liquid", "checksumMd5": "ebcbadc2a8dea96b7be768d23e8a3dd2", "size": "127" },
+        { "filename": "assets/base.css", "checksumMd5": "ac86c2327fade62854a7c234fef0f414", "size": "50" },
+        { "filename": "snippets/wa-visually-hidden.liquid", "checksumMd5": "76789ef6d707c8bd5269a46868f6b086", "size": "104" }
+      ],
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1978, "restoreRate": 100.0 }
+    }
+  }
+}

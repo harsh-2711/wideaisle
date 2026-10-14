@@ -1,0 +1,14 @@
+{
+  "data": {
+    "themes": {
+      "nodes": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 3,
+      "actualQueryCost": 2,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1992, "restoreRate": 100.0 }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "data": {
+    "themes": {
+      "nodes": [
+        { "id": "gid://shopify/OnlineStoreTheme/111111111", "name": "Dawn", "role": "MAIN" }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 2,
+      "actualQueryCost": 2,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1998, "restoreRate": 100.0 }
+    }
+  }
+}

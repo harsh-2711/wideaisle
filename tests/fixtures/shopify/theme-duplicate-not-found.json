@@ -1,0 +1,17 @@
+{
+  "data": {
+    "themeDuplicate": {
+      "newTheme": null,
+      "userErrors": [
+        { "field": ["id"], "code": "NOT_FOUND", "message": "Theme does not exist" }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1990, "restoreRate": 100.0 }
+    }
+  }
+}

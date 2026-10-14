@@ -1,0 +1,22 @@
+{
+  "errors": [
+    {
+      "message": "Access denied for themeFilesUpsert field. Required access: The user needs write_themes and an exemption from Shopify to modify theme files.",
+      "locations": [{ "line": 2, "column": 3 }],
+      "path": ["themeFilesUpsert"],
+      "extensions": {
+        "code": "ACCESS_DENIED",
+        "documentation": "https://shopify.dev/api/usage/access-scopes",
+        "requiredAccess": "The user needs write_themes and an exemption from Shopify to modify theme files."
+      }
+    }
+  ],
+  "data": { "themeFilesUpsert": null },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 10,
+      "actualQueryCost": 10,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1990, "restoreRate": 100.0 }
+    }
+  }
+}

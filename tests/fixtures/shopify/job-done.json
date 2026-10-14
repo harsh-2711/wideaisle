@@ -1,0 +1,12 @@
+{
+  "data": {
+    "job": { "id": "gid://shopify/Job/5f8e2a7c-1d3b-4c6a-9e0f-2b7d4a1c8e3f", "done": true }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 1,
+      "actualQueryCost": 1,
+      "throttleStatus": { "maximumAvailable": 2000.0, "currentlyAvailable": 1985, "restoreRate": 100.0 }
+    }
+  }
+}
