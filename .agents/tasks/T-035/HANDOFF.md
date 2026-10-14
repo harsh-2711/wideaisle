@@ -30,7 +30,7 @@ None. The task is done.
 
 ## Next three steps
 
-1. When Q-33 (model) or Q-37 (cost questions) is answered, update docs/spikes/cost-per-merchant.md.
+1. When Q-37 (cost questions) is answered, update docs/spikes/cost-per-merchant.md. Q-33 is answered: Haiku 5.5 (2026-10-14).
 2. When Q-04 allows a real Spike C run, replace the token guess with the measured tokens and recompute.
 
 ## Blockers and open questions

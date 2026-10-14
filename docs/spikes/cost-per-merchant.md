@@ -9,6 +9,7 @@
 
 ## Summary
 
+- **2026-10-14: the owner picked Haiku 5.5 (Q-33).** The Haiku 4.5 columns below are kept for comparison only.
 - **The 10% bar holds only at scale.** With few paying stores, each one's share of the fixed monthly cost puts Starter and Agency over on either model. Pro stays under, except on Haiku 4.5 in the smallest cases.
 - **M5 and M7 go over.** M5, 10 pilots: Starter costs up to $3.21 on Haiku 5.5, which is 11% of $29 and 22% at a 50% founding price. On Haiku 4.5 it is up to $5.10: 18% and 35%. M7, 15 paying stores of 50 installs on the budget's Launch setup: the shared cost alone is $3.00 to $7.00 a paying store, and Starter reaches 25% on Haiku 5.5.
 - **Launch at capacity:** 200 stores, 30% of them paying. On Haiku 5.5 every plan is under 10%, with Agency at 9.8%. On Haiku 4.5, Starter (13%) and Agency (19%) go over at the high end.
@@ -91,5 +92,5 @@ This estimate changes no decision. Owner queue Q-37 holds these questions.
 - **No live-store data.** Images, theme publishes and page weight are assumptions. Real stores often load more third-party script than the fixtures.
 - **Every price is an estimate or a plan figure.** No quote, invoice or provider pick exists, and no web page was opened for this estimate. The provider memo for the server and storage is due before M4 (ADR 0005, D-04).
 - **RAM.** One scanner needs about 1.1 GB besides Postgres and the app. The low end of D-10's range may be too small; if so, use the high end.
-- **Haiku 4.5** may be withdrawn from 2026-10-15 (Spike C). The Haiku 4.5 figures then no longer apply.
+- **Haiku 4.5** may be withdrawn from 2026-10-15 (Spike C). The owner picked Haiku 5.5 (Q-33, 2026-10-14), so the Haiku 4.5 figures are for comparison only.
 - **Not counted:** agent plans, CI agents' API use, domain and email, support time. Shopify takes 0% of the first $1M (roadmap).
