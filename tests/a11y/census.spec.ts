@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./census-browser";
 import dgram from "node:dgram";
 import fs from "node:fs";
 import http from "node:http";
@@ -16,7 +16,7 @@ Shopify.theme = {"name":"Dawn","schema_name":"Dawn","schema_version":"15.0.0","t
 const COLLECTION = `<!doctype html><html lang="en"><head><title>Shirts</title></head><body><main><a href="/cart"><svg></svg></a></main></body></html>`;
 const PRODUCT = `<!doctype html><html lang="en"><head><title>Linen</title></head><body><main><form><input type="email" name="e"></form></main></body></html>`;
 
-test("the census finds the store, respects robots.txt and scans the sampled pages", async ({ browser }) => {
+test("the census finds the store, respects robots.txt and scans the sampled pages", async ({ censusBrowser: browser }) => {
   const hits: { path: string; ua: string }[] = [];
   const server = http.createServer((req, res) => {
     hits.push({ path: req.url ?? "", ua: String(req.headers["user-agent"]) });
@@ -67,7 +67,7 @@ test("the census finds the store, respects robots.txt and scans the sampled page
   }
 });
 
-test("the scan browser reaches no private address, by HTTP or WebRTC", async ({ browser }) => {
+test("the scan browser reaches no private address, by HTTP or WebRTC", async ({ censusBrowser: browser }) => {
   const hits: string[] = [];
   const server = http.createServer((req, res) => {
     hits.push(req.url ?? "");
@@ -120,7 +120,7 @@ try {
   }
 });
 
-test("browser redirects are vetted before the browser requests them", async ({ browser }) => {
+test("browser redirects are vetted before the browser requests them", async ({ censusBrowser: browser }) => {
   const hits: string[] = [];
   const server = http.createServer((req, res) => {
     hits.push(req.url ?? "");

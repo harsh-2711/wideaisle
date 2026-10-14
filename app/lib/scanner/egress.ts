@@ -166,7 +166,17 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
     req.pipe(upstream);
   });
 
+  // A CONNECT tunnel leaves the server's own connection tracking, and a
+  // browser keeps tunnels open. close() ends them itself; otherwise it would
+  // wait for as long as the browser holds one (T-027).
+  const tunnels = new Set<Duplex>();
+  const track = (s: Duplex) => {
+    tunnels.add(s);
+    s.on("close", () => tunnels.delete(s));
+  };
+
   server.on("connect", async (req: http.IncomingMessage, client: Duplex, head: Buffer) => {
+    track(client);
     client.on("error", () => client.destroy());
     const m = /^\[?([^\]]+?)\]?:(\d+)$/.exec(req.url ?? "");
     if (!m) {
@@ -182,12 +192,14 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
       client.end("HTTP/1.1 403 Forbidden\r\n\r\n");
       return;
     }
+    if (client.destroyed) return;
     const upstream = net.connect({ host, port: Number(port), lookup: pinnedLookup(addresses) as unknown as net.LookupFunction }, () => {
       client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       if (head.length) upstream.write(head);
       upstream.pipe(client);
       client.pipe(upstream);
     });
+    track(upstream);
     upstream.on("error", () => client.destroy());
     client.on("close", () => upstream.destroy());
   });
@@ -202,8 +214,9 @@ export async function startEgressProxy(opts: GuardOptions & { ports?: number[] |
     blocked,
     close: () =>
       new Promise((resolve) => {
-        server.closeAllConnections();
         server.close(() => resolve());
+        server.closeAllConnections();
+        for (const s of tunnels) s.destroy();
       }),
   };
 }

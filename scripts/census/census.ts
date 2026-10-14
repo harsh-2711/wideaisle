@@ -24,6 +24,7 @@ import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner
 import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
 import { BlockedAddressError, sameSite } from "../../app/lib/scanner/netguard";
 import { describeSkip, isSkip, PoliteClient } from "../../app/lib/scanner/polite";
+import { BLOCK_SPECULATION_RULES, isHtml, withoutRulesHeader, withoutRulesScripts } from "../../app/lib/scanner/speculation";
 
 export interface StoreRecord extends StoreFacts {
   domain: string;
@@ -228,11 +229,16 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
       proxy: { server: proxy.server, bypass: "<-loopback>" },
     });
     await context.addInitScript(noWebRtc);
+    await context.addInitScript({ content: BLOCK_SPECULATION_RULES });
     await context.routeWebSocket(/.*/, (ws) => ws.close());
     context.on("requestfinished", (req) => void remember(req));
     await context.route("**/*", async (route) => {
       const req = route.request();
       if (["image", "media"].includes(req.resourceType())) return route.abort("blockedbyclient");
+      // A prefetch (<link rel="prefetch">) fetches a page the scan did not
+      // ask for, outside robots.txt and the gap between page loads (T-027).
+      const headers = req.headers();
+      if (/prefetch|prerender/i.test(`${headers["sec-purpose"] ?? ""} ${headers["purpose"] ?? ""}`)) return route.abort("blockedbyclient");
       if (!req.isNavigationRequest() || req.frame().parentFrame() !== null) {
         // A fresh copy from an earlier page of this store makes no request.
         // A miss goes out through the proxy as before.
@@ -253,7 +259,7 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // A Referer, when sent, must come from that page's origin. Compare
         // origins only: a referrer policy or history.replaceState can change
         // the rest of it.
-        const referer = req.headers()["referer"];
+        const referer = headers["referer"];
         const fromCurrent = !referer || (nav.current !== null && sameOrigin(referer, nav.current));
         if (nav.loading && fromCurrent && !nav.redirect && sameSite(domain, new URL(url).host)) {
           nav.redirect = url;
@@ -270,7 +276,13 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
           nav.redirect = new URL(location, url).href;
           return route.fulfill({ status: 200, contentType: "text/html", body: "" });
         }
-        return route.fulfill({ response: res });
+        // Speculation rules would make Chromium fetch other pages without
+        // passing this handler (T-027). Drop the header and make inline rule
+        // sets inert; init scripts catch rules a page adds later.
+        const resHeaders = res.headers();
+        const body = isHtml(resHeaders) ? withoutRulesScripts(await res.body()) : null;
+        if (body) return route.fulfill({ response: res, headers: withoutRulesHeader(resHeaders, true), body });
+        return route.fulfill({ response: res, headers: withoutRulesHeader(resHeaders, false) });
       } catch {
         return route.fulfill({ status: 502, contentType: "text/plain", body: "" });
       }
@@ -350,6 +362,18 @@ export const CENSUS_DISABLED_FEATURES = [
   "OptimizationHintsFetching",
 ];
 
+// Playwright 1.64.0's own --enable-features list. It passes none when
+// PLAYWRIGHT_LEGACY_SCREENSHOT is set. Only the last --enable-features
+// switch counts too, so ours repeats it (T-027).
+export const PLAYWRIGHT_ENABLED_FEATURES = process.env.PLAYWRIGHT_LEGACY_SCREENSHOT ? [] : ["CDPScreenshotNewSurface"];
+
+export const CENSUS_ENABLED_FEATURES = [
+  // <link rel="prerender"> starts a NoState prefetch in the full Chromium
+  // build, which Playwright's route handler never sees. The holdback turns
+  // it off (T-027).
+  "NoStatePrefetchHoldback",
+];
+
 // Playwright already turns off background networking, component updates,
 // sync and the like. These add what the census needs on top.
 export const CENSUS_CHROMIUM_ARGS = [
@@ -358,6 +382,7 @@ export const CENSUS_CHROMIUM_ARGS = [
   "--disable-domain-reliability",
   "--no-pings",
   `--disable-features=${[...PLAYWRIGHT_DISABLED_FEATURES, ...CENSUS_DISABLED_FEATURES].join(",")}`,
+  `--enable-features=${[...PLAYWRIGHT_ENABLED_FEATURES, ...CENSUS_ENABLED_FEATURES].join(",")}`,
 ];
 
 export interface CensusBrowser {
@@ -371,10 +396,16 @@ export interface CensusBrowser {
 // context has its own egress proxy. Traffic outside those contexts, such as
 // Chromium's sign-in check and push-service check-in, goes to a proxy that
 // allows no port, so it is refused and never leaves the machine.
-export async function launchCensusBrowser(executablePath?: string): Promise<CensusBrowser> {
+// `extraArgs` is for tests only, such as --ignore-certificate-errors for a
+// local HTTPS server; the census passes none.
+export async function launchCensusBrowser(executablePath?: string, opts: { extraArgs?: string[] } = {}): Promise<CensusBrowser> {
   const deny = await startEgressProxy({ ports: [] });
   try {
-    const browser = await chromium.launch({ executablePath: executablePath || undefined, args: CENSUS_CHROMIUM_ARGS, proxy: { server: deny.server } });
+    const browser = await chromium.launch({
+      executablePath: executablePath || undefined,
+      args: [...CENSUS_CHROMIUM_ARGS, ...(opts.extraArgs ?? [])],
+      proxy: { server: deny.server },
+    });
     return {
       browser,
       refused: deny.blocked,
