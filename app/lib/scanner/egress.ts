@@ -74,7 +74,7 @@ function decode(body: Buffer, encoding: string | undefined, maxBytes: number): B
     .map((e) => e.trim().toLowerCase())
     .filter((e) => e && e !== "identity");
   const unknown = layers.find((e) => !DECODERS.has(e));
-  if (unknown) throw new ContentEncodingError(`content-encoding ${unknown} is not supported`);
+  if (unknown) throw new ContentEncodingError(`content-encoding ${unknown.slice(0, 40)} is not supported`);
   if (layers.length > MAX_ENCODING_LAYERS) throw new ContentEncodingError(`content-encoding has ${layers.length} layers, over ${MAX_ENCODING_LAYERS}`);
   const tooLarge = () => new ResponseTooLargeError(`response over ${maxBytes} bytes once decompressed`);
   let left = maxBytes;

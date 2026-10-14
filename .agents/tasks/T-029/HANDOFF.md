@@ -19,7 +19,8 @@ In review: PR #55. Last updated 2026-10-14.
 | Census skips a page it cannot decode, with the reason; two specs | 53db8b2 |
 | New tests run against main's decoder: all eight fail (see Proof) | no commit, files restored |
 | README line on decoding | 9545c16 |
-| All checks green (list below); pushed; PR #55 opened; board In review | this checkpoint |
+| All checks green (list below); pushed; PR #55 opened; board In review | daffabe |
+| Review (APPROVE) fixes: a 4xx robots.txt body is not read (RFC 9309), the echoed encoding token is cut to 40 characters, and a zlib deflate bomb is shown not to be retried as raw deflate | (this commit) |
 
 ## Current step
 

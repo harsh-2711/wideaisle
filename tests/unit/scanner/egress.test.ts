@@ -228,6 +228,18 @@ describe("pinnedFetch", () => {
       }
     });
 
+    it("stops a zlib deflate bomb as too large, without retrying it as raw deflate", async () => {
+      const srv = await serve({ "/": { encodings: ["deflate"], body: zlib.deflateSync(Buffer.alloc(20_000_000)) } });
+      const raw = vi.spyOn(zlib, "inflateRawSync");
+      try {
+        await expect(srv.get("/")).rejects.toThrow(ResponseTooLargeError);
+        expect(raw).not.toHaveBeenCalled();
+      } finally {
+        raw.mockRestore();
+        srv.close();
+      }
+    });
+
     it("holds the decoded cap across all layers together, not per layer", async () => {
       // 600 KB that does not compress: each layer is about 600 KB, so the
       // two decoded layers make 1.2 MB, though each is under 1 MB.

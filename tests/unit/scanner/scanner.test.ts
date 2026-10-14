@@ -137,6 +137,20 @@ describe("polite client", () => {
     expect(userAgentFor("research@example.com")).toContain("contact: research@example.com");
   });
 
+  it("treats a 4xx robots.txt as no rules without reading its body", async () => {
+    // A body that throws when read, as an undecodable one does in pinnedFetch.
+    const fetchImpl = (async (url: string) => {
+      if (url.endsWith("/robots.txt")) {
+        return { status: 404, headers: new Headers(), text: async () => { throw new Error("content-encoding zstd is not supported"); } };
+      }
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+    let clock = 0;
+    const client = new PoliteClient({ contact: "a@b.co", minDelayMs: 0, fetchImpl, now: () => clock, sleep: async (ms) => void (clock += ms), lookup: publicLookup });
+    const res = await client.get("https://s.example/");
+    expect(isSkip(res)).toBe(false);
+  });
+
   it("reads robots.txt first, skips disallowed pages and spaces requests", async () => {
     let clock = 0;
     const calls: { url: string; at: number; ua: string }[] = [];
