@@ -26,7 +26,10 @@ export function attrValue(raw: string): string {
     .replace(/&#([0-9]+);?/g, (_m, dec: string) => ascii(Number(dec)))
     .replace(/&Tab;/g, "\t")
     .replace(/&NewLine;/g, "\n")
-    .replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "")
+    // trim(), not a regex: a regex with an end anchor retries from every
+    // character of a whitespace run, which is quadratic. trim() also drops
+    // non-ASCII spaces, so it may make a few more values inert; harmless.
+    .trim()
     .toLowerCase();
 }
 
@@ -66,7 +69,7 @@ export const NEUTRALIZE_RULES_JS = `((html) => {
       .replace(/&#([0-9]+);?/g, (m, dec) => ascii(Number(dec)))
       .replace(/&Tab;/g, "\\t")
       .replace(/&NewLine;/g, "\\n")
-      .replace(/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g, "")
+      .trim()
       .toLowerCase();
     return v === "speculationrules" ? name + ${JSON.stringify(`"${REMOVED_TYPE}"`)} : whole;
   });

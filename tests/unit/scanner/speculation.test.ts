@@ -48,6 +48,16 @@ describe("speculation rules in a page", () => {
     }
   });
 
+  it("reads type values in linear time on hostile pages", () => {
+    // A long whitespace run inside one value used to take seconds per page
+    // (35 s for 200 KB), blocking the census for every store.
+    const html = `<!doctype html><html><head><script type="a${"\t".repeat(200_000)}b"></script></head><body>hi</body></html>`;
+    const started = performance.now();
+    expect(neutralizeRules(html)).toBeNull();
+    expect(withoutRulesScripts(Buffer.from(html, "latin1"))).toBeNull();
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
   it("leaves other scripts and pages alone", () => {
     expect(strip(`<script>const t = "a";</script>`)).toBeNull();
     expect(strip(`<script data-type="speculationrules">x</script>`)).toBeNull();
