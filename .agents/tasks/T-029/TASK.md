@@ -18,8 +18,8 @@ Decode page bodies with stacked or raw content-encodings the way Chromium does, 
 
 Each one is a test or a check someone can run.
 
-- [ ] A `gzip, gzip` page and a raw-deflate page each render their decoded HTML or are skipped with a reason; neither breaks the store's next page (spec in tests/a11y/census-doc-cap.spec.ts)
-- [ ] A stacked `gzip, gzip` bomb and a page over the cap on the wire each raise ResponseTooLargeError (unit test in tests/unit/scanner/egress.test.ts)
+- [x] A `gzip, gzip` page and a raw-deflate page each render their decoded HTML or are skipped with a reason; neither breaks the store's next page (tests/a11y/census-doc-cap.spec.ts:97 and :119)
+- [x] A stacked `gzip, gzip` bomb and a page over the cap on the wire each raise ResponseTooLargeError (tests/unit/scanner/egress.test.ts:197)
 
 ## Out of scope
 

@@ -65,7 +65,8 @@ none
 
 - app/lib/scanner/egress.ts (decode, DECODERS, MAX_ENCODING_LAYERS, ContentEncodingError, lazy body error)
 - scripts/census/census.ts (pageNotDecoded, nav.skip)
-- tests/unit/scanner/egress.test.ts (6 tests), tests/a11y/census-doc-cap.spec.ts (2 tests)
+- tests/unit/scanner/egress.test.ts (7 tests), tests/a11y/census-doc-cap.spec.ts (2 tests)
+- app/lib/scanner/polite.ts (a 4xx robots.txt body is not read), tests/unit/scanner/scanner.test.ts (its test)
 - docs/census/README.md (one line)
 
 ## How to verify
