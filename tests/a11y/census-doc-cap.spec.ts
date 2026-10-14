@@ -1,13 +1,15 @@
 // The census loads at most MAX_PAGE_BYTES of a page's HTML, on the wire and
 // after decompression (T-028). A page over it is skipped with a clear
-// reason, quickly, and the scan goes on to the next store.
+// reason, quickly, and the scan goes on to the next store. Pages with
+// stacked or raw-deflate content-encodings are decoded as Chromium decodes
+// them; a page the census cannot decode is skipped with the reason (T-029).
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
 import { PoliteClient } from "../../app/lib/scanner/polite";
-import { MAX_PAGE_BYTES, openScanContext, PAGE_TOO_LARGE, scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
+import { MAX_PAGE_BYTES, openScanContext, PAGE_TOO_LARGE, pageNotDecoded, scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
 import { expect, test } from "./census-browser";
 
 const KINDS = ["home", "collection", "product", "cart"];
@@ -16,6 +18,17 @@ const page = (title: string) =>
 // Over the cap as sent, and small as sent but over the cap once decompressed.
 const BIG = `<!doctype html><html lang="en"><head><title>big</title></head><body>${"<p>x</p>".repeat(Math.ceil((MAX_PAGE_BYTES * 1.2) / 8))}</body></html>`;
 const BOMB = zlib.gzipSync(Buffer.alloc(MAX_PAGE_BYTES * 5, " "));
+// encoded.test sends these pages with these content-encodings, and the rest
+// as plain HTML. zstd.test sends its home page in an encoding the census
+// does not decode.
+const ENCODED: Record<string, Record<string, [string, (b: Buffer) => Buffer]>> = {
+  "encoded.test": {
+    "/": ["gzip, gzip", (b) => zlib.gzipSync(zlib.gzipSync(b))],
+    "/collections/shirts": ["deflate", (b) => zlib.deflateRawSync(b)],
+  },
+  "zstd.test": { "/": ["zstd", (b) => zlib.gzipSync(b)] },
+};
+const CLIENT = { contact: "census@example.com", minDelayMs: 0, allowPrivate: true, lookup: async () => ["127.0.0.1"] };
 
 async function startStores() {
   const seen: { host: string; url: string; cookie: string }[] = [];
@@ -27,6 +40,11 @@ async function startStores() {
     if (url === "/robots.txt") return res.writeHead(404).end();
     if (host === "big.test") return res.writeHead(200, { "content-type": "text/html" }).end(BIG);
     if (host === "bomb.test") return res.writeHead(200, { "content-type": "text/html", "content-encoding": "gzip" }).end(BOMB);
+    const encoded = ENCODED[host]?.[url];
+    if (encoded) {
+      const [encoding, encode] = encoded;
+      return res.writeHead(200, { "content-type": "text/html", "content-encoding": encoding }).end(encode(Buffer.from(page(`${host} ${url}`))));
+    }
     const cookie = host === "cookie.test" && url === "/" ? { "set-cookie": "wa_visit=1; Path=/" } : {};
     res.writeHead(200, { "content-type": "text/html", ...cookie }).end(page(`${host} ${url}`));
   });
@@ -35,9 +53,10 @@ async function startStores() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-census-doc-cap-"));
   return {
     seen,
+    port,
     async scan(browser: import("playwright").Browser, names: string[]): Promise<ScanRecord[]> {
       const stores: StoreRecord[] = names.map((n) => ({ domain: `${n}:${port}`, origin: `http://${n}:${port}`, checkedAt: "", isShopify: true, shopDomain: null, theme: null, apps: [] }));
-      const client = new PoliteClient({ contact: "census@example.com", minDelayMs: 0, allowPrivate: true, lookup: async () => ["127.0.0.1"] });
+      const client = new PoliteClient(CLIENT);
       const out = path.join(dir, `scans-${names.join("-")}.jsonl`);
       await scan(stores, out, client, { browser, concurrency: 1 });
       return fs.readFileSync(out, "utf8").trim().split("\n").map((l) => JSON.parse(l) as ScanRecord);
@@ -70,6 +89,47 @@ test("a page over the cap is skipped quickly, and the next store still scans", a
     // Both capped stores together took a few seconds at most.
     expect(Date.parse(ok.scannedAt) - Date.parse(big.scannedAt)).toBeLessThan(10_000);
     expect(ok.pages.map((p) => p.kind)).toEqual(KINDS);
+  } finally {
+    stores.close();
+  }
+});
+
+test("a gzip, gzip page and a raw-deflate page render their decoded HTML, and the store's next page loads", async ({ censusBrowser }) => {
+  const stores = await startStores();
+  const client = new PoliteClient(CLIENT);
+  const origin = `http://encoded.test:${stores.port}`;
+  let ctx: Awaited<ReturnType<typeof openScanContext>> | undefined;
+  try {
+    ctx = await openScanContext(censusBrowser, client, `encoded.test:${stores.port}`);
+    const tab = await ctx.context.newPage();
+    // gzip, gzip; raw deflate; then two plain pages of the same store.
+    for (const p of ["/", "/collections/shirts", "/products/shirt", "/cart"]) {
+      expect(await client.pageTurn(origin + p), p).toBeNull();
+      const loaded = await ctx.goto(tab, origin + p);
+      expect(loaded, p).not.toHaveProperty("skip");
+      expect(await tab.title(), p).toBe(`encoded.test ${p}`);
+      await expect(tab.getByRole("heading", { level: 1 }), p).toHaveText(`encoded.test ${p}`);
+    }
+  } finally {
+    await ctx?.close();
+    stores.close();
+  }
+});
+
+test("a page in an encoding the census does not decode is skipped with the reason, and the store's next page loads", async ({ censusBrowser }) => {
+  const stores = await startStores();
+  try {
+    const [record] = await stores.scan(censusBrowser, ["zstd.test"]);
+    // The home page is skipped, never shown still encoded. With no home
+    // page there are no links, so the collection falls back to
+    // /collections/all and the product has none.
+    expect(record.skipped).toEqual([
+      { kind: "home", reason: pageNotDecoded("content-encoding zstd is not supported") },
+      { kind: "product", reason: "no link found" },
+    ]);
+    expect(record.pages.map((p) => p.kind)).toEqual(["collection", "cart"]);
+    expect(record.retry).toBeUndefined();
+    expect(record.error).toBeUndefined();
   } finally {
     stores.close();
   }
