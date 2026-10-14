@@ -10,13 +10,13 @@
 ## Summary
 
 - The batch client, prompt, checks, resume logic, cost report and rating sheet are built and tested with a mocked SDK. Nothing has called the real API.
-- Default model: `claude-haiku-5-5`, the current Haiku. The plan named Haiku 4.5. Set `ALT_TEXT_MODEL=claude-haiku-4-5` to run the plan's model instead.
+- Default model: `claude-haiku-5-5`, the current Haiku and the owner's pick (Q-33). The plan first named Haiku 4.5. Set `ALT_TEXT_MODEL=claude-haiku-4-5` to run Haiku 4.5 instead.
 - Rough estimate before measuring: about 1,100 input and 200 output tokens per image, so about $0.10 per 1,000 images on Haiku 5.5 and about $1 on Haiku 4.5, at batch prices still to verify. The real run replaces this guess with measured usage.
 - The output is a review queue. Nothing is written to a store. Merchants approve every alt text (D-11).
 
 ## Model choice
 
-The roadmap and D-11 say "Claude Haiku 4.5 in batch". Since the plan was written, Claude Haiku 5.5 became the current Haiku, and Haiku 4.5 is listed as a legacy model. The default is Haiku 5.5 because:
+The roadmap and D-11 said "Claude Haiku 4.5 in batch". Since the plan was written, Claude Haiku 5.5 became the current Haiku, and Haiku 4.5 is listed as a legacy model. The default is Haiku 5.5 because:
 
 - Its batch price is a tenth of Haiku 4.5's: $0.05 input and $0.25 output per million tokens, against $0.50 and $2.50 (pricing page, to verify).
 - It will last. The deprecations page gives Haiku 5.5 a retirement not sooner than October 7, 2027. Haiku 4.5 (`claude-haiku-4-5-20251001`) has "not sooner than October 15, 2026", one week from today, so the plan's model may be gone before lane C ships.

@@ -13,7 +13,7 @@
 - **The 10% bar holds only at scale.** With few paying stores, each one's share of the fixed monthly cost puts Starter and Agency over on either model. Pro stays under, except on Haiku 4.5 in the smallest cases.
 - **M5 and M7 go over.** M5, 10 pilots: Starter costs up to $3.21 on Haiku 5.5, which is 11% of $29 and 22% at a 50% founding price. On Haiku 4.5 it is up to $5.10: 18% and 35%. M7, 15 paying stores of 50 installs on the budget's Launch setup: the shared cost alone is $3.00 to $7.00 a paying store, and Starter reaches 25% on Haiku 5.5.
 - **Launch at capacity:** 200 stores, 30% of them paying. On Haiku 5.5 every plan is under 10%, with Agency at 9.8%. On Haiku 4.5, Starter (13%) and Agency (19%) go over at the high end.
-- **Scanning costs almost nothing:** under $0.01 a store a month. The number of paying stores sets the result, then the model (Q-33).
+- **Scanning costs almost nothing:** under $0.01 a store a month. The number of paying stores sets the result, then the model (Haiku 5.5, picked in Q-33).
 
 ## Inputs
 
@@ -29,7 +29,7 @@
 | Launch infrastructure | $40 to $100 a month: managed Postgres, a separate scan worker, object storage, error monitoring | Roadmap stage table and budget (M7 onward) | Estimate |
 | Browser Run, census bursts | $5 a month with 10 browser-hours, then $0.09 an hour. A census fits the 10 hours if the network adds under about 1.4 s a page | Roadmap, D-10; Spike D for the hours | Plan figure, not measured (Q-05) |
 | Images a store a month | Starter 1,000. Pro 1,000 ("Everything in Starter"). Agency 1,000 a store. Free 0 | Roadmap pricing table. Agency's is not set | Assumption: full allowance every month |
-| Alt text per 1,000 images, batch | Haiku 5.5 $0.105. Haiku 4.5 $1.05 | [Spike C](spike-c-alt-text.md): about 1,100 input and 200 output tokens an image, at batch prices in `app/lib/alt-text/config.ts` (read 2026-10-08) | Estimate. Q-04 measures it; Q-33 picks the model |
+| Alt text per 1,000 images, batch | Haiku 5.5 $0.105. Haiku 4.5 $1.05 | [Spike C](spike-c-alt-text.md): about 1,100 input and 200 output tokens an image, at batch prices in `app/lib/alt-text/config.ts` (read 2026-10-08) | Estimate. Q-04 measures it; Q-33 picked Haiku 5.5 (2026-10-14) |
 | Share of stores that pay | PoC: all, since every store is a pilot. Launch: 30%, the M7 target of 15 paying of 50 installs | Roadmap M5 and M7 exits | Assumption |
 | 10% bar | List price: Starter $2.90, Pro $7.90, Agency $1.99 a store ($199 over 10 stores; fewer stores raise it). At a 50% founding price: $1.45, $3.95, $1.00 | D-12 ("for example 50% off for 12 months"), roadmap budget guardrails | Owner rule. The founding price is an example |
 
@@ -71,7 +71,7 @@ The high end as a share of price. For pilots: list price, then the 50% founding 
 ## What moves the result most
 
 1. **Paying stores sharing the fixed cost.** The scan load barely uses the server, so its price is a fixed fee. Fewer installs or more Free stores raise every figure. At M7, keeping the PoC setup ($10 to $30) cuts the shared cost to $0.67 to $2.00 a paying store; Starter on Haiku 5.5 then tops out at 7.6% and Agency at 11.1%. That is 50 installs on one server, past the 20 PoC stores D-10 accepts, so it needs the owner's call.
-2. **The model (Q-33).** Haiku 4.5 costs ten times Haiku 5.5: $1.05 to $2.10 a store at the full allowance, against $0.11 to $0.21. At twice the token guess, an Agency store's alt text alone ($2.10) is over its $1.99 bar.
+2. **The model (Haiku 5.5, picked in Q-33).** Haiku 4.5 costs ten times Haiku 5.5: $1.05 to $2.10 a store at the full allowance, against $0.11 to $0.21. At twice the token guess, an Agency store's alt text alone ($2.10) is over its $1.99 bar.
 3. **The price the bar is judged against.** A 50% founding price halves every pilot's bar.
 4. **Images and tokens.** Every store is assumed to use all 1,000 images every month. After a first catalogue pass, most likely send far fewer. Tokens an image are a guess until the real run (Q-04).
 
@@ -81,7 +81,7 @@ The high end as a share of price. For pilots: list price, then the 50% founding 
 
 This estimate changes no decision. Owner queue Q-37 holds these questions.
 
-1. **What image allowance should an Agency store get?** Agency a store is over its 10% bar at the high end on Haiku 4.5 in every case, and on either model at M5 and M7. The roadmap sets no Agency allowance. Picking Haiku 5.5 (Q-33) brings Agency under at Launch.
+1. **What image allowance should an Agency store get?** Agency a store is over its 10% bar at the high end on Haiku 4.5 in every case, and on either model at M5 and M7. The roadmap sets no Agency allowance. Haiku 5.5, picked in Q-33, brings Agency under at Launch.
 2. **Does the 10% bar apply to founding prices?** If it does, Starter and Agency pilots at 10 stores go over on either model: up to 22% and 32% on Haiku 5.5.
 3. **What scan cadence should Free and Agency get?** This estimate assumes one Free scan a month and Pro cadence for Agency.
 4. **Should the move to the Launch setup follow paying store count rather than the launch date?** D-10 moves Postgres to a managed service at launch. At M7 the Launch setup puts Starter at up to 25% on Haiku 5.5; the PoC setup, at up to 7.6%. D-10 accepts one server for up to 20 PoC stores, so the second option goes past it.

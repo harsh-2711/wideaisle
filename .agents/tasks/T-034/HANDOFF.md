@@ -31,6 +31,7 @@ Blocked on you. PR #46 merges the five ADRs as Status Proposed after three revie
 | 12. Route B retry also finds a merged pull request (599b8de); board set to Blocked on you and Q-28 opened for the merge | (this commit) |
 | 13. Spike D (PR #47) numbers in ADR 0005: each row marked "Estimate, Spike D replaces it" now has the measured value and its source, or says Spike D did not measure it. Scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. Done on T-035's branch `claude/docs-cost-per-merchant` | 91eaded |
 | 14. PR #48 review: ADR 0004's cost line now says the $2.90 comparison counts alt text alone and points to the cost doc ($3.60 for Starter on Haiku 4.5 with infrastructure). ADR 0005's worker figures corrected to 220 MB and 23% | (this commit) |
+| 15. ADR 0004 names Haiku 5.5, the owner's pick in Q-33; its cost line now gives $3.21 for Starter at 10 pilots with infrastructure (done on T-032's branch) | PR #52 |
 
 ## Current step
 

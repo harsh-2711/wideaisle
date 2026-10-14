@@ -26,7 +26,8 @@ Blocked on you. Merged in PR #39. The owner approved Haiku 5.5 on 2026-10-14 (Q-
 | 6. Board state set to In review | 88ec366 |
 | 7. Merged origin/main (owner queue Q-30 to Q-32, census tsx); took main's `^4.23.15` range for tsx | 855116b |
 | 8. Review fixes: create with no SDK retries and unknown outcome kept, per-run caps and ceilings, run lock, custom_id clash, CSV guard, certif\w*, locale check; regression tests | e7e1749 |
-| 9. Docs for the fixes, owner queue Q-33, board back to In review | (this commit) |
+| 9. Docs for the fixes, owner queue Q-33, board back to In review | (merged in PR #39) |
+| 10. Q-33 answered (Haiku 5.5, 2026-10-14) and recorded in D-11, INDEX, the roadmap, ADR 0004, Spike C and the cost doc; needs now Q-04 and Q-26 | PR #52 |
 
 ## Current step
 
@@ -62,6 +63,7 @@ D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (
 
 ## Files touched
 
+- decisions/D-11.md, decisions/INDEX.md, docs/plan/roadmap.md, docs/adr/0004-ai-in-the-product.md, docs/spikes/cost-per-merchant.md (PR #52, Q-33)
 - package.json, package-lock.json (SDK pinned at 0.132.1, tsx `^4.23.15` as on main, scripts
   `alt-text`, `alt-text:sheet`)
 - .gitignore (`/data/`)
