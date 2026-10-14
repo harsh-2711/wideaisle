@@ -8,22 +8,23 @@ See TASK.md. Decode page bodies with stacked or raw content-encodings the way Ch
 
 ## Status
 
-Queued. Last updated 2026-10-14.
+Running (builder). Last updated 2026-10-14.
 
 ## Done so far
 
 | Step | Commit |
 |---|---|
+| Branch cut from main at dbd6c25; board set Running | this checkpoint |
 
 ## Current step
 
-Not started.
+Unit tests first (tests/unit/scanner/egress.test.ts), then the decoder in app/lib/scanner/egress.ts.
 
 ## Next three steps
 
-1. Read app/lib/scanner/egress.ts `decode` and how pinnedFetch caps wire and decoded bytes.
-2. Decode stacked encodings in order (as Chromium does), with the decoded cap applied across all of them; raw deflate falls back from zlib to raw inflate. Otherwise skip with a reason.
-3. Build the fixtures in the tests (zlib.gzipSync twice for `gzip, gzip`; zlib.deflateRawSync for raw deflate). Spec: each page renders its decoded HTML or is skipped with a reason, then the next page of the same store loads. Unit test: a stacked `gzip, gzip` bomb raises ResponseTooLargeError.
+1. Unit tests: `gzip, gzip`, raw deflate, br alone and stacked, unknown encoding and too many layers refused, a stacked bomb and a page over the cap on the wire raise ResponseTooLargeError, the cap holds across layers together.
+2. Decoder: every listed layer, last applied first; deflate falls back from zlib to raw; one decoded budget for all layers (`maxOutputLength` per layer = what is left). Unknown encoding, more than 3 layers or corrupt data: ContentEncodingError, and the census skips the page with a reason.
+3. Spec in tests/a11y/census-doc-cap.spec.ts: a `gzip, gzip` page and a raw-deflate page render their decoded HTML and the next page loads; an unknown encoding is skipped with the reason and the next page loads.
 
 ## Blockers and open questions
 
