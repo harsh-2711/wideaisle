@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "In review",
-  "step": "Round 3 fixes on PR #51; waiting for the lead",
+  "state": "Done",
+  "step": "Merged in PR #51",
   "branch": "claude/fix-census-prefetch",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T06:20:10Z",
+  "updated": "2026-10-14T06:27:44Z",
   "id": "T-027"
 }

@@ -8,7 +8,7 @@ See TASK.md. Store pages cannot make the census browser fetch store URLs outside
 
 ## Status
 
-In review. PR #51 (https://github.com/harsh-2711/wideaisle/pull/51). Last updated 2026-10-13.
+Done. Merged in PR #51 (https://github.com/harsh-2711/wideaisle/pull/51) as 0aeb6ab. Last updated 2026-10-14.
 
 ## Done so far
 
@@ -29,16 +29,15 @@ In review. PR #51 (https://github.com/harsh-2711/wideaisle/pull/51). Last update
 | Finding 2: document.write joins arguments; split-across-calls limit in README, comment and spec | abbe4f7 |
 | Finding 3: one copy of the filter (NEUTRALIZE_RULES_JS, compiled once with node:vm) | b6252fc |
 | Security review: every write argument converted as write() does, then filtered once; object toString case in the spec | 02bf877 |
+| PR #51 merged by the lead | 0aeb6ab |
 
 ## Current step
 
-Round 3 fixes pushed to PR #51. Waiting for the lead. Do not merge.
+None. Merged in PR #51 as 0aeb6ab.
 
 ## Next three steps
 
-1. Answer any further review comments on PR #51.
-2. Once the lead says it merged, set the board to Done.
-3. Open questions for the lead: iframes and a page's own fetch, XHR and beacon calls still load without a robots.txt check; a rule split across two write calls into a closed declarative shadow root still fetches (README says both).
+1. None for this task. The main-document size cap from the review's optional note is T-028 (`.agents/tasks/T-028/`), on `claude/fix-census-doc-cap`.
 
 ## Checks after round 3 (all passed)
 
