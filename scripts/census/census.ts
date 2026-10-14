@@ -21,7 +21,7 @@ import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine }
 import { AssetCache, reusableForMs, type AssetRequest } from "../../app/lib/scanner/asset-cache";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
-import { DEFAULT_PORTS, pinnedFetch, ResponseTooLargeError, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
+import { DEFAULT_PORTS, pinnedFetch, portOf, ResponseTooLargeError, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
 import { BlockedAddressError, sameSite } from "../../app/lib/scanner/netguard";
 import { describeSkip, isSkip, PoliteClient } from "../../app/lib/scanner/polite";
 import { BLOCK_SPECULATION_RULES, isHtml, withoutRulesHeader, withoutRulesScripts } from "../../app/lib/scanner/speculation";
@@ -290,6 +290,10 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // decompression, connects only to vetted addresses, and does not
         // follow redirects, so the scan can vet each hop. Like route.fetch,
         // it sends the browser's headers and the context's cookies.
+        // The egress proxy refused other ports on its own; this path checks
+        // them here rather than trusting every caller to run pageTurn first.
+        const port = portOf(new URL(url));
+        if (!client.allowPrivate && !DEFAULT_PORTS.includes(port)) throw new BlockedAddressError(`port ${port} is not allowed`);
         const cookies = await context!.cookies(url);
         const headers: Record<string, string> = { ...req.headers(), "accept-encoding": "gzip, deflate, br" };
         if (cookies.length) headers["cookie"] = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
@@ -316,6 +320,8 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
           nav.tooLarge = true;
           return route.fulfill({ status: 200, contentType: "text/html", body: "" });
         }
+        // Recorded as the egress proxy records its refusals.
+        if (err instanceof BlockedAddressError) proxy.blocked.add(new URL(url).hostname);
         return route.fulfill({ status: 502, contentType: "text/plain", body: "" });
       }
     });

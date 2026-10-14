@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
 import { PoliteClient } from "../../app/lib/scanner/polite";
-import { MAX_PAGE_BYTES, PAGE_TOO_LARGE, scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
+import { MAX_PAGE_BYTES, openScanContext, PAGE_TOO_LARGE, scan, type ScanRecord, type StoreRecord } from "../../scripts/census/census";
 import { expect, test } from "./census-browser";
 
 const KINDS = ["home", "collection", "product", "cart"];
@@ -87,5 +87,30 @@ test("a cookie a page sets is sent with the store's next page", async ({ censusB
     for (const p of pages.slice(1)) expect(p.cookie, p.url).toBe("wa_visit=1");
   } finally {
     stores.close();
+  }
+});
+
+// The egress proxy refused ports other than 80 and 443 on its own. The page
+// fetch now checks them itself, so a caller that skips pageTurn still cannot
+// reach another port, and the refusal is recorded like the proxy's.
+test("the page fetch refuses other ports itself and records the host", async ({ censusBrowser }) => {
+  let looked = 0;
+  const client = new PoliteClient({
+    contact: "census@example.com",
+    minDelayMs: 0,
+    lookup: async () => {
+      looked++;
+      return [];
+    },
+  });
+  const ctx = await openScanContext(censusBrowser, client, "ports.test");
+  try {
+    const page = await ctx.context.newPage();
+    // The refusal is an empty 502, which Chromium reports as a failed load.
+    await ctx.goto(page, "http://ports.test:8081/").catch(() => null);
+    expect([...ctx.proxy.blocked]).toContain("ports.test");
+    expect(looked).toBe(0);
+  } finally {
+    await ctx.close();
   }
 });
