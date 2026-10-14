@@ -2,8 +2,8 @@
 // limits and prices live here and nowhere else.
 
 /**
- * Default model: the latest Haiku. The plan (roadmap, D-11) named Haiku 4.5;
- * Haiku 5.5 replaced it as the current Haiku. Override with ALT_TEXT_MODEL.
+ * Default model: Claude Haiku 5.5, the owner's pick for alt text (D-11, Q-33,
+ * 2026-10-14). Override with ALT_TEXT_MODEL.
  */
 export const DEFAULT_ALT_TEXT_MODEL = "claude-haiku-5-5";
 

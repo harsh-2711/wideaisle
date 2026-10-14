@@ -8,11 +8,11 @@ See TASK.md. Draft alt text for 200 product images through the Batch API; cost p
 
 - [x] Batch client and prompt tested with a mock
 - [x] Rating sheet ready
-- [ ] Real run (needs Q-04 and Q-33), owner rates 50 (Q-26)
+- [ ] Real run (needs Q-04; model approved in Q-33), owner rates 50 (Q-26)
 
 ## Status
 
-Blocked on you. Merged in PR #39. The real run waits on the API key (Q-04) and the model pick (Q-33); ratings wait on Q-26.
+Blocked on you. Merged in PR #39. The owner approved Haiku 5.5 on 2026-10-14 (Q-33). The real run waits on the API key (Q-04); ratings wait on Q-26.
 
 ## Done so far
 
@@ -26,15 +26,16 @@ Blocked on you. Merged in PR #39. The real run waits on the API key (Q-04) and t
 | 6. Board state set to In review | 88ec366 |
 | 7. Merged origin/main (owner queue Q-30 to Q-32, census tsx); took main's `^4.23.15` range for tsx | 855116b |
 | 8. Review fixes: create with no SDK retries and unknown outcome kept, per-run caps and ceilings, run lock, custom_id clash, CSV guard, certif\w*, locale check; regression tests | e7e1749 |
-| 9. Docs for the fixes, owner queue Q-33, board back to In review | (this commit) |
+| 9. Docs for the fixes, owner queue Q-33, board back to In review | (merged in PR #39) |
+| 10. Q-33 answered (Haiku 5.5, 2026-10-14) and recorded in D-11, INDEX, the roadmap, ADR 0004, Spike C and the cost doc; needs now Q-04 and Q-26 | PR #52 |
 
 ## Current step
 
-Waiting for Q-04 and Q-33.
+Waiting for Q-04.
 
 ## Next three steps
 
-1. After Q-04 and Q-33: `npm run alt-text -- --input products.jsonl --dry-run`, then a one-image run
+1. After Q-04: `npm run alt-text -- --input products.jsonl --dry-run`, then a one-image run
    (`--limit 1 --run spike-c-one --yes`) to confirm URL image sources work in a batch.
 2. Run 200 images (`--run spike-c --yes`), check the total against the Console usage page, then
    change the price status in `app/lib/alt-text/config.ts` from "to verify" if it matches.
@@ -44,8 +45,7 @@ Waiting for Q-04 and Q-33.
 ## Blockers and open questions
 
 - Q-04: no Anthropic API key yet. Nothing has called the real API. All tests use a mocked client.
-- Q-33: the owner approves Haiku 5.5 in place of the Haiku 4.5 that D-11 names. Haiku 4.5 retires
-  not sooner than October 15, 2026. `ALT_TEXT_MODEL` switches the model if the answer is no.
+- Q-33: done. The owner approved Haiku 5.5 on 2026-10-14; D-11 records it.
 - Q-26: the owner rates 50 drafts after the real run.
 - Source of 200 images: the Q-03 dev store (needs an Admin API export, lane C) or public images
   we may use. Not decided.
@@ -63,6 +63,7 @@ D-11 (alt text in batch; merchants approve), D-06 (no compliance claims), D-04 (
 
 ## Files touched
 
+- decisions/D-11.md, decisions/INDEX.md, docs/plan/roadmap.md, docs/adr/0004-ai-in-the-product.md, docs/spikes/cost-per-merchant.md (PR #52, Q-33)
 - package.json, package-lock.json (SDK pinned at 0.132.1, tsx `^4.23.15` as on main, scripts
   `alt-text`, `alt-text:sheet`)
 - .gitignore (`/data/`)

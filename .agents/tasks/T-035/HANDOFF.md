@@ -30,12 +30,12 @@ None. The task is done.
 
 ## Next three steps
 
-1. When Q-33 (model) or Q-37 (cost questions) is answered, update docs/spikes/cost-per-merchant.md.
+1. When Q-37 (cost questions) is answered, update docs/spikes/cost-per-merchant.md. Q-33 is answered: Haiku 5.5 (2026-10-14).
 2. When Q-04 allows a real Spike C run, replace the token guess with the measured tokens and recompute.
 
 ## Blockers and open questions
 
-- None block the estimate. It uses estimates where nothing is measured: server and object storage prices (provider memo, ADR 0005), Browser Run (Q-05), alt-text tokens and prices (Q-04), the model (Q-33), live pages (Q-01).
+- None block the estimate. It uses estimates where nothing is measured: server and object storage prices (provider memo, ADR 0005), Browser Run (Q-05), alt-text tokens and prices (Q-04), live pages (Q-01).
 - Result: the 10% bar holds only at scale. At M5 (10 pilots, 50% founding price) Starter reaches 22% of price on Haiku 5.5 and 35% on Haiku 4.5. At M7 (15 paying of 50, Launch setup) Starter reaches 25% on Haiku 5.5. At Launch capacity with 30% paying, Haiku 5.5 keeps every plan under (Agency 9.8%); Haiku 4.5 puts Starter (13.3%) and Agency (19.3%) over at the high end. Owner queue Q-37 holds the four questions.
 
 ## Decisions used

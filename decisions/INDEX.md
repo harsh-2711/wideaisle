@@ -16,7 +16,7 @@ To add a decision, copy `.agents/templates/decision-memo.md` to `decisions/D-xx.
 | [D-08](D-08.md) | v1 scope and success bar | Six types plus alt text on the top 5 census themes; PoC passes at 80% fewer errors | G1 | Approved |
 | [D-09](D-09.md) | How fixes reach a store | A for pilots, C as the fallback, B for agencies | G1 | Approved |
 | [D-10](D-10.md) | PoC hosting | A: one small server for app, Postgres, queue and scanner | G1 | Approved |
-| [D-11](D-11.md) | AI inside the product | A to start (AI offline, alt text in batch); keep the design open for B | G1 | Changed |
+| [D-11](D-11.md) | AI inside the product | A to start (AI offline, alt text in batch on Claude Haiku 5.5); keep the design open for B | G1 | Changed |
 | [D-12](D-12.md) | Pricing | Free scan, Starter $29 a month, Pro $79 a month, Agency $199 a month for up to 10 stores | G2 | Approved |
 | [D-13](D-13.md) | Human accessibility checks | Test a low-cost AI check first; else a freelancer per release | G2 | Changed |
 | [D-14](D-14.md) | Legal review before launch | A lawyer reviews the terms, privacy policy and claims before launch | G3 | Approved |

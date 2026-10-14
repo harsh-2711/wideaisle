@@ -12,7 +12,7 @@ Spike C (T-032, merged in PR #39) built the alt-text pipeline: a batch client, p
 
 - **Run state.** An append-only log (`data/alt-text/<run>/state.jsonl`) records an intent before each submit and the batch ID after it. A resume does not resend a submission with an unknown outcome unless the operator passes `--allow-resubmit`.
 - **Caps per run.** Images: default 250, ceiling 1,000. Requests: default 500, ceiling 3,000. Attempts per image: default 2, ceiling 3. The API key's monthly spend limit is the last backstop (Q-04).
-- **Model.** The code defaults to `claude-haiku-5-5` (`DEFAULT_ALT_TEXT_MODEL` in `app/lib/alt-text/config.ts`), and `ALT_TEXT_MODEL` overrides it. D-11 names Haiku 4.5. Q-33 asks the owner to pick.
+- **Model.** The code defaults to `claude-haiku-5-5` (`DEFAULT_ALT_TEXT_MODEL` in `app/lib/alt-text/config.ts`), and `ALT_TEXT_MODEL` overrides it. The owner picked Haiku 5.5 on 2026-10-14 (Q-33); D-11 records it. Haiku 4.5 stays in the table for comparison.
 
 | | Haiku 5.5 | Haiku 4.5 |
 |---|---|---|
@@ -49,7 +49,7 @@ In M4 the run log moves from files to Postgres and keeps its append-only shape: 
 
 ### The model is configuration
 
-This ADR does not pick the model; Q-33 does. The design is the same for either Haiku. The model ID lives in one constant and one environment variable, and a run keeps the model it started with. Every draft already records its model, and drafts will also record a prompt version. The evidence pack and the remediation log show both.
+The model is Haiku 5.5, the owner's pick (D-11, Q-33). The design does not depend on it. The model ID lives in one constant and one environment variable, and a run keeps the model it started with. Every draft already records its model, and drafts will also record a prompt version. The evidence pack and the remediation log show both.
 
 ### Keeping option B open
 
@@ -67,10 +67,10 @@ Nothing here builds B. B needs its own owner decision with cost numbers. To keep
 
 ## Consequences
 
-- **Cost.** About $0.10 per 1,000 images on Haiku 5.5, or about $1 on Haiku 4.5 (estimates; Spike C's real run measures them). A store that uses its full Starter allowance costs about $0.10 or $1 a month, under the $2.90 guardrail either way. That counts alt text alone: with infrastructure included, Starter on Haiku 4.5 reaches $3.60 a store at the PoC high end (`docs/spikes/cost-per-merchant.md`). Nor is it a ceiling: retries (2 attempts by default, up to 3) and refusals are billed, and the token counts are a guess. Twenty PoC stores at the full allowance cost about $2 or $20 a month. The roadmap's "Claude API for alt text and CI agents" line is $20 to $40 a month in M4 to M6, so on Haiku 4.5, alt text alone could use the low end of that line.
+- **Cost.** About $0.10 per 1,000 images on Haiku 5.5 (estimate; Spike C's real run measures it). A store that uses its full Starter allowance costs about $0.10 a month in alt text, well under the $2.90 guardrail. That counts alt text alone. With infrastructure included, Starter on Haiku 5.5 reaches $3.21 a store at 10 pilots, over $2.90; the share of fixed costs decides the result at small store counts (`docs/spikes/cost-per-merchant.md`). Nor is it a ceiling: retries (2 attempts by default, up to 3) and refusals are billed, and the token counts are a guess. Twenty PoC stores at the full allowance cost about $2 a month, against the roadmap's $20 to $40 a month line for the Claude API in M4 to M6. Haiku 4.5 would have cost about ten times as much.
 - **Easier.** AI cost grows with images, not page views. The UI never waits on a model. Every draft can be traced to a model and prompt version.
 - **Harder.** Alt text arrives up to a day after theme fixes. The review queue is extra work for the merchant.
 - **Risk: quality is unmeasured.** No real run yet (Q-04), and no owner ratings yet (Q-26). Known failure modes: the wrong variant colour, invented text, decorative images described at length, and uneven quality outside English.
 - **Risk: refusals and fetch errors.** Haiku 5.5 refusals have no server-side fallback, so the merchant writes those alt texts. Images go to the model as URLs; if fetches fail often, switch to base64.
-- **Risk: model retirement.** Haiku 4.5 may retire soon after 2026-10-15. If Q-33 keeps it, plan a move. A move is a config change plus a rating run.
+- **Risk: model retirement.** Haiku 5.5 retires not sooner than 2027-10-07. A move to a later model is a config change plus a rating run.
 - **Risk: prompt injection.** Merchants control product titles. Product text goes into the prompt as escaped data, the checks flag drafts that echo instructions, and the merchant approves every draft.

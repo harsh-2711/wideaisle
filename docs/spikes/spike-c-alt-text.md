@@ -4,19 +4,19 @@
 |---|---|
 | Task | T-032, branch `claude/feat-alt-text` |
 | Decisions | D-11 (AI only offline, alt text in batch, merchants approve), D-06 (claims), D-04 (buy nothing) |
-| Status | Agent part done. Real run waits on Q-04 (API key) and Q-33 (model approval); ratings on Q-26. |
+| Status | Agent part done. Model approved: Haiku 5.5 (Q-33, 2026-10-14). Real run waits on Q-04 (API key); ratings on Q-26. |
 | Date | 2026-10-08 |
 
 ## Summary
 
 - The batch client, prompt, checks, resume logic, cost report and rating sheet are built and tested with a mocked SDK. Nothing has called the real API.
-- Default model: `claude-haiku-5-5`, the current Haiku. The plan named Haiku 4.5. Set `ALT_TEXT_MODEL=claude-haiku-4-5` to run the plan's model instead.
+- Default model: `claude-haiku-5-5`, the current Haiku and the owner's pick (Q-33). The plan first named Haiku 4.5. Set `ALT_TEXT_MODEL=claude-haiku-4-5` to run Haiku 4.5 instead.
 - Rough estimate before measuring: about 1,100 input and 200 output tokens per image, so about $0.10 per 1,000 images on Haiku 5.5 and about $1 on Haiku 4.5, at batch prices still to verify. The real run replaces this guess with measured usage.
 - The output is a review queue. Nothing is written to a store. Merchants approve every alt text (D-11).
 
 ## Model choice
 
-The roadmap and D-11 say "Claude Haiku 4.5 in batch". Since the plan was written, Claude Haiku 5.5 became the current Haiku, and Haiku 4.5 is listed as a legacy model. The default is Haiku 5.5 because:
+The roadmap and D-11 said "Claude Haiku 4.5 in batch". Since the plan was written, Claude Haiku 5.5 became the current Haiku, and Haiku 4.5 is listed as a legacy model. The default is Haiku 5.5 because:
 
 - Its batch price is a tenth of Haiku 4.5's: $0.05 input and $0.25 output per million tokens, against $0.50 and $2.50 (pricing page, to verify).
 - It will last. The deprecations page gives Haiku 5.5 a retirement not sooner than October 7, 2027. Haiku 4.5 (`claude-haiku-4-5-20251001`) has "not sooner than October 15, 2026", one week from today, so the plan's model may be gone before lane C ships.
@@ -34,7 +34,7 @@ What changes with Haiku 5.5, and how the code handles it:
 
 The model ID lives in one constant, `DEFAULT_ALT_TEXT_MODEL` in `app/lib/alt-text/config.ts`, overridable with `ALT_TEXT_MODEL`. A run keeps the model it started with, even if a resume asks for another. Haiku 4.5 does not accept `effort`, so the client leaves it out for that model.
 
-Owner queue Q-33 asks you to approve Haiku 5.5 in place of the Haiku 4.5 that D-11 names. The real run waits for that answer.
+The owner approved Haiku 5.5 in place of the Haiku 4.5 that D-11 named (Q-33, 2026-10-14; D-11 records it). The default model is the approved one.
 
 ## How it works
 
@@ -184,7 +184,7 @@ The pre-run estimate (`--dry-run`) assumes about 0.3 tokens per prompt character
 ## What the real run needs
 
 1. **Q-04:** an Anthropic API key with a monthly spend limit, as the `ANTHROPIC_API_KEY` secret in the cloud environment. 200 images should cost well under $1 on either Haiku. Batches can go slightly over a workspace spend limit, so the limit is a backstop, not an exact cap. The run's own caps are in "Spending limits" above.
-2. **Q-33:** your approval of Haiku 5.5 in place of the Haiku 4.5 that D-11 names.
+2. **Q-33:** done. The owner approved Haiku 5.5 on 2026-10-14.
 3. **200 product images.** Either products on the Q-03 dev store, exported to JSONL with the Admin API (lane C builds that query; check it with the Shopify Dev MCP), or public product images we have the right to use. They should look like real catalogue photos: several angles, variants in different colours, some lifestyle shots and a few decorative images.
 4. **Network:** the run needs `api.anthropic.com`. The image hosts only need to be reachable by Anthropic, not by us.
 5. **Q-26:** your 50 ratings, using [alt-text-rating-sheet.md](alt-text-rating-sheet.md).

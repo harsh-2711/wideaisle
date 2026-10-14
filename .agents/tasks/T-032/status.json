@@ -4,14 +4,13 @@
   "lane": "fixers",
   "agent": "builder",
   "state": "Blocked on you",
-  "step": "Merged in PR #39; real run waits on key and model pick",
+  "step": "Merged in PR #39; model approved (Haiku 5.5); real run waits on the API key",
   "branch": "claude/feat-alt-text",
   "issue": 28,
   "needs": [
     "owner:Q-04",
-    "owner:Q-33",
     "owner:Q-26"
   ],
-  "updated": "2026-10-09T05:57:36Z",
+  "updated": "2026-10-14T06:08:13Z",
   "id": "T-032"
 }

@@ -168,7 +168,7 @@ Every decision below is yours. Agents draft a memo with options and costs, you s
 | D-08 | v1 scope and success bar | Six failure types plus alt text on the top 5 themes from the census; PoC passes at 80% fewer of those errors on key pages | As written | G1 | Approved |
 | D-09 | How fixes reach a store | A: a custom-distribution app per pilot store, plus the exemption request. B: pull requests on a GitHub-connected theme. C: a patched theme file the merchant uploads | A for pilots, C as fallback, B for agencies | G1 | Approved |
 | D-10 | PoC hosting | A: one small server for app, database, queue and scanner (about $5 to $15, est.). B: managed app host plus managed Postgres (about $20 to $50, est.). C: Cloudflare Workers plus Browser Run ($5 plan, then $0.09 per browser-hour after 10 hours) | A, with Browser Run for census bursts | G1 | Approved |
-| D-11 | AI inside the product | A: AI only offline to author fixes per theme, plus Claude Haiku 4.5 in batch for alt text. B: AI generates every fix live | A to start with, solution should be open for B | G1 | Changed |
+| D-11 | AI inside the product | A: AI only offline to author fixes per theme, plus Claude Haiku 4.5 in batch for alt text. B: AI generates every fix live | A to start with, solution should be open for B. Alt text on Claude Haiku 5.5 (Q-33, 2026-10-14) | G1 | Changed |
 | D-12 | Pricing | Free scan; Starter $29; Pro $79; Agency $199 for 10 stores; pilots at a founding price | As written | G2 | Approved |
 | D-13 | Human accessibility checks | None; a certified freelancer per release (about $100 to $300, est.); or a monthly retainer | Check if this can automated with AI in a cost effective way, else Per release | G2 | Changed |
 | D-14 | Legal review before launch | Templates only, or a lawyer reviews terms, privacy policy and claims (about $300 to $1,500, est.) | Lawyer | G3 | Approved |
@@ -402,7 +402,7 @@ Each milestone lists its goal, the lanes agents run in parallel, what you do, an
 
 - Spike A, write path: a custom-distribution app on a dev store that duplicates a theme and writes files; the GitHub pull-request route on a connected theme; the patched-theme file route. Confirm whether custom-distribution apps need the exemption, and file the exemption request if D-09 says so.
 - Spike B, six fixers on Dawn: rule-based Liquid and CSS patches; axe-core before and after; Playwright screenshots for visual diffs; Theme Check passing through the Shopify Dev MCP.
-- Spike C, alt text: Claude Haiku 4.5 through the Batch API on 200 product images; you rate a sample of 50; cost per 1,000 images.
+- Spike C, alt text: Claude Haiku 5.5 through the Batch API on 200 product images; you rate a sample of 50; cost per 1,000 images. (The plan named Haiku 4.5; the owner switched to Haiku 5.5 on 2026-10-14, Q-33.)
 - Spike D, hosting: 1,000 page scans on a small server versus Cloudflare Browser Run, timed and costed.
 
 **Exit:**
@@ -528,7 +528,7 @@ v1 does one job well: it fixes the six failure types behind 96% of detected erro
 | Failure | Share of top million home pages | How v1 fixes it | Where the fix lives |
 |---|---|---|---|
 | Low-contrast text | 83.9% | Adjusts colour tokens just enough to pass, keeping the brand hue; merchant previews first | Theme settings and CSS |
-| Missing alt text | 53.1% | Claude Haiku 4.5 drafts alt text from the image and product title; merchant reviews in bulk | Product media through the Admin API, no theme edit needed |
+| Missing alt text | 53.1% | Claude Haiku 5.5 drafts alt text from the image and product title; merchant reviews in bulk | Product media through the Admin API, no theme edit needed |
 | Missing form labels | 51% | Adds real labels to search, newsletter, contact and quantity fields | Theme Liquid |
 | Empty links | 46.3% | Names icon links (logo, social, cart) from context | Theme Liquid |
 | Empty buttons | 30.6% | Names icon buttons (menu, close, quantity, slider controls) | Theme Liquid |
@@ -590,7 +590,7 @@ These ranges are planning estimates that Spike D replaces with measured numbers;
 **Why it stays cheap.**
 
 - Fixes are rules, not AI calls: once a theme's fixers exist, fixing another store on it costs one scan and a few API writes.
-- Alt text runs in batch: Claude Haiku 4.5 costs $1 per million input tokens and $5 per million output tokens, halved through the Batch API ([Claude docs](https://docs.claude.com/en/docs/about-claude/pricing)). A downscaled image plus prompt is roughly 600 input tokens, so 1,000 images should cost under $1 (estimate; Spike C measures it).
+- Alt text runs in batch: Claude Haiku 5.5 costs $0.10 per million input tokens and $0.50 per million output tokens, halved through the Batch API ([Claude docs](https://docs.claude.com/en/docs/about-claude/pricing)). Spike C estimates about 1,100 input and 200 output tokens an image, so 1,000 images should cost about $0.10 (estimate; Spike C's real run measures it). The plan first named Haiku 4.5 at ten times the price; the owner switched on 2026-10-14 (Q-33).
 - Browser time is cheap: Browser Run includes 10 hours on the $5 Workers Paid plan, then $0.09 an hour ([Cloudflare](https://developers.cloudflare.com/browser-run/pricing/)). At 5 to 10 seconds a page, one hour covers roughly 360 to 720 pages (estimate).
 - Re-scans follow theme-publish and theme-update webhooks and plan schedules instead of constant polling.
 - Shopify takes 0% of the first $1M of lifetime app revenue and 15% above that, after a $19 one-time registration ([Shopify](https://shopify.dev/docs/apps/store/revenue-share)).

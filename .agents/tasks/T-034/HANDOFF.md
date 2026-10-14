@@ -31,6 +31,7 @@ Blocked on you. PR #46 merges the five ADRs as Status Proposed after three revie
 | 12. Route B retry also finds a merged pull request (599b8de); board set to Blocked on you and Q-28 opened for the merge | (this commit) |
 | 13. Spike D (PR #47) numbers in ADR 0005: each row marked "Estimate, Spike D replaces it" now has the measured value and its source, or says Spike D did not measure it. Scanning, base image, cost, server size and follow-up lines updated. ADR 0001 cost line rechecked. Both stay Proposed. Done on T-035's branch `claude/docs-cost-per-merchant` | 91eaded |
 | 14. PR #48 review: ADR 0004's cost line now says the $2.90 comparison counts alt text alone and points to the cost doc ($3.60 for Starter on Haiku 4.5 with infrastructure). ADR 0005's worker figures corrected to 220 MB and 23% | (this commit) |
+| 15. ADR 0004 names Haiku 5.5, the owner's pick in Q-33; its cost line now gives $3.21 for Starter at 10 pilots with infrastructure (done on T-032's branch) | PR #52 |
 
 ## Current step
 
@@ -39,7 +40,7 @@ Waiting for the owner: Q-28 (move the ADRs to Accepted) and Q-35 (revert cases i
 ## Next three steps
 
 1. Done (step 13): Spike D's numbers are in ADR 0005 and the ADR 0001 cost line is rechecked. When Q-05 or Q-01 is answered and Browser Run or live pages are measured, update the rows that still say "not measured".
-2. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-33 is answered, name the chosen model in ADR 0004. When Q-35 is answered, update ADR 0002's "Revert" section.
+2. When PR #41 merges (Q-34), point ADR 0002's Spike A sources at main instead of the branch. When Q-35 is answered, update ADR 0002's "Revert" section.
 3. Done (step 14): ADR 0004's cost line points to docs/spikes/cost-per-merchant.md.
 
 ## Blockers and open questions
@@ -47,7 +48,6 @@ Waiting for the owner: Q-28 (move the ADRs to Accepted) and Q-35 (revert cases i
 - None block the review. The ADRs point to these owner items:
   - Q-03, dev store: 12 Spike A checks and the Spike B live scan wait on it.
   - Q-27, exemption request: file now, or after the Q-03 test. ADR 0002 gives the order.
-  - Q-33: Haiku 5.5 or Haiku 4.5 for alt text.
   - Q-34: merge PR #41.
   - Q-35: accept a one-step merchant revert for route C and merged route B pull requests, or require more work. ADR 0002 does not change D-09 until then.
   - Q-36: how pilots pay under D-12, since custom apps may not be able to use the Billing API (one unverified community reply).
