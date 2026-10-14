@@ -61,6 +61,7 @@ document.write('<div><template shadowrootmode="closed">' + ${split(["/secret/dsd
 document.write('<div><template shadowrootmode="closed"><script type="specu', 'lationrules">' + ${JSON.stringify(rules(["/secret/dsd-write-args"]))} + '</scr' + 'ipt></template></div>');
 document.write('<div><template shadowrootmode="closed"><script type="specu');
 document.write('lationrules">' + ${JSON.stringify(rules(["/secret/dsd-write-calls"]))} + '</scr' + 'ipt></template></div>');
+document.write('<div><template shadowrootmode="closed"><script type="specu', { toString() { return 'lationrules">' + ${JSON.stringify(rules(["/secret/dsd-write-object"]))} + '</scr' + 'ipt></template></div>'; } });
 // Arguments that are not strings, and writeln, still work as before.
 document.write(1, " ", { toString() { return "<b id=odd>obj</b>"; } }, null);
 document.writeln("<i id=wl>a</i>", "<i>b</i>");
@@ -81,6 +82,7 @@ const SEEN_BY_CONTROL = [
   "/secret/dsd-closed",
   "/secret/dsd-write",
   "/secret/dsd-write-args",
+  "/secret/dsd-write-object",
   "/secret/dsd-write-calls",
   "/secret/late",
 ];

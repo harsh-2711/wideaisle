@@ -73,8 +73,8 @@ export function withoutRulesHeader(headers: Record<string, string>, bodyChanged:
 //   document and in every shadow root it can reach: ones made by
 //   attachShadow (open or closed) and open declarative ones;
 // - document.write and writeln get the same filter as the HTML, applied to
-//   all of one call's string arguments joined. That covers a closed
-//   declarative shadow root written by one call.
+//   all of one call's arguments, turned into strings and joined as write
+//   does. That covers a closed declarative shadow root written by one call.
 // Not covered, both in a closed declarative shadow root: one in the page
 // source that the HTML filter misreads, and a rule split across two
 // separate write calls, which no single call's text shows whole.
@@ -131,11 +131,13 @@ export const BLOCK_SPECULATION_RULES = `(() => {
   for (const name of ["write", "writeln"]) {
     const write = Document.prototype[name];
     Document.prototype[name] = function (...parts) {
-      // write() joins its arguments, so a rule split across two of them is
-      // whole only once joined. Other values, such as TrustedHTML, pass
-      // through as they are.
-      if (parts.length > 0 && parts.every((p) => typeof p === "string")) return write.call(this, neutralize(parts.join("")));
-      return write.apply(this, parts.map((p) => (typeof p === "string" ? neutralize(p) : p)));
+      // write() turns each argument into a string and joins them, so a rule
+      // can be split across arguments, or finished by an object's toString.
+      // Do the same conversion here (a template literal is ToString, which
+      // throws on a Symbol, as write does), then filter the whole text once.
+      // Under an enforced Trusted Types policy, write now gets a plain
+      // string and throws: that fails closed, which suits the census.
+      return write.call(this, neutralize(parts.map((p) => \`\${p}\`).join("")));
     };
   }
 })();`;
