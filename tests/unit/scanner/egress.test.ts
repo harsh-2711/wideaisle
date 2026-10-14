@@ -3,7 +3,7 @@ import net from "node:net";
 import type { AddressInfo } from "node:net";
 import zlib from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { pinnedFetch, startEgressProxy } from "../../../app/lib/scanner/egress";
+import { pinnedFetch, ResponseTooLargeError, startEgressProxy } from "../../../app/lib/scanner/egress";
 import { BlockedAddressError, isPublicAddress, resolvePublic } from "../../../app/lib/scanner/netguard";
 import { PoliteClient } from "../../../app/lib/scanner/polite";
 
@@ -67,6 +67,33 @@ describe("pinnedFetch", () => {
   it("stops reading a body over the cap", async () => {
     const f = pinnedFetch({ lookup: toLocal, allowPrivate: true, maxBytes: 5 });
     await expect(f(`http://store.test:${port}/long`, { headers, redirect: "manual" })).rejects.toThrow(/over 5 bytes/);
+    await expect(f(`http://store.test:${port}/long`, { headers, redirect: "manual" })).rejects.toThrow(ResponseTooLargeError);
+  });
+
+  it("stops a compressed body that expands past the cap, and gives the decoded body and every header", async () => {
+    // About 10 KB of gzip that expands to 10 MB, and a small page with two cookies.
+    const bomb = zlib.gzipSync(Buffer.alloc(10_000_000));
+    const page = zlib.gzipSync(Buffer.from("héllo", "latin1"));
+    const srv = http.createServer((req, res) => {
+      if (req.url === "/bomb") return res.writeHead(200, { "content-encoding": "gzip" }).end(bomb);
+      res.writeHead(200, [["content-encoding", "gzip"], ["set-cookie", "a=1"], ["set-cookie", "b=2"], ["content-type", "text/html; charset=windows-1252"]]);
+      res.end(page);
+    });
+    await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+    const p = (srv.address() as AddressInfo).port;
+    try {
+      const f = pinnedFetch({ lookup: toLocal, allowPrivate: true, maxBytes: 1_000_000 });
+      expect(bomb.length).toBeLessThan(1_000_000);
+      await expect(f(`http://store.test:${p}/bomb`, { headers, redirect: "manual" })).rejects.toThrow(ResponseTooLargeError);
+      const res = await f(`http://store.test:${p}/page`, { headers, redirect: "manual" });
+      expect(await res.decodedBody!()).toEqual(Buffer.from("héllo", "latin1"));
+      expect(res.headerList!.filter(([k]) => k === "set-cookie")).toEqual([
+        ["set-cookie", "a=1"],
+        ["set-cookie", "b=2"],
+      ]);
+    } finally {
+      srv.close();
+    }
   });
 
   it("is the PoliteClient default, so the client refuses non-standard ports", async () => {

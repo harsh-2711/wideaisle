@@ -12,7 +12,14 @@ export interface FetchLikeResponse {
   status: number;
   headers: { get(name: string): string | null };
   text(): Promise<string>;
+  // pinnedFetch also gives the decoded body as bytes and every header line,
+  // for callers that pass the response on, such as the census's page loads.
+  decodedBody?(): Promise<Buffer>;
+  headerList?: [string, string][];
 }
+
+// A body over the fetch's cap, on the wire or after decompression.
+export class ResponseTooLargeError extends Error {}
 
 export type FetchLike = (
   url: string,
@@ -62,7 +69,7 @@ export function pinnedFetch(opts: GuardOptions & { maxBytes?: number } = {}): Fe
           size += c.length;
           if (size > maxBytes) {
             tooBig = true;
-            reject(new Error(`response over ${maxBytes} bytes`));
+            reject(new ResponseTooLargeError(`response over ${maxBytes} bytes`));
             req.destroy();
             return;
           }
@@ -75,8 +82,12 @@ export function pinnedFetch(opts: GuardOptions & { maxBytes?: number } = {}): Fe
           try {
             body = decode(Buffer.concat(chunks), res.headers["content-encoding"], maxBytes);
           } catch (err) {
+            // zlib stops at maxOutputLength with ERR_BUFFER_TOO_LARGE.
+            if ((err as NodeJS.ErrnoException).code === "ERR_BUFFER_TOO_LARGE") return reject(new ResponseTooLargeError(`response over ${maxBytes} bytes once decompressed`));
             return reject(err);
           }
+          const headerList: [string, string][] = [];
+          for (let i = 0; i + 1 < res.rawHeaders.length; i += 2) headerList.push([res.rawHeaders[i].toLowerCase(), res.rawHeaders[i + 1]]);
           resolve({
             status: res.statusCode ?? 0,
             headers: {
@@ -86,6 +97,8 @@ export function pinnedFetch(opts: GuardOptions & { maxBytes?: number } = {}): Fe
               },
             },
             text: async () => body.toString("utf8"),
+            decodedBody: async () => body,
+            headerList,
           });
         });
       });
