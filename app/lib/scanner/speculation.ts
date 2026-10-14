@@ -82,10 +82,12 @@ export const NEUTRALIZE_RULES_JS = `((html) => {
 // - the observer stops rules from document.write and fragments, in the
 //   document and in every shadow root it can reach: ones made by
 //   attachShadow (open or closed) and open declarative ones;
-// - document.write and writeln get the same filter as the HTML, which
-//   covers closed declarative shadow roots written by a script.
-// A closed declarative shadow root in the page source is reachable only by
-// the HTML filter.
+// - document.write and writeln get the same filter as the HTML, applied to
+//   all of one call's string arguments joined. That covers a closed
+//   declarative shadow root written by one call.
+// Not covered, both in a closed declarative shadow root: one in the page
+// source that the HTML filter misreads, and a rule split across two
+// separate write calls, which no single call's text shows whole.
 //
 // It is source text, not a function: under tsx (npm run census), esbuild
 // wraps inner functions in a __name helper the page does not have, and
@@ -139,6 +141,10 @@ export const BLOCK_SPECULATION_RULES = `(() => {
   for (const name of ["write", "writeln"]) {
     const write = Document.prototype[name];
     Document.prototype[name] = function (...parts) {
+      // write() joins its arguments, so a rule split across two of them is
+      // whole only once joined. Other values, such as TrustedHTML, pass
+      // through as they are.
+      if (parts.length > 0 && parts.every((p) => typeof p === "string")) return write.call(this, neutralize(parts.join("")));
       return write.apply(this, parts.map((p) => (typeof p === "string" ? neutralize(p) : p)));
     };
   }

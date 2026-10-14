@@ -58,6 +58,12 @@ document.body.append(document.createRange().createContextualFragment(${split(["/
 }
 document.getElementById("closed-host").attachShadow({ mode: "closed" }).append(document.createRange().createContextualFragment(${split(["/secret/shadow-closed"])}));
 document.write('<div><template shadowrootmode="closed">' + ${split(["/secret/dsd-write"])} + '</template></div>');
+document.write('<div><template shadowrootmode="closed"><script type="specu', 'lationrules">' + ${JSON.stringify(rules(["/secret/dsd-write-args"]))} + '</scr' + 'ipt></template></div>');
+document.write('<div><template shadowrootmode="closed"><script type="specu');
+document.write('lationrules">' + ${JSON.stringify(rules(["/secret/dsd-write-calls"]))} + '</scr' + 'ipt></template></div>');
+// Arguments that are not strings, and writeln, still work as before.
+document.write(1, " ", { toString() { return "<b id=odd>obj</b>"; } }, null);
+document.writeln("<i id=wl>a</i>", "<i>b</i>");
 setTimeout(() => addRules(document.body, ["/secret/late"]), 300);
 </script></body></html>`;
 
@@ -74,8 +80,16 @@ const SEEN_BY_CONTROL = [
   "/secret/shadow-closed",
   "/secret/dsd-closed",
   "/secret/dsd-write",
+  "/secret/dsd-write-args",
+  "/secret/dsd-write-calls",
   "/secret/late",
 ];
+// A known limit, stated in docs/census/README.md: a rule split across two
+// separate document.write calls, inside a closed declarative shadow root.
+// No single call's text shows the rule whole, and no script hook reaches
+// the root. If the census stops fetching it, remove it here and from the
+// README.
+const KNOWN_LIMITS = ["/secret/dsd-write-calls"];
 // <link rel="prerender"> fetches only in the full binary; the headless
 // shell has no NoState prefetch.
 const EXE = process.env.PW_CHROMIUM_PATH || undefined;
@@ -143,12 +157,14 @@ test("a store page cannot make the census browser prefetch other store URLs", as
       expect(await client.pageTurn(origin + "/")).toBeNull();
       expect(await ctx.goto(scanPage, origin + "/")).toMatchObject({ url: origin + "/" });
       await scanPage.waitForTimeout(3000);
+      expect(await scanPage.evaluate(() => [document.getElementById("odd")?.textContent, document.getElementById("wl")?.textContent])).toEqual(["obj", "a"]);
     } finally {
       // Over HTTPS this used to hang: the egress proxy waited on open tunnels.
       await ctx.close();
     }
     const fromCensus = hits.filter((h) => h.startsWith("census ")).map((h) => h.slice("census ".length));
-    expect(fromCensus).toEqual(["/robots.txt", "/"]);
+    expect(fromCensus.filter((p) => !p.startsWith("/secret"))).toEqual(["/robots.txt", "/"]);
+    expect(fromCensus.filter((p) => p.startsWith("/secret"))).toEqual(KNOWN_LIMITS);
     // The census's init scripts break nothing on the page.
     expect(errors).toEqual([]);
   } finally {
