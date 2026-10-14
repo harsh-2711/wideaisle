@@ -8,7 +8,7 @@ See TASK.md. Cap the main document the census fulfils, so hostile HTML cannot bl
 
 ## Status
 
-In review. PR #53 (https://github.com/harsh-2711/wideaisle/pull/53). Last updated 2026-10-14.
+Done. Merged in PR #53 on 2026-10-14.
 
 ## Done so far
 
@@ -23,12 +23,11 @@ In review. PR #53 (https://github.com/harsh-2711/wideaisle/pull/53). Last update
 
 ## Current step
 
-PR #53 approved by the reviewer; the two low findings are fixed in e7acd46. The lead merges once CI is green.
+None. The task is done.
 
 ## Next three steps
 
-1. After merge, set the board to Done.
-2. Follow-up, not in this PR: `decode` in app/lib/scanner/egress.ts handles one content-encoding only. A `gzip, gzip` body arrives garbled and raw deflate fails as a 502. Main behaves the same; the reviewer's probe is scratchpad/probe/docpath.mts.
+1. The decode follow-up is T-029.
 
 ## Checks run before the PR (all passed)
 

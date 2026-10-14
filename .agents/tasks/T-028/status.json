@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "",
-  "state": "In review",
-  "step": "PR #53 open; waiting for a reviewer",
+  "state": "Done",
+  "step": "Merged in PR #53",
   "branch": "claude/fix-census-doc-cap",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T06:40:26Z",
+  "updated": "2026-10-14T06:57:24Z",
   "id": "T-028"
 }
