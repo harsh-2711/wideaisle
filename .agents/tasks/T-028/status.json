@@ -1,0 +1,13 @@
+{
+  "title": "Census main document size cap",
+  "milestone": "M2",
+  "lane": "data",
+  "agent": "",
+  "state": "Running",
+  "step": "Check how route.fetch returns bodies and real page sizes",
+  "branch": "claude/fix-census-doc-cap",
+  "issue": null,
+  "needs": [],
+  "updated": "2026-10-14T06:27:44Z",
+  "id": "T-028"
+}
