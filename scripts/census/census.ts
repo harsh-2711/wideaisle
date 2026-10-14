@@ -157,9 +157,11 @@ export interface ScanContext {
   close(): Promise<void>;
 }
 
-// A browser context for one store. Every request goes through the egress
-// proxy, which connects only to vetted public addresses; loopback is sent
-// through it too. Service workers, WebSockets and WebRTC would get around
+// A browser context for one store. Every request the browser sends goes
+// through the egress proxy, which connects only to vetted public
+// addresses; loopback is sent through it too. The page HTML itself comes
+// from pinnedFetch, which applies the same checks and a size cap (T-028).
+// Service workers, WebSockets and WebRTC would get around
 // those controls, so they are off. Images and media are not loaded: axe
 // does not need them, and the store's servers are spared.
 // Chromium drops the fragment and escapes some characters that WHATWG URL
