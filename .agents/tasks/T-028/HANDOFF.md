@@ -19,16 +19,16 @@ In review. PR #53 (https://github.com/harsh-2711/wideaisle/pull/53). Last update
 | Page HTML through pinnedFetch at MAX_PAGE_BYTES (10 MB, wire and decoded); skip reason; ResponseTooLargeError, decodedBody, headerList; unit tests; census-doc-cap.spec.ts | 34a558b |
 | README line; context comment | b30b05c, 3955c99 |
 | All checks green; PR #53 opened | ab55bb6 |
+| Review (APPROVE) hardening: the page fetch checks ports itself before DNS, and refused page hosts go to blockedHosts; spec fails without the port check | e7acd46 |
 
 ## Current step
 
-PR #53 open, waiting for a reviewer agent. Not merged: the lead merges or asks for it.
+PR #53 approved by the reviewer; the two low findings are fixed in e7acd46. The lead merges once CI is green.
 
 ## Next three steps
 
-1. Answer review comments on PR #53.
-2. Once the lead says it merged, set the board to Done.
-3. None further.
+1. After merge, set the board to Done.
+2. Follow-up, not in this PR: `decode` in app/lib/scanner/egress.ts handles one content-encoding only. A `gzip, gzip` body arrives garbled and raw deflate fails as a 502. Main behaves the same; the reviewer's probe is scratchpad/probe/docpath.mts.
 
 ## Checks run before the PR (all passed)
 
