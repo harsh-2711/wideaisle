@@ -21,7 +21,7 @@ import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine }
 import { AssetCache, reusableForMs, type AssetRequest } from "../../app/lib/scanner/asset-cache";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
-import { DEFAULT_PORTS, pinnedFetch, portOf, ResponseTooLargeError, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
+import { ContentEncodingError, DEFAULT_PORTS, pinnedFetch, portOf, ResponseTooLargeError, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
 import { BlockedAddressError, sameSite } from "../../app/lib/scanner/netguard";
 import { describeSkip, isSkip, PoliteClient } from "../../app/lib/scanner/polite";
 import { BLOCK_SPECULATION_RULES, isHtml, withoutRulesHeader, withoutRulesScripts } from "../../app/lib/scanner/speculation";
@@ -59,6 +59,9 @@ export const MAX_ATTEMPTS = 3;
 // memory or the event loop. A page over it is skipped, not scanned.
 export const MAX_PAGE_BYTES = 10_000_000;
 export const PAGE_TOO_LARGE = `page over ${MAX_PAGE_BYTES / 1_000_000} MB, not scanned`;
+// A page whose content-encoding the census cannot decode: an unknown
+// encoding, too many layers or corrupt data (T-029).
+export const pageNotDecoded = (why: string) => `page could not be decoded (${why}), not scanned`;
 
 function readLines(file: string): string[] {
   return fs.readFileSync(file, "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
@@ -195,12 +198,13 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
   // The one main-frame navigation the scan asked for, where it redirected,
   // and a signal for a redirect that arrives while the page is loading.
-  // `tooLarge` marks a page over MAX_PAGE_BYTES.
-  const nav: { expected: string | null; current: string | null; redirect: string | null; tooLarge: boolean; loading: boolean; signal: () => void } = {
+  // `skip` is why the page was not loaded: over MAX_PAGE_BYTES, or a body
+  // that could not be decoded.
+  const nav: { expected: string | null; current: string | null; redirect: string | null; skip: string | null; loading: boolean; signal: () => void } = {
     expected: null,
     current: null,
     redirect: null,
-    tooLarge: false,
+    skip: null,
     loading: false,
     signal: () => {},
   };
@@ -287,7 +291,8 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // The census's own fetch, not route.fetch (T-028). Playwright reads
         // and decompresses a whole body, with no limit, before route.fetch
         // returns. pinnedFetch stops at MAX_PAGE_BYTES on the wire and after
-        // decompression, connects only to vetted addresses, and does not
+        // decompression, across every content-encoding layer together
+        // (T-029). It connects only to vetted addresses, and does not
         // follow redirects, so the scan can vet each hop. Like route.fetch,
         // it sends the browser's headers and the context's cookies.
         // The egress proxy refused other ports on its own; this path checks
@@ -311,13 +316,15 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         // Speculation rules would make Chromium fetch other pages without
         // passing this handler (T-027). Drop the header and make inline rule
         // sets inert; init scripts catch rules a page adds later. The body
-        // is decoded, so its transfer headers go too.
+        // is decoded, so its transfer headers go too. A body that cannot be
+        // decoded throws here; it never reaches the browser still encoded.
         const raw = await res.decodedBody();
         const body = (isHtml(resHeaders) && withoutRulesScripts(raw)) || raw;
         return route.fulfill({ status: res.status, headers: withoutRulesHeader(resHeaders, true), body });
       } catch (err) {
-        if (err instanceof ResponseTooLargeError) {
-          nav.tooLarge = true;
+        const skip = err instanceof ResponseTooLargeError ? PAGE_TOO_LARGE : err instanceof ContentEncodingError ? pageNotDecoded(err.message) : null;
+        if (skip) {
+          nav.skip = skip;
           return route.fulfill({ status: 200, contentType: "text/html", body: "" });
         }
         // Recorded as the egress proxy records its refusals.
@@ -345,7 +352,7 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         }
         nav.expected = new URL(current).href;
         nav.redirect = null;
-        nav.tooLarge = false;
+        nav.skip = null;
         nav.current = new URL(current).href;
         const redirected = new Promise<void>((resolve) => (nav.signal = resolve));
         let res: Response | null;
@@ -356,7 +363,7 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         } finally {
           nav.loading = false;
         }
-        if (nav.tooLarge) return { skip: PAGE_TOO_LARGE, retry: false };
+        if (nav.skip) return { skip: nav.skip, retry: false };
         if (!nav.redirect) return { res, url: current };
         current = nav.redirect;
       }

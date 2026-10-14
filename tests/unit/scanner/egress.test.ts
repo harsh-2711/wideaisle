@@ -1,9 +1,10 @@
+import crypto from "node:crypto";
 import http from "node:http";
 import net from "node:net";
 import type { AddressInfo } from "node:net";
 import zlib from "node:zlib";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { pinnedFetch, ResponseTooLargeError, startEgressProxy } from "../../../app/lib/scanner/egress";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { ContentEncodingError, pinnedFetch, ResponseTooLargeError, startEgressProxy } from "../../../app/lib/scanner/egress";
 import { BlockedAddressError, isPublicAddress, resolvePublic } from "../../../app/lib/scanner/netguard";
 import { PoliteClient } from "../../../app/lib/scanner/polite";
 
@@ -94,6 +95,164 @@ describe("pinnedFetch", () => {
     } finally {
       srv.close();
     }
+  });
+
+  describe("content-encodings, as Chromium decodes them (T-029)", () => {
+    const html = Buffer.from(`<!doctype html><html lang="en"><head><title>Shirts</title></head><body><h1>Shirts</h1></body></html>`);
+    const gz = (b: Buffer, level?: number) => zlib.gzipSync(b, level === undefined ? {} : { level });
+    const br = (b: Buffer) => zlib.brotliCompressSync(b);
+
+    // Each path answers with its own status, content-encoding header lines
+    // and body. Two strings mean two header lines.
+    type Route = { status?: number; encodings: string[]; body: Buffer; location?: string };
+    async function serve(routes: Record<string, Route>) {
+      const srv = http.createServer((req, res) => {
+        const r = routes[req.url ?? ""];
+        if (!r) return res.writeHead(404).end();
+        const lines: [string, string][] = [["content-type", "text/html"], ...r.encodings.map((e): [string, string] => ["content-encoding", e])];
+        if (r.location) lines.push(["location", r.location]);
+        res.writeHead(r.status ?? 200, lines).end(r.body);
+      });
+      await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+      const p = (srv.address() as AddressInfo).port;
+      return {
+        get: (path: string, maxBytes = 1_000_000) => pinnedFetch({ lookup: toLocal, allowPrivate: true, maxBytes })(`http://store.test:${p}${path}`, { headers, redirect: "manual" }),
+        close: () => srv.close(),
+      };
+    }
+
+    it("decodes `gzip, gzip`, in one header line or two", async () => {
+      const srv = await serve({
+        "/one": { encodings: ["gzip, gzip"], body: gz(gz(html)) },
+        "/two": { encodings: ["gzip", "gzip"], body: gz(gz(html)) },
+      });
+      try {
+        for (const path of ["/one", "/two"]) {
+          const res = await srv.get(path);
+          expect(await res.decodedBody!(), path).toEqual(html);
+          expect(await res.text(), path).toBe(html.toString());
+        }
+      } finally {
+        srv.close();
+      }
+    });
+
+    it("decodes deflate with or without its zlib header", async () => {
+      // Raw deflate breaks the RFC, but Chromium accepts it.
+      const srv = await serve({
+        "/raw": { encodings: ["deflate"], body: zlib.deflateRawSync(html) },
+        "/zlib": { encodings: ["deflate"], body: zlib.deflateSync(html) },
+      });
+      try {
+        expect(await (await srv.get("/raw")).decodedBody!()).toEqual(html);
+        expect(await (await srv.get("/zlib")).decodedBody!()).toEqual(html);
+      } finally {
+        srv.close();
+      }
+    });
+
+    it("decodes br alone and stacked with gzip, the last one applied first", async () => {
+      const srv = await serve({
+        "/br": { encodings: ["br"], body: br(html) },
+        // "gzip, br": gzip was applied first, then br.
+        "/gzip-br": { encodings: ["gzip, br"], body: br(gz(html)) },
+        "/br-gzip": { encodings: ["br, gzip"], body: gz(br(html)) },
+        // Names in any case, x-gzip, and identity, which changes nothing.
+        "/names": { encodings: ["X-Gzip", "identity, Br"], body: br(gz(html)) },
+      });
+      try {
+        for (const path of ["/br", "/gzip-br", "/br-gzip", "/names"]) expect(await (await srv.get(path)).decodedBody!(), path).toEqual(html);
+      } finally {
+        srv.close();
+      }
+    });
+
+    it("refuses an unknown encoding, too many layers or corrupt data, and never passes the bytes on still encoded", async () => {
+      const srv = await serve({
+        "/zstd": { encodings: ["zstd"], body: gz(html) },
+        "/gzip-zstd": { encodings: ["gzip, zstd"], body: gz(html) },
+        "/three": { encodings: ["gzip, gzip, gzip"], body: gz(gz(gz(html))) },
+        "/four": { encodings: ["gzip, gzip, gzip, gzip"], body: gz(gz(gz(gz(html)))) },
+        "/corrupt": { encodings: ["gzip"], body: Buffer.from("not gzip at all") },
+        // A redirect's body is never read, so its encoding does not matter.
+        "/moved": { status: 302, encodings: ["zstd"], body: Buffer.from("elsewhere"), location: "/three" },
+      });
+      try {
+        for (const [path, why] of [["/zstd", /zstd/], ["/gzip-zstd", /zstd/], ["/four", /4 layers/], ["/corrupt", /gzip/]] as const) {
+          // The status and headers are still there; reading the body fails.
+          const res = await srv.get(path);
+          expect(res.status, path).toBe(200);
+          await expect(res.decodedBody!(), path).rejects.toThrow(ContentEncodingError);
+          await expect(res.decodedBody!(), path).rejects.toThrow(why);
+          await expect(res.text(), path).rejects.toThrow(ContentEncodingError);
+        }
+        expect(await (await srv.get("/three")).decodedBody!()).toEqual(html);
+        const moved = await srv.get("/moved");
+        expect([moved.status, moved.headers.get("location")]).toEqual([302, "/three"]);
+      } finally {
+        srv.close();
+      }
+    });
+
+    it("a stacked `gzip, gzip` bomb and a page over the cap on the wire each raise ResponseTooLargeError", async () => {
+      // The middle layer is 20 MB of stored (uncompressed) gzip, the last
+      // layer 20 MB of zeros. Each is a few KB on the wire.
+      const zeros = Buffer.alloc(20_000_000);
+      const srv = await serve({
+        "/middle": { encodings: ["gzip, gzip"], body: gz(gz(zeros, 0), 9) },
+        "/last": { encodings: ["gzip, gzip"], body: gz(gz(zeros, 9), 9) },
+        "/wire": { encodings: ["gzip, gzip"], body: crypto.randomBytes(1_000_001) },
+      });
+      const gunzip = vi.spyOn(zlib, "gunzipSync");
+      try {
+        for (const path of ["/middle", "/last"]) {
+          gunzip.mockClear();
+          await expect(srv.get(path), path).rejects.toThrow(ResponseTooLargeError);
+          await expect(srv.get(path), path).rejects.toThrow(/once decompressed/);
+          // No layer may produce more than the cap: the middle layer is never
+          // decoded whole into memory.
+          for (const [, opts] of gunzip.mock.calls) expect(opts?.maxOutputLength, path).toBeLessThanOrEqual(1_000_000);
+        }
+        // The middle-layer bomb stops in the first layer decoded.
+        gunzip.mockClear();
+        await expect(srv.get("/middle")).rejects.toThrow(ResponseTooLargeError);
+        expect(gunzip).toHaveBeenCalledTimes(1);
+        // Over the cap as sent: refused before any decoding.
+        gunzip.mockClear();
+        await expect(srv.get("/wire")).rejects.toThrow(ResponseTooLargeError);
+        await expect(srv.get("/wire")).rejects.toThrow(/over 1000000 bytes$/);
+        expect(gunzip).not.toHaveBeenCalled();
+      } finally {
+        gunzip.mockRestore();
+        srv.close();
+      }
+    });
+
+    it("stops a zlib deflate bomb as too large, without retrying it as raw deflate", async () => {
+      const srv = await serve({ "/": { encodings: ["deflate"], body: zlib.deflateSync(Buffer.alloc(20_000_000)) } });
+      const raw = vi.spyOn(zlib, "inflateRawSync");
+      try {
+        await expect(srv.get("/")).rejects.toThrow(ResponseTooLargeError);
+        expect(raw).not.toHaveBeenCalled();
+      } finally {
+        raw.mockRestore();
+        srv.close();
+      }
+    });
+
+    it("holds the decoded cap across all layers together, not per layer", async () => {
+      // 600 KB that does not compress: each layer is about 600 KB, so the
+      // two decoded layers make 1.2 MB, though each is under 1 MB.
+      const page = crypto.randomBytes(600_000);
+      const srv = await serve({ "/": { encodings: ["gzip, gzip"], body: gz(gz(page)) } });
+      try {
+        await expect(srv.get("/", 1_000_000)).rejects.toThrow(ResponseTooLargeError);
+        // Buffer.equals: a deep compare of 600 KB takes seconds.
+        expect((await (await srv.get("/", 1_300_000)).decodedBody!()).equals(page)).toBe(true);
+      } finally {
+        srv.close();
+      }
+    });
   });
 
   it("is the PoliteClient default, so the client refuses non-standard ports", async () => {

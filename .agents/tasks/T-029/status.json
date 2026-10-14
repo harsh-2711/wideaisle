@@ -2,12 +2,12 @@
   "title": "Census page decoder: several content-encodings",
   "milestone": "M2",
   "lane": "data",
-  "agent": "",
-  "state": "Queued",
-  "step": "",
+  "agent": "builder",
+  "state": "In review",
+  "step": "PR #55 open",
   "branch": "claude/fix-census-multi-encoding",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T06:57:24Z",
+  "updated": "2026-10-14T17:02:05Z",
   "id": "T-029"
 }

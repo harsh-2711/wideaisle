@@ -197,7 +197,10 @@ export class PoliteClient {
           current = new URL(location, current).href;
           continue;
         }
-        return { url: current, status: res.status, text: await res.text(), contentType: res.headers.get("content-type") ?? "" };
+        // A 4xx means no rules whatever the body (RFC 9309), so its body is not
+        // read: a body that cannot be decoded must not make the store unreachable.
+        const text = res.status >= 400 ? "" : await res.text();
+        return { url: current, status: res.status, text, contentType: res.headers.get("content-type") ?? "" };
       } finally {
         clearTimeout(timer);
       }
