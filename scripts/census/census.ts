@@ -21,7 +21,7 @@ import { buildReport, pickRecords, renderReport, type ScanLine, type StoreLine }
 import { AssetCache, reusableForMs, type AssetRequest } from "../../app/lib/scanner/asset-cache";
 import { scanPage, type PageScan } from "../../app/lib/scanner/axe";
 import { detectStore, sampleLinks, type StoreFacts } from "../../app/lib/scanner/detect";
-import { DEFAULT_PORTS, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
+import { DEFAULT_PORTS, pinnedFetch, ResponseTooLargeError, startEgressProxy, type EgressProxy } from "../../app/lib/scanner/egress";
 import { BlockedAddressError, sameSite } from "../../app/lib/scanner/netguard";
 import { describeSkip, isSkip, PoliteClient } from "../../app/lib/scanner/polite";
 import { BLOCK_SPECULATION_RULES, isHtml, withoutRulesHeader, withoutRulesScripts } from "../../app/lib/scanner/speculation";
@@ -50,6 +50,15 @@ export interface ScanRecord {
 
 // A domain is retried at most this many times across runs.
 export const MAX_ATTEMPTS = 3;
+
+// The largest page HTML the census loads, on the wire and after
+// decompression (T-028). The Spike D fixtures, modelled on Dawn, have
+// 75 to 214 KB of HTML at the median and at most 1.3 MB with their CSS and
+// JS; large live collection pages are said to reach a few MB (not measured,
+// Q-01). 10 MB leaves a wide margin, and keeps hostile HTML from holding
+// memory or the event loop. A page over it is skipped, not scanned.
+export const MAX_PAGE_BYTES = 10_000_000;
+export const PAGE_TOO_LARGE = `page over ${MAX_PAGE_BYTES / 1_000_000} MB, not scanned`;
 
 function readLines(file: string): string[] {
   return fs.readFileSync(file, "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
@@ -184,13 +193,17 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
   const proxy = await startEgressProxy({ ...client.guard, ports: client.allowPrivate ? "any" : DEFAULT_PORTS });
   // The one main-frame navigation the scan asked for, where it redirected,
   // and a signal for a redirect that arrives while the page is loading.
-  const nav: { expected: string | null; current: string | null; redirect: string | null; loading: boolean; signal: () => void } = {
+  // `tooLarge` marks a page over MAX_PAGE_BYTES.
+  const nav: { expected: string | null; current: string | null; redirect: string | null; tooLarge: boolean; loading: boolean; signal: () => void } = {
     expected: null,
     current: null,
     redirect: null,
+    tooLarge: false,
     loading: false,
     signal: () => {},
   };
+  // Pages come through the census's own fetch, capped (T-028).
+  const fetchPage = pinnedFetch({ ...client.guard, maxBytes: MAX_PAGE_BYTES });
   // The store's CSS, JS and fonts (T-025). Routing turns the browser's HTTP
   // cache off, so without this every page would fetch them all again. Only
   // responses the browser fetched through the proxy are stored, and the
@@ -269,21 +282,38 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
       }
       nav.expected = null;
       try {
-        // Fetch without following redirects, so the scan can vet each hop.
-        const res = await route.fetch({ maxRedirects: 0 });
-        const location = res.headers()["location"];
-        if (res.status() >= 300 && res.status() < 400 && location) {
+        // The census's own fetch, not route.fetch (T-028). Playwright reads
+        // and decompresses a whole body, with no limit, before route.fetch
+        // returns. pinnedFetch stops at MAX_PAGE_BYTES on the wire and after
+        // decompression, connects only to vetted addresses, and does not
+        // follow redirects, so the scan can vet each hop. Like route.fetch,
+        // it sends the browser's headers and the context's cookies.
+        const cookies = await context!.cookies(url);
+        const headers: Record<string, string> = { ...req.headers(), "accept-encoding": "gzip, deflate, br" };
+        if (cookies.length) headers["cookie"] = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+        const res = await fetchPage(url, { headers, redirect: "manual", signal: AbortSignal.timeout(30_000) });
+        const location = res.headers.get("location");
+        if (res.status >= 300 && res.status < 400 && location) {
           nav.redirect = new URL(location, url).href;
           return route.fulfill({ status: 200, contentType: "text/html", body: "" });
         }
+        if (!res.decodedBody || !res.headerList) throw new Error("pinnedFetch gives the body and every header");
+        // Playwright splits a set-cookie value on newlines, other headers
+        // on nothing, so repeated headers are joined that way.
+        const resHeaders: Record<string, string> = {};
+        for (const [k, v] of res.headerList) resHeaders[k] = k in resHeaders ? `${resHeaders[k]}${k === "set-cookie" ? "\n" : ", "}${v}` : v;
         // Speculation rules would make Chromium fetch other pages without
         // passing this handler (T-027). Drop the header and make inline rule
-        // sets inert; init scripts catch rules a page adds later.
-        const resHeaders = res.headers();
-        const body = isHtml(resHeaders) ? withoutRulesScripts(await res.body()) : null;
-        if (body) return route.fulfill({ response: res, headers: withoutRulesHeader(resHeaders, true), body });
-        return route.fulfill({ response: res, headers: withoutRulesHeader(resHeaders, false) });
-      } catch {
+        // sets inert; init scripts catch rules a page adds later. The body
+        // is decoded, so its transfer headers go too.
+        const raw = await res.decodedBody();
+        const body = (isHtml(resHeaders) && withoutRulesScripts(raw)) || raw;
+        return route.fulfill({ status: res.status, headers: withoutRulesHeader(resHeaders, true), body });
+      } catch (err) {
+        if (err instanceof ResponseTooLargeError) {
+          nav.tooLarge = true;
+          return route.fulfill({ status: 200, contentType: "text/html", body: "" });
+        }
         return route.fulfill({ status: 502, contentType: "text/plain", body: "" });
       }
     });
@@ -307,6 +337,7 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         }
         nav.expected = new URL(current).href;
         nav.redirect = null;
+        nav.tooLarge = false;
         nav.current = new URL(current).href;
         const redirected = new Promise<void>((resolve) => (nav.signal = resolve));
         let res: Response | null;
@@ -317,6 +348,7 @@ export async function openScanContext(browser: Browser, client: PoliteClient, do
         } finally {
           nav.loading = false;
         }
+        if (nav.tooLarge) return { skip: PAGE_TOO_LARGE, retry: false };
         if (!nav.redirect) return { res, url: current };
         current = nav.redirect;
       }
