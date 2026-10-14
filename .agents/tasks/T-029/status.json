@@ -3,11 +3,11 @@
   "milestone": "M2",
   "lane": "data",
   "agent": "builder",
-  "state": "In review",
-  "step": "PR #55 open",
+  "state": "Done",
+  "step": "Merged in PR #55",
   "branch": "claude/fix-census-multi-encoding",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T17:02:05Z",
+  "updated": "2026-10-14T17:16:54Z",
   "id": "T-029"
 }

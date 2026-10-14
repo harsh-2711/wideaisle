@@ -8,7 +8,7 @@ See TASK.md. Decode page bodies with stacked or raw content-encodings the way Ch
 
 ## Status
 
-In review: PR #55. Last updated 2026-10-14.
+Done. Merged in PR #55 on 2026-10-14.
 
 ## Done so far
 
@@ -20,17 +20,15 @@ In review: PR #55. Last updated 2026-10-14.
 | New tests run against main's decoder: all eight fail (see Proof) | no commit, files restored |
 | README line on decoding | 9545c16 |
 | All checks green (list below); pushed; PR #55 opened; board In review | daffabe |
-| Review (APPROVE) fixes: a 4xx robots.txt body is not read (RFC 9309), the echoed encoding token is cut to 40 characters, and a zlib deflate bomb is shown not to be retried as raw deflate | (this commit) |
+| Review (APPROVE) fixes: a 4xx robots.txt body is not read (RFC 9309), the echoed encoding token is cut to 40 characters, and a zlib deflate bomb is shown not to be retried as raw deflate | f96a52c |
 
 ## Current step
 
-Waiting on review of PR #55. Do not merge; the lead decides.
+None. The task is done.
 
 ## Next three steps
 
-1. Answer review comments on PR #55, with a new test for each fix.
-2. Rerun every check in "Checks run before the PR" after any change.
-3. Once merged, set T-029 Done with the PR number.
+None.
 
 ## Checks run before the PR (all passed)
 
