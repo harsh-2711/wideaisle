@@ -4,10 +4,10 @@
   "lane": "data",
   "agent": "",
   "state": "In review",
-  "step": "Round 3 fixes done on PR #51; running checks",
+  "step": "Round 3 fixes on PR #51; waiting for the lead",
   "branch": "claude/fix-census-prefetch",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T06:16:50Z",
+  "updated": "2026-10-14T06:20:10Z",
   "id": "T-027"
 }
