@@ -18,8 +18,8 @@ Cap the main document the census fulfils, so hostile HTML cannot block the event
 
 Each one is a test or a check someone can run.
 
-- [ ] A spec where a store serves a page over the cap shows it skipped with that reason, quickly, and the next store still scans
-- [ ] docs/census/README.md states the cap
+- [x] A spec where a store serves a page over the cap shows it skipped with that reason, quickly, and the next store still scans (`tests/a11y/census-doc-cap.spec.ts`, including a compressed bomb)
+- [x] docs/census/README.md states the cap
 
 ## Out of scope
 

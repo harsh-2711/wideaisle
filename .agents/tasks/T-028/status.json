@@ -4,10 +4,10 @@
   "lane": "data",
   "agent": "",
   "state": "Running",
-  "step": "Check how route.fetch returns bodies and real page sizes",
+  "step": "Running every check before the PR",
   "branch": "claude/fix-census-doc-cap",
   "issue": null,
   "needs": [],
-  "updated": "2026-10-14T06:27:44Z",
+  "updated": "2026-10-14T06:35:31Z",
   "id": "T-028"
 }

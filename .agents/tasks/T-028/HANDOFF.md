@@ -15,17 +15,26 @@ Running. Last updated 2026-10-14.
 | Step | Commit |
 |---|---|
 | Branch cut from main at 0aeb6ab (PR #51 merged); T-027 set Done | b23e1ff |
-| Task created | (this checkpoint) |
+| Task created | 88157a8 |
+| Page HTML through pinnedFetch at MAX_PAGE_BYTES (10 MB, wire and decoded); skip reason; ResponseTooLargeError, decodedBody, headerList; unit tests; census-doc-cap.spec.ts | 34a558b |
+| README line; context comment | b30b05c, 3955c99 |
 
 ## Current step
 
-Fetch the main document with pinnedFetch (capped on the wire and after decompression) instead of route.fetch.
+Running every check before the PR.
 
 ## Next three steps
 
-1. pinnedFetch: a typed ResponseTooLargeError for both caps, and the decoded body and header list for callers that pass the response on.
-2. openScanContext: main document through pinnedFetch at MAX_PAGE_BYTES, with the context's cookies; a page over the cap becomes a skip in goto.
-3. Specs (over-cap page, compressed bomb, next store scans, cookies still round-trip), README line, checks, PR.
+1. Lint, typecheck, `npm test`; full Playwright suite on both builds; four rule checks; `lint-handoff --all`; commitlint.
+2. Push, open the PR from the template, set the board to In review.
+3. Report the PR link, head and checks to the lead. Do not merge.
+
+## Design
+
+- `MAX_PAGE_BYTES = 10_000_000` in `scripts/census/census.ts`. Margin: the Spike D fixtures (Dawn-like) have 75 to 214 KB of HTML at the median and at most 1.3 MB with CSS and JS; large live collection pages are said to reach a few MB (not measured here, Q-01).
+- The main-frame branch of the route handler calls `pinnedFetch({ ...client.guard, maxBytes: MAX_PAGE_BYTES })` instead of `route.fetch({ maxRedirects: 0 })`. Same rules: vetted, pinned addresses; no redirects followed, so goto still vets each hop; 30 s timeout. It sends the browser's request headers, `accept-encoding: gzip, deflate, br`, and the context's cookies (`context.cookies(url)`), as route.fetch did. Repeated response headers are joined for route.fulfill: set-cookie with newlines (Playwright splits them), others with commas. The body is decoded, so its transfer headers are dropped.
+- Over the cap (wire or decoded): `ResponseTooLargeError`, the route fulfils an empty page, and goto returns `{ skip: "page over 10 MB, not scanned", retry: false }`. scan() records it in `skipped` like other skips.
+- Page HTML now leaves the egress proxy's path: Node fetches it directly with the same checks, as robots.txt already was. The README and the context comment say so.
 
 ## Finding: where the cap must go
 
@@ -42,10 +51,15 @@ none
 ## Files touched
 
 - .agents/tasks/T-028/, .agents/tasks/T-027/ (set Done)
+- app/lib/scanner/egress.ts (ResponseTooLargeError, decodedBody, headerList)
+- scripts/census/census.ts (MAX_PAGE_BYTES, PAGE_TOO_LARGE, page fetch, goto skip)
+- tests/unit/scanner/egress.test.ts, tests/a11y/census-doc-cap.spec.ts (new)
+- docs/census/README.md
 
 ## How to verify
 
-- (filled in as the work lands)
+- `npx vitest run tests/unit/scanner/egress.test.ts`: both caps raise ResponseTooLargeError; the decoded body and repeated headers come back.
+- `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test tests/a11y/census-doc-cap.spec.ts`, and the same with the headless shell: a 12 MB page and a gzip bomb are skipped with the reason within seconds, the next store scans, and cookies still go from one page to the next.
 
 ## Lessons and gotchas
 
